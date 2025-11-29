@@ -94,12 +94,12 @@ export async function POST(req: NextRequest) {
     // Execute manual repost
     try {
       // Deduct credits
-      const { error: deductError } = await supabase.rpc('deduct_credits', {
+      const { error: deductError } = await (supabase as any).rpc('deduct_credits', {
         p_user_id: user.id,
         p_amount: creditsNeeded,
         p_ad_id: ad_id,
         p_transaction_type: 'manual_repost'
-      } as any);
+      });
 
       if (deductError) {
         console.error('Deduct credits error:', deductError);
@@ -123,10 +123,10 @@ export async function POST(req: NextRequest) {
       if (updateError) {
         console.error('Update ad error:', updateError);
         // Try to refund credits if update fails
-        await supabase.rpc('add_credits', {
+        await (supabase as any).rpc('add_credits', {
           p_user_id: user.id,
           p_amount: creditsNeeded
-        } as any);
+        });
         return NextResponse.json({ error: 'Failed to repost ad' }, { status: 500 });
       }
 

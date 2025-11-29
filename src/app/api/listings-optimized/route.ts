@@ -48,7 +48,7 @@ export async function GET(request: Request) {
 
   if (cachedData) {
     return NextResponse.json({
-      ...cachedData,
+      ...(cachedData as any),
       cached: true,
       cache_source: 'redis',
       execution_time: Date.now() - startTime
