@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Block access to sensitive areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /node_modules/
+
+# Allow important assets
+Allow: /images/
+Allow: /favicon.ico
+
+# Sitemap
+Sitemap: https://piata-ai.ro/sitemap.xml

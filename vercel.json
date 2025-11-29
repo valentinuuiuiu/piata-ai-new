@@ -1,0 +1,38 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "crons": [
+    {
+      "path": "/api/cron/blog-daily",
+      "schedule": "0 9 * * *"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_APP_URL": "https://piata-ai.vercel.app"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=60, stale-while-revalidate=30"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+}

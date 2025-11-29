@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+  body {
+    @apply bg-primary text-white min-h-screen antialiased;
+  }
+}
+
+@layer components {
+  .btn-neon {
+    @apply px-6 py-3 rounded-full font-bold tracking-wide transition-all duration-300 bg-gradient-to-r from-[#ff00f0] to-[#00f0ff] text-black hover:scale-105 shadow-neon hover:shadow-[0_0_30px_rgba(0,240,255,0.8)];
+  }
+  .glass {
+    @apply backdrop-blur-xl bg-white/5 border border-white/20 rounded-3xl;
+  }
+  .floating-credits-widget {
+    @apply hidden md:flex flex-col border border-white/20 rounded-3xl bg-gradient-to-br from-[#0f172a]/80 to-[#0f172a]/70 backdrop-blur-[40px] p-6 max-w-xs shadow-[0_0_40px_rgba(0,240,255,0.35)] text-white;
+  }
+  .floating-credits-widget span {
+    @apply text-xs uppercase tracking-[0.3em] text-white/60;
+  }
+}
