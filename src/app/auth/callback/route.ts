@@ -10,21 +10,48 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!error && data.session) {
+      console.log('✅ Session created for user:', data.user?.email)
+      
+      const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'
       
-      // Always redirect to dashboard after successful auth
+      // Build redirect URL
+      let redirectUrl: string
       if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`)
+        redirectUrl = `${origin}${next}`
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        redirectUrl = `https://${forwardedHost}${next}`
       } else {
-        return NextResponse.redirect(`${origin}${next}`)
+        redirectUrl = `${origin}${next}`
       }
+      
+      // Create response with proper headers to persist session
+      const response = NextResponse.redirect(redirectUrl)
+      
+      // Set session cookies explicitly
+      response.cookies.set({
+        name: 'sb-access-token',
+        value: data.session.access_token,
+        path: '/',
+        sameSite: 'lax',
+        secure: !isLocalEnv,
+        httpOnly: false,
+      })
+      
+      response.cookies.set({
+        name: 'sb-refresh-token',
+        value: data.session.refresh_token,
+        path: '/',
+        sameSite: 'lax',
+        secure: !isLocalEnv,
+        httpOnly: false,
+      })
+      
+      return response
     } else {
-      // Log the error for debugging
       console.error('Auth code exchange error:', error)
     }
   }
