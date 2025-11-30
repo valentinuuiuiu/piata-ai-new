@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function AuthCodeError() {
+function AuthCodeErrorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [errorDetails, setErrorDetails] = useState<string>('');
@@ -149,5 +149,17 @@ export default function AuthCodeError() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthCodeError() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#00f0ff]"></div>
+      </div>
+    }>
+      <AuthCodeErrorContent />
+    </Suspense>
   );
 }
