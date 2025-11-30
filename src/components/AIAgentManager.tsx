@@ -314,7 +314,7 @@ export default function AIAgentManager() {
                 { name: 'Auto-Moderate Listings', triggers: ['new_listing'], actions: ['review_content'] },
                 { name: 'User Engagement Boost', triggers: ['daily_cron'], actions: ['send_emails'] },
                 { name: 'System Health Monitor', triggers: ['hourly_cron'], actions: ['generate_reports'] },
-                { name: 'Content Quality Assurance', triggers: ['content_created'], actions: ['quality_check'] }
+                { name: 'Content Quality Assurance', ', triggers: ['content_created'], actions: ['quality_check'] }
               ].map((pattern, index) => (
                 <div key={index} className="p-4 bg-gray-800/30 rounded-lg">
                   <h4 className="font-bold text-white mb-2">{pattern.name}</h4>
