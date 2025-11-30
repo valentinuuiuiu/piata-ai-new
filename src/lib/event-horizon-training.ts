@@ -12,10 +12,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = (supabaseUrl && supabaseKey)
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 // =============================================================================
 // EVENT HORIZON STORIES - Irresistible training scenarios
@@ -309,6 +311,11 @@ export async function recordStoryCompletion(
   const xpGained = story.multipleEndings[ending].xp
 
   // Get current progress
+  if (!supabase) {
+    console.warn('Supabase client not initialized');
+    return { xpGained, newLevel: 1, message: 'Progress not saved (no DB)' };
+  }
+
   const { data: existing } = await supabase
     .from('agent_capabilities')
     .select('*')

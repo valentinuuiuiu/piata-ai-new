@@ -9,10 +9,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = (supabaseUrl && supabaseKey)
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 // =============================================================================
 // AGENT DEFINITIONS
@@ -284,6 +286,7 @@ async function storeAgentLearning(data: {
   performanceScore: number
 }): Promise<boolean> {
   try {
+    if (!supabase) return false;
     const { error } = await supabase.from('agent_learning_history').insert({
       agent_name: data.agentName,
       task_description: data.taskDescription,

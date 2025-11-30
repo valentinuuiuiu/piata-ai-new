@@ -140,8 +140,11 @@ export class AutomationEngine {
   private tasks: Map<string, AutomationTask> = new Map();
 
   constructor() {
-    this.loadTasks();
-    this.startScheduler();
+    // Only initialize if not in build phase
+    if (process.env.NEXT_PHASE !== 'phase-production-build') {
+      this.loadTasks();
+      this.startScheduler();
+    }
   }
 
   private async loadTasks() {
@@ -623,7 +626,10 @@ export async function initializeAutomationTasks() {
 export const automationEngine = new AutomationEngine();
 
 // Initialize tasks on module load
-initializeAutomationTasks();
+// Initialize tasks on module load only if not building
+if (process.env.NEXT_PHASE !== 'phase-production-build') {
+  initializeAutomationTasks();
+}
 
 // Default automation tasks
 export const DEFAULT_AUTOMATION_TASKS: Omit<

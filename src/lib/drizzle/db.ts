@@ -4,17 +4,31 @@ import * as schema from './schema';
 import { healthCheck } from '../db';
 
 // Create PostgreSQL pool
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  user: process.env.DB_USER!,
-  password: process.env.DB_PASS!,
-  database: process.env.DB_NAME!,
-  max: 20,
-  min: 2,
-  connectionTimeoutMillis: 2000,
-  idleTimeoutMillis: 30000,
-});
+// Create PostgreSQL pool
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+const poolConfig = connectionString
+  ? {
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      min: 2,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+    }
+  : {
+      host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? undefined : 'localhost'),
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER!,
+      password: process.env.DB_PASS!,
+      database: process.env.DB_NAME!,
+      max: 20,
+      min: 2,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+    };
+
+const pool = new Pool(poolConfig as any);
 
 export const db = drizzle(pool, { schema });
 export type DB = typeof db;

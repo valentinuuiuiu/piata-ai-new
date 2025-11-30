@@ -1,18 +1,36 @@
 import { Pool } from 'pg';
 import { convertSQLPlaceholders } from './sql-utils';
 
-const pool = new Pool({
-  host: process.env.DB_HOST || process.env.POSTGRES_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  user: process.env.DB_USER || process.env.POSTGRES_USER || 'piata_ro_user',
-  password: process.env.DB_PASS || process.env.POSTGRES_PASSWORD,
-  database: process.env.DB_NAME || process.env.POSTGRES_DATABASE || 'piata_ro',
-  ssl: process.env.POSTGRES_HOST ? { rejectUnauthorized: false } : undefined,
-  max: 20, // Maximum number of clients in the pool
-  min: 2,  // Minimum number of clients in the pool
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-});
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+const poolConfig = connectionString
+  ? {
+      connectionString,
+      ssl: { rejectUnauthorized: false }, // Required for Supabase
+      max: 20,
+      min: 2,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+    }
+  : {
+      host: process.env.DB_HOST || process.env.POSTGRES_HOST || (process.env.NODE_ENV === 'production' ? undefined : 'localhost'),
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER || process.env.POSTGRES_USER || 'piata_ro_user',
+      password: process.env.DB_PASS || process.env.POSTGRES_PASSWORD,
+      database: process.env.DB_NAME || process.env.POSTGRES_DATABASE || 'piata_ro',
+      ssl: (process.env.DB_HOST && process.env.DB_HOST !== 'localhost') ? { rejectUnauthorized: false } : undefined,
+      max: 20,
+      min: 2,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+    };
+
+// Validate config in production
+if (process.env.NODE_ENV === 'production' && !connectionString && !poolConfig.host) {
+  console.error('❌ Database configuration missing in production! Set DATABASE_URL or DB_HOST.');
+}
+
+const pool = new Pool(poolConfig as any);
 
 // Health check function
 export async function healthCheck() {
