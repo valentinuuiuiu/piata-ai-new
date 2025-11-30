@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/blog-daily",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/check-agents",
+      "schedule": "0 9 * * *"
     }
   ],
   "env": {
