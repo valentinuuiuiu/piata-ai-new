@@ -92,3 +92,34 @@ export const listingBoosts = pgTable('listing_boosts', {
 
 export type UserProfile = InferSelectModel<typeof userProfiles>;
 export type ListingBoost = InferSelectModel<typeof listingBoosts>;
+
+// Shopping Agents - AI-powered listing monitoring
+export const shoppingAgents = pgTable('shopping_agents', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  filters: jsonb('filters').$type<{
+    category?: string;
+    priceMin?: number;
+    priceMax?: number;
+    location?: string;
+  }>().default({}),
+  isActive: boolean('is_active').default(true),
+  lastCheckedAt: timestamp('last_checked_at'),
+  matchesFound: integer('matches_found').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const agentMatches = pgTable('agent_matches', {
+  id: serial('id').primaryKey(),
+  agentId: integer('agent_id').references(() => shoppingAgents.id, { onDelete: 'cascade' }).notNull(),
+  listingId: integer('listing_id').references(() => anunturi.id, { onDelete: 'cascade' }).notNull(),
+  matchScore: integer('match_score').notNull(), // 0-100
+  notifiedAt: timestamp('notified_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type ShoppingAgent = InferSelectModel<typeof shoppingAgents>;
+export type AgentMatch = InferSelectModel<typeof agentMatches>;
