@@ -331,32 +331,47 @@ export default function CreditsPage() {
         </div>
       )}
 
-      {/* Info Section */}
+      {/* Credit Packages Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mt-16 glass p-8 rounded-2xl"
       >
-        <h3 className="text-2xl font-bold text-[#00f0ff] mb-4">💡 Ce poți face cu creditele?</h3>
-        <ul className="space-y-3 text-gray-300">
-          <li className="flex items-start gap-3">
-            <span className="text-[#ff00f0] text-xl">🔥</span>
-            <span><strong>Featured Boost:</strong> 50 credite - Anunțul tău apare PRIMUL timp de 7 zile</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-[#ffaa00] text-xl">⭐</span>
-            <span><strong>Premium Boost:</strong> 3 credite pe zi - Evidențiere specială</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-[#00ff88] text-xl">📊</span>
-            <span><strong>Optimizare AI:</strong> 1 credit - AI-ul optimizează titlul și descrierea pentru mai multe vizualizări</span>
-          </li>
-        </ul>
-
-          <li className="flex items-start gap-3">
-            <span className="text-[#00ff88] text-xl">🤖</span>
-            <span><strong>CV Creat de AI:</strong> 5 credite (opțional) - PAI îți pune întrebări, apoi AI-ul creează un CV profesionist în format PDF pentru tine</span>
-          </li>
+        <h3 className="text-2xl font-bold text-[#00f0ff] mb-6 text-center">💎 Pachete de Credite Disponibile</h3>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="bg-white/5 p-6 rounded-xl border border-[#00f0ff]/30 hover:border-[#00f0ff] transition-all">
+            <div className="text-3xl mb-3 text-center">💎</div>
+            <h4 className="text-xl font-bold text-[#00f0ff] mb-2 text-center">5 Credite</h4>
+            <div className="text-center">
+              <div className="text-3xl font-black text-white mb-1">25 RON</div>
+              <div className="text-sm text-gray-400">5 RON / credit</div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-[#ff00f0]/20 to-[#00f0ff]/20 p-6 rounded-xl border-2 border-[#ff00f0] shadow-[0_0_20px_rgba(255,0,240,0.3)]">
+            <div className="text-xs font-bold text-center mb-2 text-[#ff00f0]">CEL MAI POPULAR</div>
+            <div className="text-3xl mb-3 text-center">💎💎</div>
+            <h4 className="text-xl font-bold text-[#ff00f0] mb-2 text-center">10 Credite</h4>
+            <div className="text-center">
+              <div className="text-3xl font-black text-white mb-1">45 RON</div>
+              <div className="text-sm text-green-400 font-bold">Economisești 5 RON!</div>
+              <div className="text-xs text-gray-400">4.5 RON / credit</div>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 p-6 rounded-xl border border-yellow-400/30 hover:border-yellow-400 transition-all">
+            <div className="text-3xl mb-3 text-center">💎💎💎</div>
+            <h4 className="text-xl font-bold text-yellow-400 mb-2 text-center">20 Credite</h4>
+            <div className="text-center">
+              <div className="text-3xl font-black text-white mb-1">85 RON</div>
+              <div className="text-sm text-green-400 font-bold">Economisești 15 RON!</div>
+              <div className="text-xs text-gray-400">4.25 RON / credit</div>
+            </div>
+          </div>
+        </div>
+        <p className="text-center text-gray-400 mt-6 text-sm">
+          Creditele pot fi folosite pentru promovarea anunțurilor și alte funcții viitoare ale platformei
+        </p>
       </motion.div>
     </div>
   );
