@@ -5,6 +5,11 @@ import { createServiceClient } from '@/lib/supabase/server';
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
+// Configure route to handle larger payloads
+export const maxDuration = 60; // 60 seconds for Vercel Pro
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: Request) {
   try {
     // Use service client for server-side operations

@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   serverExternalPackages: ['mcp-servers'],
   experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   images: {
     unoptimized: process.env.NODE_ENV === 'development',

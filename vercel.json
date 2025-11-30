@@ -30,7 +30,11 @@
   ],
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 10
+      "maxDuration": 60
+    },
+    "src/app/api/anunturi/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "rewrites": [
