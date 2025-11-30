@@ -18,15 +18,20 @@ export default function Navbar() {
       setUser(user);
       if (user) {
         // Fetch credits
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('user_profiles')
           .select('credits_balance')
           .eq('user_id', user.id)
           .single();
         
-        // Cast data to expected type since we don't have full generated types yet
-        const profile = data as { credits_balance: number } | null;
-        setCredits(profile?.credits_balance || 0);
+        if (error) {
+          console.error('Error fetching credits:', error);
+          setCredits(0);
+        } else {
+          // Cast data to expected type since we don't have full generated types yet
+          const profile = data as { credits_balance: number } | null;
+          setCredits(profile?.credits_balance || 0);
+        }
       }
     };
     getUser();
