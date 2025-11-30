@@ -11,9 +11,10 @@ interface CreditsPackageRow {
   is_active?: boolean;
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2024-06-20' as any
-});
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey 
+  ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' as any })
+  : null;
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -119,6 +120,10 @@ export async function POST(request: Request) {
   // If no Stripe price ID, create a direct Stripe session
   if (!pkg.stripe_price_id) {
     try {
+      if (!stripe) {
+        return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
+      }
+
       const checkoutSession = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
@@ -153,6 +158,10 @@ export async function POST(request: Request) {
 
   // Legacy path for packages with Stripe price IDs
   try {
+    if (!stripe) {
+      return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{

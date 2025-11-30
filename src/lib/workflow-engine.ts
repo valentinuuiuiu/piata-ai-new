@@ -10,10 +10,12 @@
 import { executeTask } from './ai-orchestrator'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = (supabaseUrl && supabaseKey)
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 // =============================================================================
 // WORKFLOW DEFINITIONS
@@ -334,6 +336,7 @@ export async function scheduleWorkflows() {
 
 async function storeWorkflowExecution(execution: WorkflowExecution) {
   try {
+    if (!supabase) return;
     await supabase.from('automation_tasks').insert({
       id: `${execution.workflowId}-${execution.startTime}`,
       name: WORKFLOWS[execution.workflowId]?.name || execution.workflowId,

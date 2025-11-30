@@ -1,0 +1,91 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   🎯 SIMPLE INSTRUCTIONS - IMAGE UPLOAD FIX                 ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+YOU ONLY NEED TO DO THIS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open: https://supabase.com/dashboard/project/ndzoavaveppnclkujjhh/sql/new
+
+2. Copy EVERYTHING from file: tmp_rovodev_SQL_TO_RUN.sql
+
+3. Paste into Supabase SQL Editor
+
+4. Click RUN
+
+5. Done! ✅
+
+
+THEN TEST:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run: node tmp_rovodev_test_complete_flow.js
+
+You should see:
+  ✅ Connected to Supabase
+  ✅ Listings bucket exists  
+  ✅ Upload test successful!
+
+
+THEN USE YOUR APP:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run: npm run dev
+
+Go to: http://localhost:3000/postare
+Upload images, create ad → Should work! ✅
+
+
+THAT'S IT!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Total time: 2 minutes ⏱️
+
+No coding needed!
+No configuration needed!
+Just run the SQL script! 🚀
+
+
+FILES YOU NEED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ tmp_rovodev_SQL_TO_RUN.sql     ← THIS ONE!
+✅ tmp_rovodev_test_complete_flow.js  ← For testing
+✅ .env.local                      ← Already created
+
+Everything else is optional documentation.
+
+
+WHAT THE SQL DOES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Creates storage bucket "listings"
+✅ Makes it PUBLIC (so images are visible)
+✅ Adds upload/view/update/delete policies
+✅ Fixes anunturi table permissions
+✅ Configures everything automatically
+
+
+TROUBLESHOOTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q: SQL gives an error?
+A: Check you're on the correct Supabase project
+
+Q: Test still fails?
+A: Wait 10 seconds and try again (policies need to propagate)
+
+Q: Images still don't upload in app?
+A: Make sure you're logged in when posting
+
+Q: Need more help?
+A: Read: START_HERE.md or tmp_rovodev_INSTRUCTIONS.md
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ready? Run the SQL script now! 🚀
+

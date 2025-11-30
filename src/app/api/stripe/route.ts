@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' as any });
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey 
+  ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' as any })
+  : null;
 
 const CREDIT_PRICE_RON = 5.0; // 1 credit = 5 RON
 
@@ -11,6 +14,10 @@ export async function POST(request: NextRequest) {
 
     if (!credits || credits <= 0) {
       return NextResponse.json({ error: 'Invalid credits amount' }, { status: 400 });
+    }
+
+    if (!stripe) {
+      return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
     }
 
     const session = await stripe.checkout.sessions.create({

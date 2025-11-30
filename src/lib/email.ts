@@ -5,7 +5,8 @@
 
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 const CLAUDE_EMAIL = 'claude.dev@mail.com';
 const IONUT_EMAIL = 'ionutbaltag3@gmail.com';
@@ -23,6 +24,11 @@ export interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions) {
   try {
+    if (!resend) {
+      console.warn('Resend API key missing, skipping email');
+      return { success: false, error: 'Resend API key missing' };
+    }
+
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: options.to || CLAUDE_EMAIL,

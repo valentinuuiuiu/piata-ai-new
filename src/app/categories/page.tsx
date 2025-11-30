@@ -27,6 +27,7 @@ interface Category {
   slug: string;
   icon: string;
   subcat_count: number;
+  listing_count: number;
 }
 
 export default function Categories() {
@@ -46,186 +47,13 @@ export default function Categories() {
         if (data.categories && Array.isArray(data.categories)) {
           setCategories(data.categories);
         } else {
-          // Fallback to hardcoded categories if API returns unexpected data
-          setCategories([
-            {
-              id: 1,
-              name: 'Imobiliare',
-              slug: 'imobiliare',
-              icon: '🏠',
-              subcat_count: 1250
-            },
-            {
-              id: 2,
-              name: 'Auto Moto',
-              slug: 'auto-moto',
-              icon: '🚗',
-              subcat_count: 890
-            },
-            {
-              id: 3,
-              name: 'Electronice',
-              slug: 'electronice',
-              icon: '📱',
-              subcat_count: 2340
-            },
-            {
-              id: 4,
-              name: 'Modă',
-              slug: 'moda',
-              icon: '👗',
-              subcat_count: 3200
-            },
-            {
-              id: 5,
-              name: 'Servicii',
-              slug: 'servicii',
-              icon: '🔧',
-              subcat_count: 670
-            },
-            {
-              id: 6,
-              name: 'Casă & Grădină',
-              slug: 'casa-gradina',
-              icon: '🏡',
-              subcat_count: 1540
-            },
-            {
-              id: 7,
-              name: 'Sport & Hobby',
-              slug: 'sport-hobby',
-              icon: '⚽',
-              subcat_count: 780
-            },
-            {
-              id: 8,
-              name: 'Animale',
-              slug: 'animale',
-              icon: '🐾',
-              subcat_count: 420
-            },
-            {
-              id: 9,
-              name: 'Locuri de Muncă',
-              slug: 'locuri-munca',
-              icon: '💼',
-              subcat_count: 1890
-            },
-            {
-              id: 10,
-              name: 'Mama & Copilul',
-              slug: 'mama-copilul',
-              icon: '👶',
-              subcat_count: 980
-            },
-            {
-              id: 11,
-              name: 'Cărți & Muzică',
-              slug: 'carti-muzica',
-              icon: '📚',
-              subcat_count: 560
-            },
-            {
-              id: 12,
-              name: 'Diverse',
-              slug: 'diverse',
-              icon: '📦',
-              subcat_count: 1200
-            }
-          ]);
+          setError('Date invalide primite de la server');
         }
         setLoading(false);
       })
       .catch(err => {
         console.error('Error fetching categories:', err);
-        setError('Nu s-au putut încărca categoriile. Se folosesc categoriile implicite.');
-        // Fallback to hardcoded categories on error
-        setCategories([
-          {
-            id: 1,
-            name: 'Imobiliare',
-            slug: 'imobiliare',
-            icon: '🏠',
-            subcat_count: 1250
-          },
-          {
-            id: 2,
-            name: 'Auto Moto',
-            slug: 'auto-moto',
-            icon: '🚗',
-            subcat_count: 890
-          },
-          {
-            id: 3,
-            name: 'Electronice',
-            slug: 'electronice',
-            icon: '📱',
-            subcat_count: 2340
-          },
-          {
-            id: 4,
-            name: 'Modă',
-            slug: 'moda',
-            icon: '👗',
-            subcat_count: 3200
-          },
-          {
-            id: 5,
-            name: 'Servicii',
-            slug: 'servicii',
-            icon: '🔧',
-            subcat_count: 670
-          },
-          {
-            id: 6,
-            name: 'Casă & Grădină',
-            slug: 'casa-gradina',
-            icon: '🏡',
-            subcat_count: 1540
-          },
-          {
-            id: 7,
-            name: 'Sport & Hobby',
-            slug: 'sport-hobby',
-            icon: '⚽',
-            subcat_count: 780
-          },
-          {
-            id: 8,
-            name: 'Animale',
-            slug: 'animale',
-            icon: '🐾',
-            subcat_count: 420
-          },
-          {
-            id: 9,
-            name: 'Locuri de Muncă',
-            slug: 'locuri-munca',
-            icon: '💼',
-            subcat_count: 1890
-          },
-          {
-            id: 10,
-            name: 'Mama & Copilul',
-            slug: 'mama-copilul',
-            icon: '👶',
-            subcat_count: 980
-          },
-          {
-            id: 11,
-            name: 'Cărți & Muzică',
-            slug: 'carti-muzica',
-            icon: '📚',
-            subcat_count: 560
-          },
-          {
-            id: 12,
-            name: 'Diverse',
-            slug: 'diverse',
-            icon: '📦',
-            subcat_count: 1200
-          }
-        ]);
+        setError('Nu s-au putut încărca categoriile.');
         setLoading(false);
       });
   }, []);
@@ -265,28 +93,40 @@ export default function Categories() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {categories.map((cat, i) => (
             <AnimatedCard key={cat.id} delay={i * 0.05}>
-              <Link href={`/categories/${cat.slug}`}>
-                <div className={`glass p-8 rounded-3xl bg-gradient-to-b from-[#00f0ff]/20 to-[#0080ff]/20 border-2 border-[#00f0ff]/30 hover:shadow-[0_0_40px_rgba(0,240,255,0.4)] transition-all duration-500 cursor-pointer h-full`}>
-                  <motion.div
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.2 }}
-                    className="text-6xl mb-4 text-center"
-                  >
-                    {cat.icon}
-                  </motion.div>
-                  <h3 className="font-black text-2xl mb-3 text-center text-white">
-                    {cat.name}
-                  </h3>
-                  <p className="text-gray-300 text-center mb-4 text-sm leading-relaxed">
-                    {cat.subcat_count} subcategorii
-                  </p>
-                  <div className="text-center">
-                    <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-[#00f0ff]/30 to-[#ff00f0]/30 border border-[#00f0ff]/50 text-[#00f0ff] font-bold text-sm">
-                      {cat.subcat_count} anunțuri
-                    </span>
-                  </div>
+              <div className={`glass p-8 rounded-3xl bg-gradient-to-b from-[#00f0ff]/20 to-[#0080ff]/20 border-2 border-[#00f0ff]/30 hover:shadow-[0_0_40px_rgba(0,240,255,0.4)] transition-all duration-500 h-full flex flex-col`}>
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.2 }}
+                  className="text-6xl mb-4 text-center"
+                >
+                  {cat.icon}
+                </motion.div>
+                <h3 className="font-black text-2xl mb-3 text-center text-white">
+                  {cat.name}
+                </h3>
+                <p className="text-gray-300 text-center mb-4 text-sm leading-relaxed">
+                  {cat.subcat_count || 0} subcategorii
+                </p>
+                <div className="text-center mb-4">
+                  <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-[#00f0ff]/30 to-[#ff00f0]/30 border border-[#00f0ff]/50 text-[#00f0ff] font-bold text-sm">
+                    {cat.listing_count || 0} anunțuri
+                  </span>
                 </div>
-              </Link>
+                
+                {/* Buttons */}
+                <div className="flex flex-col gap-2 mt-auto">
+                  <Link href={`/categories/${cat.slug}`} className="w-full">
+                    <button className="w-full btn-neon py-3 px-4 text-sm md:text-base font-bold hover:scale-105 transition-transform">
+                      🔍 Explorează Subcategorii
+                    </button>
+                  </Link>
+                  <Link href={`/cautare?categoria=${cat.slug}`} className="w-full">
+                    <button className="w-full py-2 px-3 text-xs md:text-sm font-semibold rounded-xl bg-white/10 hover:bg-white/20 text-[#00f0ff] border border-[#00f0ff]/30 transition-all">
+                      Vezi Anunțuri
+                    </button>
+                  </Link>
+                </div>
+              </div>
             </AnimatedCard>
           ))}
         </div>

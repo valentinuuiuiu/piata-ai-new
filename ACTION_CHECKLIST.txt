@@ -1,0 +1,116 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              📋 ACTION CHECKLIST - FOLLOW THIS              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+☐ STEP 1: Open Supabase SQL Editor
+   Link: https://supabase.com/dashboard/project/ndzoavaveppnclkujjhh/sql/new
+   
+   □ Click the link above
+   □ You should see Supabase SQL Editor page
+
+
+☐ STEP 2: Copy the SQL Script
+   File: tmp_rovodev_SQL_TO_RUN.sql
+   
+   □ Open the file in your code editor
+   □ Select all (Ctrl+A or Cmd+A)
+   □ Copy (Ctrl+C or Cmd+C)
+
+
+☐ STEP 3: Run the SQL Script
+   
+   □ Go back to Supabase SQL Editor tab
+   □ Paste (Ctrl+V or Cmd+V)
+   □ Click "RUN" button (bottom right corner)
+   □ Wait 5-10 seconds
+   □ Check for success messages at bottom
+
+
+☐ STEP 4: Verify It Worked
+   
+   Open terminal and run:
+   □ node tmp_rovodev_test_complete_flow.js
+   
+   You should see:
+   ✅ Connected to Supabase
+   ✅ Listings bucket exists
+   ✅ Upload test successful!
+
+
+☐ STEP 5: Test in Browser (Optional)
+   
+   □ Open: tmp_rovodev_test_upload.html
+   □ Double-click the file
+   □ Click "Test Upload" button
+   □ Select an image
+   □ Should see: "✅ Upload successful!"
+
+
+☐ STEP 6: Test Your App
+   
+   In terminal:
+   □ Run: npm run dev
+   □ Open: http://localhost:3000/autentificare
+   □ Login or create account
+   □ Go to: http://localhost:3000/postare
+   □ Fill the form
+   □ Upload 3-4 images
+   □ Click "Publică Anunțul ACUM!"
+   □ Should redirect to dashboard
+   □ Your listing should appear with images!
+
+
+☐ STEP 7: Cleanup (After Everything Works)
+   
+   In terminal:
+   □ Run: rm tmp_rovodev_* START_HERE.md STORAGE_FIX_GUIDE.md 🚀_RUN_THIS_FIRST.md ACTION_CHECKLIST.txt
+
+
+═══════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: SQL script gives errors
+□ Make sure you copied ALL the content
+□ Check you're on the right Supabase project
+□ Try running it again
+
+Problem: Test script says "Bucket not found"
+□ Wait 10 seconds for changes to propagate
+□ Try running test again
+□ Refresh Supabase dashboard
+
+Problem: Images don't upload in app
+□ Make sure you're logged in
+□ Check file size (max 10MB)
+□ Check file type (only images)
+□ Look at browser console for errors (F12)
+
+Problem: Images upload but don't display
+□ Check bucket is PUBLIC in Supabase
+□ Go to: Storage > listings > Settings
+□ Make sure "Public" is checked
+
+═══════════════════════════════════════════════════════════════
+
+CURRENT STATUS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Problem identified: Storage bucket missing
+✅ Solution created: SQL script ready
+✅ .env.local configured: Yes
+✅ Test scripts ready: Yes
+✅ Documentation created: Yes
+
+⏳ Waiting for: You to run the SQL script!
+
+═══════════════════════════════════════════════════════════════
+
+ESTIMATED TIME: 3 minutes total
+
+Ready? Start with STEP 1! 🚀
+

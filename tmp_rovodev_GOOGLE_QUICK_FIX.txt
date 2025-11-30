@@ -1,0 +1,191 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║         🔐 GOOGLE OAUTH - QUICK FIX GUIDE                   ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+✅ WHAT I FIXED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Updated src/app/autentificare/page.tsx
+   • Changed hardcoded URL to dynamic: window.location.origin
+   • Now works for both localhost and production
+
+2. Created error page: src/app/auth/auth-code-error/page.tsx
+   • Shows detailed error information
+   • Provides troubleshooting steps
+   • Auto-redirects back to login
+
+
+🔧 WHAT YOU NEED TO DO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: Google Cloud Console
+─────────────────────────────────────────────────────────────
+
+1. Open: https://console.cloud.google.com/apis/credentials
+
+2. Click your OAuth 2.0 Client ID
+
+3. Add these to "Authorized redirect URIs":
+
+   ✅ https://www.piata-ai.ro/auth/callback
+   ✅ https://piata-ai.ro/auth/callback
+   ✅ https://ndzoavaveppnclkujjhh.supabase.co/auth/v1/callback
+   ✅ http://localhost:3000/auth/callback
+
+4. Add these to "Authorized JavaScript origins":
+
+   ✅ https://www.piata-ai.ro
+   ✅ https://piata-ai.ro
+   ✅ https://ndzoavaveppnclkujjhh.supabase.co
+   ✅ http://localhost:3000
+
+5. Click SAVE
+
+
+STEP 2: Supabase Dashboard
+─────────────────────────────────────────────────────────────
+
+1. Open: https://supabase.com/dashboard/project/ndzoavaveppnclkujjhh/auth/providers
+
+2. Find "Google" and click "Edit"
+
+3. Make sure:
+   • Enabled: ON
+   • Client ID: (from Google Cloud Console)
+   • Client Secret: (from Google Cloud Console)
+
+4. Click "Save"
+
+5. Go to URL Configuration:
+   https://supabase.com/dashboard/project/ndzoavaveppnclkujjhh/auth/url-configuration
+
+6. Set:
+   • Site URL: https://www.piata-ai.ro
+   • Redirect URLs: https://www.piata-ai.ro/**, http://localhost:3000/**
+
+7. Click "Save"
+
+
+STEP 3: Deploy & Test
+─────────────────────────────────────────────────────────────
+
+# Deploy changes
+git add .
+git commit -m "Fix Google OAuth redirect URLs"
+git push
+
+# Wait 2-3 minutes for deployment
+
+# Test it
+Go to: https://www.piata-ai.ro/autentificare
+Click: "Continuă cu Google"
+Should work! ✅
+
+
+🐛 IF IT STILL DOESN'T WORK:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Common Issues:
+─────────────────────────────────────────────────────────────
+
+1. "redirect_uri_mismatch" error
+   → Check the exact URL in the error
+   → Add that EXACT URL to Google Cloud Console
+   → Look for typos (http/https, www/no-www)
+
+2. "auth-code-error" page shows
+   → Wait 5-10 minutes (Google needs time to update)
+   → Clear browser cookies
+   → Try incognito/private window
+   → Check Supabase logs
+
+3. "Invalid client" error
+   → Re-copy Client ID from Google
+   → Re-copy Client Secret from Google
+   → Update in Supabase
+   → Make sure no extra spaces
+
+4. Still not working?
+   → Check browser console (F12)
+   → Check Supabase logs
+   → Try with different Google account
+   → Email me the error message
+
+
+📋 VERIFICATION CHECKLIST:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Google Cloud Console:
+□ OAuth 2.0 Client ID exists
+□ All 4 redirect URIs added
+□ All 4 JavaScript origins added
+□ Changes saved
+
+Supabase Dashboard:
+□ Google provider enabled
+□ Client ID added
+□ Client Secret added
+□ Site URL set to https://www.piata-ai.ro
+□ Redirect URLs configured
+□ Changes saved
+
+Code:
+□ src/app/autentificare/page.tsx updated
+□ Error page created
+□ Changes committed to git
+□ Changes deployed
+
+Testing:
+□ Localhost works (if testing locally)
+□ Production works (www.piata-ai.ro)
+□ Can login with Google
+□ User is redirected back correctly
+□ User session is created
+
+
+🎯 EXPECTED FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. User visits: /autentificare
+2. Clicks: "Continuă cu Google"
+3. Redirects to: Google login page
+4. User logs in with Google
+5. Google redirects to: /auth/callback
+6. Supabase exchanges code for session
+7. User redirects to: / (home) or /dashboard
+8. ✅ Success!
+
+
+⚠️  IMPORTANT NOTES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Changes in Google Cloud take 5-10 minutes to propagate
+• Always test in incognito window after making changes
+• www.piata-ai.ro and piata-ai.ro are DIFFERENT - add both!
+• Keep your Client Secret private - never commit it to git
+
+
+🔗 QUICK LINKS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Google Cloud:
+https://console.cloud.google.com/apis/credentials
+
+Supabase Auth:
+https://supabase.com/dashboard/project/ndzoavaveppnclkujjhh/auth/providers
+
+Test Login:
+https://www.piata-ai.ro/autentificare
+
+Error Page (if something goes wrong):
+https://www.piata-ai.ro/auth/auth-code-error
+
+
+═══════════════════════════════════════════════════════════════
+
+That's it! Follow the steps above and Google OAuth will work! 🎉
+
+═══════════════════════════════════════════════════════════════

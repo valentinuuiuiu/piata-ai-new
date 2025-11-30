@@ -27,17 +27,26 @@ export async function GET() {
       throw subcategoriesError;
     }
 
-    // Get counts for categories (subcategory count)
+    // Get counts for categories (actual listing count)
     const categoriesWithCounts = await Promise.all(
       (categories || []).map(async (cat: any) => {
+        // Get actual listing count for this category
         const { count } = await supabase
+          .from('anunturi')
+          .select('*', { count: 'exact', head: true })
+          .eq('category_id', cat.id)
+          .eq('status', 'active');
+
+        // Also get subcategory count for display
+        const { count: subcatCount } = await supabase
           .from('subcategories')
           .select('*', { count: 'exact', head: true })
           .eq('category_id', cat.id);
 
         return {
           ...cat,
-          subcat_count: count || 0
+          listing_count: count || 0,
+          subcat_count: subcatCount || 0
         };
       })
     );
@@ -72,84 +81,96 @@ export async function GET() {
           name: 'Imobiliare',
           slug: 'imobiliare',
           icon: '🏠',
-          subcat_count: 1250
+          listing_count: 1250,
+          subcat_count: 8
         },
         {
           id: 2,
           name: 'Auto Moto',
           slug: 'auto-moto',
           icon: '🚗',
-          subcat_count: 890
+          listing_count: 890,
+          subcat_count: 10
         },
         {
           id: 3,
           name: 'Electronice',
           slug: 'electronice',
           icon: '📱',
-          subcat_count: 2340
+          listing_count: 2340,
+          subcat_count: 10
         },
         {
           id: 4,
           name: 'Modă',
           slug: 'moda',
           icon: '👗',
-          subcat_count: 3200
+          listing_count: 3200,
+          subcat_count: 8
         },
         {
           id: 5,
           name: 'Servicii',
           slug: 'servicii',
           icon: '🔧',
-          subcat_count: 670
+          listing_count: 670,
+          subcat_count: 9
         },
         {
           id: 6,
           name: 'Casă & Grădină',
           slug: 'casa-gradina',
           icon: '🏡',
-          subcat_count: 1540
+          listing_count: 1540,
+          subcat_count: 8
         },
         {
           id: 7,
           name: 'Sport & Hobby',
           slug: 'sport-hobby',
           icon: '⚽',
-          subcat_count: 780
+          listing_count: 780,
+          subcat_count: 7
         },
         {
           id: 8,
           name: 'Animale',
           slug: 'animale',
           icon: '🐾',
-          subcat_count: 420
+          listing_count: 420,
+          subcat_count: 7
         },
         {
           id: 9,
           name: 'Locuri de Muncă',
           slug: 'locuri-munca',
           icon: '💼',
-          subcat_count: 1890
+          listing_count: 1890,
+          subcat_count: 10
         },
         {
           id: 10,
           name: 'Mama & Copilul',
           slug: 'mama-copilul',
           icon: '👶',
-          subcat_count: 980
+          listing_count: 980,
+          subcat_count: 8
         },
         {
           id: 11,
           name: 'Cărți & Muzică',
           slug: 'carti-muzica',
           icon: '📚',
-          subcat_count: 560
+          listing_count: 560,
+          subcat_count: 6
         },
         {
           id: 12,
           name: 'Diverse',
           slug: 'diverse',
           icon: '📦',
-          subcat_count: 1200
+          listing_count: 1200,
+          subcat_count: 6
         }
       ],
       subcategories: []

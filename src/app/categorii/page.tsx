@@ -75,7 +75,7 @@ export default function Categorii() {
                   </Link>
                 ))}
               </div>
-              <Link href={`/cautare?categoria=${cat.slug}`} className="btn-neon w-full text-center py-4 font-bold">
+              <Link href={`/cautare?categoria=${cat.slug}`} className="btn-neon w-full text-center py-3 md:py-4 text-sm md:text-base font-bold">
                 Vezi toate anunțurile
               </Link>
             </div>

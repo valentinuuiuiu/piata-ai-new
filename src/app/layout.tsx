@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingCreditsWidget from '@/components/FloatingCreditsWidget';
 import PAIHelper from '@/components/PAIHelper';
-import SuggestionWidget from '@/components/SuggestionWidget';
+
 import SacredSpace from '@/components/SacredSpace';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
@@ -89,7 +89,7 @@ export default function RootLayout({
           <Footer />
           <FloatingCreditsWidget />
           <PAIHelper />
-          <SuggestionWidget />
+
           <SacredSpace />
           <PerformanceMonitor />
         </ErrorBoundary>

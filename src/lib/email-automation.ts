@@ -8,7 +8,8 @@ import { Resend } from 'resend';
 import { createHash, randomBytes } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 const FROM_EMAIL = 'Piata AI <noreply@piata.ro>';
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://piata.ro';
 
@@ -47,6 +48,11 @@ export interface EmailTemplate {
 // Core email sending function
 export async function sendEmail(options: EmailTemplate) {
   try {
+    if (!resend) {
+      console.warn('Resend API key missing, skipping email');
+      return { success: false, error: 'Resend API key missing' };
+    }
+
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: options.to,

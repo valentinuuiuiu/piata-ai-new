@@ -7,6 +7,7 @@ import { AUTOMATION_PROMPTS } from './automation-engine';
 
 const OPENROUTER_API_BASE = process.env.OPENROUTER_API_BASE || 'https://openrouter.ai/api/v1';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'x-ai/grok-4-fast';
 const LOCAL_BALOG_URL = process.env.LOCAL_BALOG_URL; // e.g. http://localhost:8080/v1
 const LOCAL_BALOG_MODEL = process.env.LOCAL_BALOG_MODEL || 'balog';
 
@@ -56,7 +57,7 @@ export async function runPrompt(promptType: string, data: Record<string, any> = 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${OPENROUTER_API_KEY}`
         },
-        body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 1024 })
+        body: JSON.stringify({ model: OPENROUTER_MODEL, messages: [{ role: 'user', content: prompt }], max_tokens: 1024 })
       });
 
       if (!response.ok) throw new Error(`OpenRouter error ${response.status}: ${await response.text()}`);

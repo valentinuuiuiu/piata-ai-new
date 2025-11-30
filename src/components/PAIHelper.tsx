@@ -16,7 +16,7 @@ interface UserContext {
 export default function PAIHelper() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [selectedModel, setSelectedModel] = useState('x-ai/grok-4.1-fast:free');
+  const [selectedModel, setSelectedModel] = useState('x-ai/grok-4-fast');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [messages, setMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,17 +67,8 @@ export default function PAIHelper() {
     
     complexity = Math.min(complexity, 10);
     
-    // Route based on complexity
-    if (complexity <= 3) {
-      // Simple: Use fastest free model
-      return 'meta-llama/llama-3.1-8b-instruct:free';
-    } else if (complexity <= 6) {
-      // Medium: Use balanced model
-      return 'x-ai/grok-4.1-fast:free';
-    } else {
-      // Complex: Use highest quality free model
-      return 'x-ai/grok-4.1-fast:free';
-    }
+    // Route based on complexity - always use grok-4-fast
+    return 'x-ai/grok-4-fast';
   };
 
   const sendMessage = async () => {

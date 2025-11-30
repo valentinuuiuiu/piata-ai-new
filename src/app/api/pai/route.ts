@@ -290,7 +290,7 @@ REGULI ABSOLUTE:
     systemPrompt += conversationContext;
 
     // Simple routing - Frontend Smart Router already selected the best model
-    const selectedModel = model || 'x-ai/grok-4.1-fast:free';
+    const selectedModel = model || 'x-ai/grok-4-fast';
 
     console.log(`PAI using model: ${selectedModel}`);
 
@@ -321,7 +321,7 @@ REGULI ABSOLUTE:
       if (response.status === 429 || response.status === 404) {
         // Fallback chain: Grok -> GLM -> Gemma -> GPT-OSS
         const fallbackChain = [
-          'x-ai/grok-4.1-fast:free',
+          'x-ai/grok-4-fast',
           'z-ai/glm-4.5-air:free',
           'google/gemma-3-27b-it:free',
           'openai/gpt-oss-20b:free'
@@ -356,7 +356,7 @@ REGULI ABSOLUTE:
           return NextResponse.json({
             reply: fallbackReply,
             isComplex: false,
-            model: 'x-ai/grok-4.1-fast:free (fallback)',
+            model: 'x-ai/grok-4-fast (fallback)',
           });
         }
       }
