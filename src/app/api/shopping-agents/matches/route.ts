@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/shopping-agents/matches?agentId=123 - Get matches for a specific agent
 export async function GET(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {

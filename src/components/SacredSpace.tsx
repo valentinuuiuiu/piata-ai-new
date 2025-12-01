@@ -9,7 +9,7 @@ export default function SacredSpace() {
   useEffect(() => {
     const checkSession = async () => {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await (await supabase).auth.getSession();
       
       if (session?.user) {
         // You can add logic here to check credits if needed
