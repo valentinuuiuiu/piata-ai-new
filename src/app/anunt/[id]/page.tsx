@@ -9,7 +9,7 @@ export default async function AnuntPage({ params }: { params: Promise<{ id: stri
   const { data: anunt, error } = await supabase
     .from('anunturi')
     .select('*, category:categories(name)')
-    .eq('id', id)
+    .eq('id', parseInt(id))
     .single();
 
   if (anunt) {
