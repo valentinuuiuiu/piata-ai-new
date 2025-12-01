@@ -96,6 +96,105 @@ export type Database = {
           created_at: string;
         };
       };
+      shopping_agents: {
+        Row: {
+          id: number;
+          user_id: string;
+          name: string;
+          description: string;
+          filters: any;
+          is_active: boolean;
+          created_at: string;
+          updated_at?: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          name: string;
+          description: string;
+          filters?: any;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          user_id?: string;
+          name?: string;
+          description?: string;
+          filters?: any;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      agent_learning_history: {
+        Row: {
+          id: number;
+          agent_name: string;
+          task_description: string;
+          input_data: any;
+          output_data: any;
+          success: boolean;
+          feedback?: string;
+          performance_score?: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          agent_name: string;
+          task_description: string;
+          input_data?: any;
+          output_data?: any;
+          success?: boolean;
+          feedback?: string;
+          performance_score?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          agent_name?: string;
+          task_description?: string;
+          input_data?: any;
+          output_data?: any;
+          success?: boolean;
+          feedback?: string;
+          performance_score?: number;
+          created_at?: string;
+        };
+      };
+      agent_capabilities: {
+        Row: {
+          id: number;
+          agent_name: string;
+          capability_name: string;
+          capability_description: string;
+          proficiency_level: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at?: string;
+        };
+        Insert: {
+          id?: number;
+          agent_name: string;
+          capability_name: string;
+          capability_description: string;
+          proficiency_level: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          agent_name?: string;
+          capability_name?: string;
+          capability_description?: string;
+          proficiency_level?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 };
