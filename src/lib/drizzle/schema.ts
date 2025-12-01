@@ -122,4 +122,5 @@ export const agentMatches = pgTable('agent_matches', {
 });
 
 export type ShoppingAgent = InferSelectModel<typeof shoppingAgents>;
+export type NewShoppingAgent = InferInsertModel<typeof shoppingAgents>;
 export type AgentMatch = InferSelectModel<typeof agentMatches>;

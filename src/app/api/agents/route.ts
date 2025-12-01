@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { NewShoppingAgent } from '@/lib/drizzle/schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
         description,
         filters: filters || {},
         is_active: true,
-      } as any)
+      } as NewShoppingAgent)
       .select()
       .single();
 
@@ -105,13 +106,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
     }
 
-    const updateData: any = { updated_at: new Date().toISOString() };
+    const updateData: Partial<NewShoppingAgent> = { updated_at: new Date().toISOString() };
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (filters !== undefined) updateData.filters = filters;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    // @ts-ignore - Type definition issue with shopping_agents table
     const { data: agent, error } = await supabase
       .from('shopping_agents')
       .update(updateData)

@@ -17,11 +17,10 @@ export async function GET(request: Request) {
 
     console.log('GET /api/anunturi - Starting Supabase query with service client');
 
-    // Try to query anunturi table directly
+    // Query all anunturi
     const { data: listings, error } = await supabase
       .from('anunturi')
       .select('*')
-      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -183,7 +182,7 @@ export async function POST(request: Request) {
         location: rawData.location,
         phone: rawData.phone,
         images: images, // Store as JSON array
-        status: 'pending_ai', // Start with AI validation status
+        status: 'active', // Immediate approval
         is_premium: false,
         is_featured: false
       })
