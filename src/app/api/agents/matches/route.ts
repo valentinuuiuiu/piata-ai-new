@@ -14,10 +14,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const agentId = searchParams.get('agent_id');
+    const agentIdStr = searchParams.get('agent_id');
 
-    if (!agentId) {
+    if (!agentIdStr) {
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
+    }
+
+    const agentId = Number(agentIdStr);
+    if (isNaN(agentId) || !Number.isInteger(agentId) || agentId <= 0) {
+      return NextResponse.json({ error: 'Invalid Agent ID' }, { status: 400 });
     }
 
     // Verify agent belongs to user
