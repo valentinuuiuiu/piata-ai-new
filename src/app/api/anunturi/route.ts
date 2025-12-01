@@ -235,4 +235,46 @@ export async function POST(request: Request) {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
+// New endpoint to handle email verification and ad posting
+export async function PUT(request: Request) {
+  try {
+    const { email, adData } = await request.json();
+
+    // Verify email is confirmed
+    const tokenData = verificationTokens.get(email);
+    if (!tokenData || !tokenData.verified) {
+      return NextResponse.json({
+        error: 'Email not verified',
+        message: 'Please verify your email first'
+      }, { status: 403 });
+    }
+
+    // Create FormData from adData
+    const formData = new FormData();
+    Object.entries(adData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    // Add email verification flag
+    formData.append('require_email_verification', 'false'); // Already verified
+
+    // Create a new request with the FormData
+    const newRequest = new Request(request.url, {
+      method: 'POST',
+      body: formData
+    });
+
+    // Call the POST handler
+    return POST(newRequest);
+
+  } catch (error) {
+    console.error('❌ PUT /api/anunturi error:', error);
+    return NextResponse.json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}
 }
