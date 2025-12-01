@@ -73,7 +73,6 @@ export async function POST(req: NextRequest) {
 
       const { error: updateError } = await supabase
         .from('anunturi')
-        // @ts-expect-error - Supabase types don't support dynamic update objects
         .update(updateData)
         .eq('id', ad_id);
 
@@ -112,7 +111,6 @@ export async function POST(req: NextRequest) {
       // Update ad (bump to top)
       const { error: updateError } = await supabase
         .from('anunturi')
-        // @ts-expect-error - Supabase types don't include all our custom columns
         .update({
           last_reposted_at: new Date().toISOString(),
           repost_count: ((ad as any).repost_count || 0) + 1,
