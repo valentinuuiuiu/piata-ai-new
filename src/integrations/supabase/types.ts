@@ -104,8 +104,10 @@ export type Database = {
           description: string;
           filters: any;
           is_active: boolean;
+          last_checked_at: string | null;
+          matches_found: number;
           created_at: string;
-          updated_at?: string;
+          updated_at: string | null;
         };
         Insert: {
           id?: number;
@@ -114,8 +116,10 @@ export type Database = {
           description: string;
           filters?: any;
           is_active?: boolean;
+          last_checked_at?: string | null;
+          matches_found?: number;
           created_at?: string;
-          updated_at?: string;
+          updated_at?: string | null;
         };
         Update: {
           id?: number;
@@ -124,8 +128,10 @@ export type Database = {
           description?: string;
           filters?: any;
           is_active?: boolean;
+          last_checked_at?: string | null;
+          matches_found?: number;
           created_at?: string;
-          updated_at?: string;
+          updated_at?: string | null;
         };
       };
       agent_learning_history: {
