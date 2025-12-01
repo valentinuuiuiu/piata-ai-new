@@ -85,7 +85,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, updated: data?.length ?? matchIds.length });
+    // Ensure data is treated as an array and get its length, defaulting to 0 if null/undefined.
+    const updatedCount = (data ?? []).length;
+    return NextResponse.json({ success: true, updated: updatedCount });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

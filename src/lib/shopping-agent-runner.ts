@@ -1,5 +1,5 @@
 import { createServiceClient } from './supabase/server';
-import { runAllSubagents, SearchFilters } from './web-browsing-subagents';
+// import { runAllSubagents, SearchFilters } from './web-browsing-subagents'; // Puppeteer functionality removed
 
 // Shopping Agent Configuration
 export interface ShoppingAgent {
@@ -82,31 +82,31 @@ export async function runShoppingAgent(agent: ShoppingAgent): Promise<ShoppingAg
   const allListings: Listing[] = [];
   let totalListingsScanned = 0;
 
-  // Run each subagent in parallel
-  const subagentPromises = SUBAGENTS.map(async (subagent) => {
-    try {
-      console.log(`[ShoppingAgent] Running subagent: ${subagent.name}`);
-      const result = await runSubagent(subagent, agent.filters);
-      subagentResults.push(result);
-      totalListingsScanned += result.pagesScanned || 0;
+  // Puppeteer functionality is commented out as the dependency is removed.
+  // The following code would be used if puppeteer were still active:
+  // const subagentPromises = SUBAGENTS.map(async (subagent) => {
+  //   try {
+  //     console.log(`[ShoppingAgent] Running subagent: ${subagent.name}`);
+  //     const result = await runSubagent(subagent, agent.filters);
+  //     subagentResults.push(result);
+  //     totalListingsScanned += result.pagesScanned || 0;
       
-      if (result.listings && result.listings.length > 0) {
-        allListings.push(...result.listings);
-        console.log(`[ShoppingAgent] ${subagent.source}: Found ${result.listings.length} listings`);
-      }
+  //     if (result.listings && result.listings.length > 0) {
+  //       allListings.push(...result.listings);
+  //       console.log(`[ShoppingAgent] ${subagent.source}: Found ${result.listings.length} listings`);
+  //     }
       
-      return result;
-    } catch (error) {
-      console.error(`[ShoppingAgent] Subagent ${subagent.name} failed:`, error);
-      return {
-        source: subagent.source,
-        listings: [],
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  });
-
-  await Promise.all(subagentPromises);
+  //     return result;
+  //   } catch (error) {
+  //     console.error(`[ShoppingAgent] Subagent ${subagent.name} failed:`, error);
+  //     return {
+  //       source: subagent.source,
+  //       listings: [],
+  //       error: error instanceof Error ? error.message : 'Unknown error'
+  //     };
+  //   }
+  // });
+  // await Promise.all(subagentPromises);
 
   // Filter listings based on agent criteria
   const matches = filterListings(allListings, agent.filters);
@@ -140,42 +140,58 @@ export async function runShoppingAgent(agent: ShoppingAgent): Promise<ShoppingAg
   return result;
 }
 
-/**
- * Run a specific web browsing subagent
- */
-async function runSubagent(subagent: any, filters: any): Promise<SubagentResult> {
-  console.log(`[Subagent] ${subagent.name}: Starting web scraping with Puppeteer`);
-  
-  try {
-    // Convert filters to SearchFilters format
-    const searchFilters: SearchFilters = {
-      keywords: filters.keywords,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      location: filters.location,
-      maxPages: 3
-    };
-
-    // Run the web browsing subagent
-    const scrapedListings = await runAllSubagents(searchFilters);
-    
-    console.log(`[Subagent] ${subagent.name}: Successfully scraped ${scrapedListings.length} listings`);
-    
-    return {
-      source: subagent.source,
-      listings: scrapedListings,
-      pagesScanned: searchFilters.maxPages || 3
-    };
-  } catch (error) {
-    console.error(`[Subagent] ${subagent.name} failed:`, error);
-    return {
-      source: subagent.source,
-      listings: [],
-      error: error instanceof Error ? error.message : 'Unknown error',
-      pagesScanned: 0
-    };
-  }
-}
+// /**
+//  * Run a specific web browsing subagent
+//  * This function is commented out as puppeteer is no longer used.
+//  */
+// async function runSubagent(subagent: any, filters: any): Promise<SubagentResult> {
+//   console.log(`[Subagent] ${subagent.name}: Starting web scraping with Puppeteer`);
+//
+//   try {
+//     // Convert filters to SearchFilters format
+//     const searchFilters: SearchFilters = {
+//       keywords: filters.keywords,
+//       minPrice: filters.minPrice,
+//       maxPrice: filters.maxPrice,
+//       location: filters.location,
+//       maxPages: 3
+//     };
+//
+//     // Run the web browsing subagent
+//     const scrapedListings = await runAllSubagents(searchFilters);
+//
+//     console.log(`[Subagent] ${subagent.name}: Successfully scraped ${scrapedListings.length} listings`);
+//
+//     // Map scraped listings to the Listing interface
+//     const mappedListings: Listing[] = scrapedListings.map((listing: any) => ({
+//       id: listing.id || Math.floor(Math.random() * 1000000), // Assuming scraped listings might not have an ID, generate one. A better approach would be to derive it from unique properties if possible.
+//       title: listing.title,
+//       description: listing.description,
+//       price: listing.price,
+//       location: listing.location,
+//       phone: listing.phone,
+//       images: Array.isArray(listing.images) ? listing.images : (listing.images ? [listing.images] : []), // Ensure images is an array
+//       category_id: listing.category_id || 1, // Default category_id if not provided
+//       lat: listing.lat,
+//       lng: listing.lng,
+//       status: listing.status || 'active'
+//     }));
+//
+//     return {
+//      source: subagent.source,
+//      listings: mappedListings,
+//      pagesScanned: searchFilters.maxPages || 3
+//     };
+//   } catch (error) {
+//     console.error(`[Subagent] ${subagent.name} failed:`, error);
+//     return {
+//      source: subagent.source,
+//      listings: [],
+//      error: error instanceof Error ? error.message : 'Unknown error',
+//      pagesScanned: 0
+//     };
+//   }
+// }
 
 /**
  * Filter listings based on agent criteria

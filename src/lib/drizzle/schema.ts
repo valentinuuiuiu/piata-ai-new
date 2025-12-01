@@ -1,5 +1,5 @@
 import { pgTable, integer, varchar, text, decimal, timestamp, jsonb, boolean, serial } from 'drizzle-orm/pg-core';
-import { InferSelectModel } from 'drizzle-orm';
+import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(), // Matches Supabase Auth UUID
