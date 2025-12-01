@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import type { NewShoppingAgent } from '@/lib/drizzle/schema';
+import type { Database } from '@/integrations/supabase/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         description,
         filters: filters || {},
         is_active: true,
-      } as NewShoppingAgent)
+      } as any)
       .select()
       .single();
 
@@ -106,7 +106,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
     }
 
-    const updateData: Partial<NewShoppingAgent> = { updated_at: new Date().toISOString() };
+    const updateData = { updated_at: new Date().toISOString() };
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (filters !== undefined) updateData.filters = filters;
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: agent, error } = await supabase
       .from('shopping_agents')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', id)
       .eq('user_id', user.id)
       .select()
