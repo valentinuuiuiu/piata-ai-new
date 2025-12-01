@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         description,
         filters: filters || {},
         is_active: true,
-      })
+      } as any)
       .select()
       .single();
 
