@@ -113,7 +113,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: agent, error } = await supabase
       .from('shopping_agents')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', id)
       .eq('user_id', user.id)
       .select()
