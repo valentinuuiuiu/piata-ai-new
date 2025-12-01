@@ -39,7 +39,7 @@ export async function createClient() {
 
 // Service role client for server-side operations (bypasses RLS)
 export function createServiceClient() {
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
