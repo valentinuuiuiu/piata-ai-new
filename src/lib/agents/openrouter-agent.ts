@@ -1,5 +1,5 @@
 import { BaseAgent } from './base-agent';
-import { AgentCapability, AgentResult, AgentTask } from './types';
+import { AgentCapability, AgentResult, AgentTask, AgentType } from './types';
 
 interface OpenRouterAgentConfig {
   apiKey: string;
@@ -12,7 +12,7 @@ export class OpenRouterAgent extends BaseAgent {
   private config: OpenRouterAgentConfig;
 
   constructor(name: string, capabilities: AgentCapability[], config: OpenRouterAgentConfig) {
-    super(name, capabilities);
+    super(name, AgentType.CONTENT, capabilities);
     this.config = {
       endpoint: 'https://openrouter.ai/api/v1/chat/completions',
       ...config

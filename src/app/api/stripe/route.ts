@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${request.headers.get('origin') || 'http://localhost:3000'}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.headers.get('origin') || 'http://localhost:3000'}/dashboard`,
+      success_url: `${request.headers.get('origin') || 'https://piata-ai.ro'}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${request.headers.get('origin') || 'https://piata-ai.ro'}/dashboard`,
       metadata: {
         userId,
         userEmail,

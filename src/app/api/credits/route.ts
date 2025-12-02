@@ -138,8 +138,8 @@ export async function POST(request: Request) {
           quantity: 1,
         }],
         mode: 'payment',
-        success_url: `${request.headers.get('origin') || 'http://localhost:3000'}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${request.headers.get('origin') || 'http://localhost:3000'}/credits?cancelled=true`,
+        success_url: `${request.headers.get('origin') || 'https://piata-ai.ro'}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${request.headers.get('origin') || 'https://piata-ai.ro'}/credits?cancelled=true`,
         metadata: {
           user_id: user.id,
           package_id: packageId.toString(),
