@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-12-02T20:29:10.003Z",
+  "competitors": [
+    {
+      "name": "OLX Romania",
+      "url": "https://www.olx.ro",
+      "categories": [],
+      "analysis_type": "market_leader_classifieds"
+    },
+    {
+      "name": "eMAG Romania",
+      "url": "https://www.emag.ro",
+      "categories": [],
+      "analysis_type": "market_leader_ecommerce"
+    }
+  ],
+  "market_trends": [
+    {
+      "insight": "High-demand categories in Romanian market",
+      "data": [],
+      "recommendation": "Focus marketing on these high-traffic categories"
+    },
+    {
+      "insight": "Market gap analysis",
+      "data": [],
+      "recommendation": "Consider specializing in underserved categories"
+    }
+  ],
+  "pricing_analysis": [
+    {
+      "category": "Electronics",
+      "competitor_price_range": "€50-€2000",
+      "recommendation": "Competitive pricing strategy needed"
+    },
+    {
+      "category": "Vehicles",
+      "competitor_price_range": "€500-€50000",
+      "recommendation": "High-value category with strong margins"
+    },
+    {
+      "category": "Real Estate",
+      "competitor_price_range": "€20000-€500000",
+      "recommendation": "Premium category for higher-tier users"
+    }
+  ],
+  "category_insights": []
+}
