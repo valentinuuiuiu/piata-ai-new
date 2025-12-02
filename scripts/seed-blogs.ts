@@ -8,19 +8,19 @@ dotenv.config({ path: '.env.local' });
 
 const CATEGORIES = [
   {
-    name: 'Imobiliare',
-    topic: 'Tendințe pe piața imobiliară din România în 2024',
-    prompt: 'Write a comprehensive blog post about Real Estate trends in Romania for late 2024. Focus on prices in Cluj, Bucharest, and Timisoara. Discuss mortgage rates and advice for first-time buyers. Write in Romanian. Format with HTML tags (h2, p, ul, li).'
+    name: 'AI & Technology',
+    topic: 'Viitorul Inteligenței Artificiale în Comerțul Online',
+    prompt: 'Write a high-quality, professional blog post in Romanian about the future of AI in e-commerce. Discuss personalization, automated customer support, and predictive analytics. Use a sophisticated tone. Format with HTML tags (h2, p, ul, li). Avoid generic fluff.'
   },
   {
-    name: 'Auto',
-    topic: 'Top mașini second-hand de cumpărat în 2024',
-    prompt: 'Write a detailed blog post about the best used cars to buy in Romania in 2024. Compare German vs Asian brands. Discuss reliability, maintenance costs, and fuel economy. Write in Romanian. Format with HTML tags (h2, p, ul, li).'
+    name: 'Machine Learning',
+    topic: 'Cum Machine Learning Transformă Piața Imobiliară',
+    prompt: 'Write a detailed, technical but accessible blog post in Romanian about how Machine Learning is revolutionizing the Real Estate market. Cover price prediction algorithms, image recognition for listings, and fraud detection. High quality content only. Format with HTML tags.'
   },
   {
-    name: 'Electronice',
-    topic: 'Ghid de achiziție: Laptopuri și Telefoane Second Hand',
-    prompt: 'Write a helpful guide for buying used electronics (phones and laptops). What to check before buying? How to spot scams? Battery health importance. Warranty checks. Write in Romanian. Format with HTML tags (h2, p, ul, li).'
+    name: 'News',
+    topic: 'Lansarea Piata AI: O Nouă Era pentru Anunțuri',
+    prompt: 'Write an exciting news article in Romanian about the launch of Piata AI. Highlight its unique features: AI-powered validation, smart search, and user safety. Professional journalistic tone. Format with HTML tags.'
   }
 ];
 
@@ -44,8 +44,12 @@ async function seedBlogs() {
     process.exit(1);
   }
 
+  // Process all categories
   for (const cat of CATEGORIES) {
     console.log(`\n📝 Generating article for: ${cat.name}...`);
+    
+    // Add delay to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     try {
       // Call OpenRouter API
@@ -58,7 +62,7 @@ async function seedBlogs() {
           'X-Title': 'Piata AI'
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.0-flash-exp:free', // Using a reliable free model
+          model: 'x-ai/grok-4.1-fast:free', // Using the requested model
           messages: [
             { role: 'system', content: 'You are an expert content writer for a Romanian marketplace. Write in Romanian.' },
             { role: 'user', content: cat.prompt }

@@ -88,8 +88,7 @@ export async function POST(request: NextRequest) {
               .from('user_profiles')
               .insert({
                 user_id: userId,
-                credits_balance: creditsToAdd,
-                role: 'user'
+                credits_balance: creditsToAdd
               });
 
             if (insertError) {
