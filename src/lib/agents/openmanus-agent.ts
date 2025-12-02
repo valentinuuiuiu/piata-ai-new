@@ -11,9 +11,7 @@ export class OpenManusAgent extends BaseAgent {
 
   constructor() {
     super('OpenManus', AgentType.OPENMANUS, [AgentCapability.RESEARCH, AgentCapability.ANALYSIS]);
-    this.bridgeScriptPath = process.env.NODE_ENV === 'production'
-      ? '/home/shiva/ai-market-online/external/manus_bridge_simple.py'
-      : '/home/shiva/ai-market-online/external/manus_bridge_simple.py';
+    this.bridgeScriptPath = process.cwd() + '/scripts/openmanus-bridge.py';
   }
 
   async execute(task: AgentTask): Promise<AgentResult> {
