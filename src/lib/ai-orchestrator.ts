@@ -118,224 +118,152 @@ export interface OrchestratorRequest {
   maxTokens?: number
 }
 
-export interface OrchestratorResponse {
-  success: boolean
-  agent: string
-  result: string
-  reasoning?: string
-  tokensUsed?: number
-  cost?: number
-  learningStored: boolean
-  error?: string
-}
+import { Agent as BaseAgent, AgentCapability, AgentTask, AgentResult } from './agents/types';
+import { ManusAgent } from './agents/manus-agent';
+import { ContentAgent } from './agents/content-agent';
+import { OpenRouterAgent } from './agents/openrouter-agent';
 
-export async function executeTask(
-  request: OrchestratorRequest
-): Promise<OrchestratorResponse> {
-  const startTime = Date.now()
+export class AIOrchestrator {
+  private agents: Map<string, BaseAgent>;
 
-  try {
-    // Step 1: Select best agent for the task
-    const agent = request.preferredAgent
-      ? AGENTS[request.preferredAgent]
-      : selectAgent(request.task, request.context)
+  constructor() {
+    this.agents = new Map();
+    this.registerDefaultAgents();
+  }
+
+  private registerDefaultAgents() {
+    const apiKey = process.env.OPENROUTER_API_KEY || '';
+
+    // Register specialized agents
+    const manusAgent = new ManusAgent();
+    const contentAgent = new ContentAgent();
+
+    this.registerAgent(manusAgent);
+    this.registerAgent(contentAgent);
+
+    // Register OpenRouter Agents (Restoring legacy agents)
+    this.registerAgent(new OpenRouterAgent('Claude', [AgentCapability.ANALYSIS, AgentCapability.CODING, AgentCapability.CONTENT], {
+      apiKey,
+      model: 'anthropic/claude-sonnet-4', // Assuming this was the model
+      systemPrompt: 'You are Claude, specialized in reasoning, coding, and orchestration.'
+    }));
+
+    this.registerAgent(new OpenRouterAgent('Grok', [AgentCapability.ANALYSIS, AgentCapability.RESEARCH], {
+      apiKey,
+      model: 'x-ai/grok-2-1212',
+      systemPrompt: 'You are Grok, specialized in marketplace automation and real-time insights.'
+    }));
+
+    this.registerAgent(new OpenRouterAgent('Llama', [AgentCapability.CODING, AgentCapability.ANALYSIS], {
+      apiKey,
+      model: 'meta-llama/llama-3.1-405b-instruct',
+      systemPrompt: 'You are Llama, specialized in smart contracts and security.'
+    }));
+
+    this.registerAgent(new OpenRouterAgent('Qwen', [AgentCapability.CONTENT, AgentCapability.ANALYSIS], {
+      apiKey,
+      model: 'qwen/qwen-2.5-72b-instruct',
+      systemPrompt: 'You are Qwen, specialized in multilingual content and translation.'
+    }));
+  }
+
+  registerAgent(agent: BaseAgent) {
+    this.agents.set(agent.name, agent);
+    console.log(`[Orchestrator] Registered agent: ${agent.name} with capabilities: ${agent.capabilities.join(', ')}`);
+  }
+
+  async delegateTask(task: AgentTask): Promise<AgentResult> {
+    console.log(`[Orchestrator] Received task: ${task.id} (${task.type})`);
+
+    // Simple routing logic based on capability
+    // In a real system, this could be more sophisticated (LLM-based routing)
+    const agent = this.findBestAgent(task.type);
 
     if (!agent) {
-      throw new Error('No suitable agent found')
+      return {
+        status: 'error',
+        error: `No agent found for capability: ${task.type}`,
+        output: null
+      };
     }
 
-    console.log(`[Orchestrator] Task assigned to: ${agent.name}`)
-    console.log(`[Orchestrator] Specialties: ${agent.specialties.join(', ')}`)
+    console.log(`[Orchestrator] Delegating task to agent: ${agent.name}`);
+    return await agent.run(task);
+  }
 
-    // Step 2: Prepare the prompt with context
-    const messages = [
-      {
-        role: 'system',
-        content: buildSystemPrompt(agent, request)
-      },
-      {
-        role: 'user',
-        content: request.task
+  getAgent(name: string): BaseAgent | undefined {
+    // Case-insensitive lookup
+    for (const [key, agent] of this.agents.entries()) {
+      if (key.toLowerCase() === name.toLowerCase()) {
+        return agent;
       }
-    ]
-
-    // Step 3: Call the agent's API
-    const response = await fetch(agent.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${agent.apiKey}`,
-        'HTTP-Referer': 'https://piata-ai.ro',
-        'X-Title': 'Piata AI Orchestrator'
-      },
-      body: JSON.stringify({
-        model: agent.model,
-        messages,
-        temperature: request.temperature || 0.7,
-        max_tokens: request.maxTokens || 4000
-      })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(`Agent API error: ${errorData.error?.message || response.statusText}`)
     }
+    return undefined;
+  }
 
-    const data = await response.json()
-    const result = data.choices[0]?.message?.content || ''
-    const tokensUsed = data.usage?.total_tokens || 0
-    const cost = tokensUsed * agent.costPerToken
+  getAllAgents(): BaseAgent[] {
+    return Array.from(this.agents.values());
+  }
 
-    // Step 4: Calculate performance score
-    const executionTime = Date.now() - startTime
-    const performanceScore = calculatePerformanceScore(result, executionTime, tokensUsed)
+  async runCollaborativeTask(task: AgentTask, agentNames: string[]): Promise<{ results: AgentResult[], consensus: string }> {
+    console.log(`[Orchestrator] Running collaborative task with: ${agentNames.join(', ')}`);
+    
+    const promises = agentNames.map(async (name) => {
+      const agent = this.getAgent(name);
+      if (!agent) {
+        return {
+          status: 'error' as const,
+          error: `Agent not found: ${name}`,
+          output: null
+        };
+      }
+      return agent.run(task);
+    });
 
-    // Step 5: Store learning data
-    const learningStored = await storeAgentLearning({
-      agentName: agent.name,
-      taskDescription: request.task,
-      inputData: request.context || {},
-      outputData: { result, tokensUsed, executionTime },
-      success: true,
-      performanceScore
-    })
+    const results = await Promise.all(promises);
+    
+    // Simple consensus: join results
+    const consensus = results
+      .filter(r => r.status === 'success')
+      .map(r => typeof r.output === 'string' ? r.output : JSON.stringify(r.output))
+      .join('\n\n---\n\n');
 
-    return {
-      success: true,
-      agent: agent.name,
-      result,
-      tokensUsed,
-      cost: Math.round(cost * 1000000) / 1000000, // Round to 6 decimals
-      learningStored,
-      reasoning: `Selected ${agent.name} for specialties: ${agent.specialties.join(', ')}`
+    return { results, consensus };
+  }
+
+  private findBestAgent(capability: AgentCapability): BaseAgent | undefined {
+    // Find the first agent that has the required capability
+    for (const agent of this.agents.values()) {
+      if (agent.capabilities.includes(capability)) {
+        return agent;
+      }
     }
-  } catch (error: any) {
-    console.error('[Orchestrator] Error:', error)
+    return undefined;
+  }
 
-    // Store failed attempt for learning
-    await storeAgentLearning({
-      agentName: request.preferredAgent || 'auto',
-      taskDescription: request.task,
-      inputData: request.context || {},
-      outputData: { error: error.message },
-      success: false,
-      feedback: error.message,
-      performanceScore: 0
-    })
+  // Legacy method support (if needed by existing code, or we can deprecate)
+  async routeRequest(prompt: string, context: any) {
+    // Convert legacy request to new Task format
+    // This is a basic mapping, might need refinement
+    const task: AgentTask = {
+      id: `task-${Date.now()}`,
+      type: this.determineCapability(prompt),
+      goal: prompt,
+      context: context
+    };
 
-    return {
-      success: false,
-      agent: request.preferredAgent || 'unknown',
-      result: '',
-      learningStored: false,
-      error: error.message
+    return this.delegateTask(task);
+  }
+
+  private determineCapability(prompt: string): AgentCapability {
+    const p = prompt.toLowerCase();
+    if (p.includes('research') || p.includes('find') || p.includes('search')) {
+      return AgentCapability.RESEARCH;
     }
+    if (p.includes('write') || p.includes('edit') || p.includes('optimize')) {
+      return AgentCapability.CONTENT;
+    }
+    return AgentCapability.ANALYSIS; // Default
   }
 }
 
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-function buildSystemPrompt(agent: Agent, request: OrchestratorRequest): string {
-  const basePrompt = `You are ${agent.name}, an AI agent specialized in: ${agent.specialties.join(', ')}.
-
-You are part of the Piata AI orchestrator system. Your responses should be:
-- Accurate and actionable
-- Focused on your areas of expertise
-- Romanian-friendly when appropriate
-- JSON-formatted when returning structured data
-
-Current context: ${JSON.stringify(request.context || {}, null, 2)}
-
-Task: ${request.task}`
-
-  return basePrompt
-}
-
-function calculatePerformanceScore(
-  result: string,
-  executionTime: number,
-  tokensUsed: number
-): number {
-  // Simple scoring: longer results = better, faster = better, fewer tokens = better
-  let score = 50 // Base score
-
-  // Result quality (length as proxy)
-  if (result.length > 500) score += 20
-  else if (result.length > 200) score += 10
-
-  // Speed bonus
-  if (executionTime < 3000) score += 15
-  else if (executionTime < 5000) score += 10
-
-  // Token efficiency
-  if (tokensUsed < 1000) score += 15
-  else if (tokensUsed < 2000) score += 10
-
-  return Math.min(100, score)
-}
-
-async function storeAgentLearning(data: {
-  agentName: string
-  taskDescription: string
-  inputData: any
-  outputData: any
-  success: boolean
-  feedback?: string
-  performanceScore: number
-}): Promise<boolean> {
-  try {
-    if (!supabase) return false;
-    const { error } = await supabase.from('agent_learning_history').insert({
-      agent_name: data.agentName,
-      task_description: data.taskDescription,
-      input_data: data.inputData,
-      output_data: data.outputData,
-      success: data.success,
-      feedback: data.feedback || null,
-      performance_score: data.performanceScore
-    })
-
-    if (error) {
-      console.error('[Orchestrator] Failed to store learning:', error)
-      return false
-    }
-
-    console.log(`[Orchestrator] Learning stored for ${data.agentName}`)
-    return true
-  } catch (error) {
-    console.error('[Orchestrator] Learning storage error:', error)
-    return false
-  }
-}
-
-// =============================================================================
-// MULTI-AGENT COLLABORATION
-// =============================================================================
-
-export async function collaborativeTask(
-  task: string,
-  agents: string[],
-  context?: any
-): Promise<{ results: OrchestratorResponse[]; consensus?: string }> {
-  console.log(`[Orchestrator] Collaborative task with agents: ${agents.join(', ')}`)
-
-  const results = await Promise.all(
-    agents.map(agentName =>
-      executeTask({
-        task,
-        context,
-        preferredAgent: agentName
-      })
-    )
-  )
-
-  // TODO: Implement consensus mechanism (voting, averaging, etc.)
-  const consensus = results
-    .filter(r => r.success)
-    .map(r => r.result)
-    .join('\n\n---\n\n')
-
-  return { results, consensus }
-}

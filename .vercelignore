@@ -1,0 +1,9 @@
+gemini_extension
+.gemini
+gemini_extension/**
+.env.local
+.env
+jules-session-logs
+test-results
+tmp_*.sql
+tmp_*.md

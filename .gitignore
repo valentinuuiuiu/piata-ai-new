@@ -68,3 +68,8 @@ backup_*.sql
 tmp/
 temp/
 .env*.local
+
+# Gemini extension (has problematic symlinks)
+gemini_extension/
+.gemini/
+

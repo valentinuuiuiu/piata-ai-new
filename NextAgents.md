@@ -40,7 +40,20 @@ To avoid hitting API rate limits:
 
 ## 5. The Code
 
-- **Orchestrator**: `src/lib/ai-orchestrator.ts`
+- **Orchestrator**: `src/lib/ai-orchestrator.ts` (Updated to use Agent Registry)
+- **Agent Definitions**: `src/lib/agents/`
+  - `types.ts`: Core interfaces.
+  - `base-agent.ts`: Base class.
+  - `python-bridge-agent.ts`: Wrapper for external Python scripts.
+  - `manus-agent.ts`: Binding for OpenManus.
+  - `content-agent.ts`: Node.js content optimizer.
 - **MCP Client**: `src/lib/mcp-client.ts`
+
+## 6. External Agents (The "Bindable" Workers)
+
+We now support binding external Python agents (like OpenManus) via the `PythonBridgeAgent`.
+
+- **Location**: `~/ai-market-online/external/`
+- **Requirement**: Ensure the Python virtual environment in that folder has all dependencies installed (`pip install -r requirements.txt`).
 
 **"One sees a mistake, another comes with an idea, and we improve the marketplace."**

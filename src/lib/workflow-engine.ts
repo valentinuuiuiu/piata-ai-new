@@ -7,7 +7,8 @@
  * Workflows are defined as JSON and execute autonomously without manual intervention
  */
 
-import { executeTask } from './ai-orchestrator'
+import { AIOrchestrator } from './ai-orchestrator'
+import { AgentCapability } from './agents/types'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -267,14 +268,38 @@ export async function executeWorkflow(
             previousResults: execution.results
           }
 
-          const result = await executeTask({
-            task: step.task,
-            context: stepContext,
-            preferredAgent: step.agent
-          })
+          // Instantiate orchestrator (should be singleton in real app)
+          const orchestrator = new AIOrchestrator();
+          
+          let result;
+          // If step has a specific agent, use it
+          if (step.agent) {
+             const agent = orchestrator.getAgent(step.agent);
+             if (agent) {
+               result = await agent.run({
+                 id: `workflow-${step.id}-${Date.now()}`,
+                 type: AgentCapability.ANALYSIS, // Default
+                 goal: step.task,
+                 context: stepContext
+               });
+             } else {
+               throw new Error(`Agent not found: ${step.agent}`);
+             }
+          } else {
+            // Let orchestrator decide
+            result = await orchestrator.routeRequest(step.task, stepContext);
+          }
 
-          if (result.success) {
-            execution.results[step.id] = result
+          // Map new result format to old expectation
+          const stepSuccess = result.status === 'success';
+          const output = {
+             success: stepSuccess,
+             result: result.output,
+             error: result.error
+          };
+
+          if (stepSuccess) {
+            execution.results[step.id] = output
             execution.completedSteps.push(step.id)
             success = true
             console.log(`[Workflow] Step completed: ${step.name}`)

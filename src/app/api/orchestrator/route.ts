@@ -1,27 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { executeTask, collaborativeTask, selectAgent, AGENTS } from '@/lib/ai-orchestrator'
+import { AIOrchestrator } from '@/lib/ai-orchestrator'
+import { AgentCapability, AgentTask } from '@/lib/agents/types'
+
+// Instantiate orchestrator (singleton-ish)
+const orchestrator = new AIOrchestrator();
 
 /**
  * POST /api/orchestrator
- *
- * Execute tasks using the AI orchestrator
- *
- * Body:
- * {
- *   task: string (description of what to do)
- *   context?: object (additional context)
- *   preferredAgent?: string ("claude", "grok", "llama", "qwen")
- *   collaborative?: boolean (use multiple agents)
- *   agents?: string[] (which agents to use for collaboration)
- *   temperature?: number (0.0 - 1.0)
- *   maxTokens?: number
- * }
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      task,
+      task: taskDescription,
       context,
       preferredAgent,
       collaborative = false,
@@ -30,17 +21,25 @@ export async function POST(req: NextRequest) {
       maxTokens
     } = body
 
-    if (!task) {
+    if (!taskDescription) {
       return NextResponse.json(
         { error: 'Missing required field: task' },
         { status: 400 }
       )
     }
 
-    // Collaborative mode: multiple agents work together
-    if (collaborative) {
-      const result = await collaborativeTask(task, agents, context)
+    // Create base task
+    const task: AgentTask = {
+      id: `task-${Date.now()}`,
+      type: AgentCapability.ANALYSIS, // Default, will be overridden if agent selected
+      goal: taskDescription,
+      context: context,
+      input: { temperature, maxTokens }
+    };
 
+    // Collaborative mode
+    if (collaborative) {
+      const result = await orchestrator.runCollaborativeTask(task, agents);
       return NextResponse.json({
         success: true,
         mode: 'collaborative',
@@ -52,15 +51,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Single agent mode
-    const result = await executeTask({
-      task,
-      context,
-      preferredAgent,
-      temperature,
-      maxTokens
+    let agent = preferredAgent ? orchestrator.getAgent(preferredAgent) : undefined;
+    
+    // If no preferred agent, let orchestrator decide (via routeRequest logic or direct delegation)
+    // For now, if no agent, we'll use routeRequest which determines capability
+    let result;
+    if (agent) {
+      result = await agent.run(task);
+    } else {
+      result = await orchestrator.routeRequest(taskDescription, context);
+    }
+
+    return NextResponse.json({
+      success: result.status === 'success',
+      result: result.output,
+      error: result.error,
+      metadata: result.metadata
     })
 
-    return NextResponse.json(result)
   } catch (error: any) {
     console.error('Orchestrator API error:', error)
     return NextResponse.json(
@@ -72,8 +80,6 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/orchestrator/agents
- *
- * Get list of available agents and their capabilities
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -86,20 +92,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing task parameter' }, { status: 400 })
     }
 
-    const agent = selectAgent(task)
+    // We don't have a public selectAgent method anymore that returns just the agent
+    // But we can simulate it or expose findBestAgent if needed.
+    // For now, let's just return a generic response or use routeRequest to see who picks it up
+    // But routeRequest runs it.
+    // Let's just return the list of all agents as "available"
     return NextResponse.json({
       task,
-      selectedAgent: agent.name,
-      reasoning: `Best for: ${agent.specialties.join(', ')}`
+      message: "Agent selection is now dynamic based on capability."
     })
   }
 
   // Return all available agents
-  const agentList = Object.values(AGENTS).map(agent => ({
+  const agentList = orchestrator.getAllAgents().map(agent => ({
     name: agent.name,
-    model: agent.model,
-    specialties: agent.specialties,
-    costPerToken: agent.costPerToken
+    capabilities: agent.capabilities
   }))
 
   return NextResponse.json({

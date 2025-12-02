@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,33 +8,42 @@ export async function GET(request: Request) {
   const offset = parseInt(searchParams.get('offset') || '0');
 
   try {
-    let sql = `
-      SELECT id, title, slug, excerpt, category, tags, image_url, views, published_at
-      FROM blog_posts
-      WHERE status = 'published'
-    `;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    const params: any[] = [];
+    let query = supabase
+      .from('blog_posts')
+      .select('id, title, slug, content, excerpt, author, tags, views, published_at, created_at')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    if (category && category !== 'all') {
-      sql += ' AND category = ?';
-      params.push(category);
+    // Note: category filtering removed since our table doesn't have a category column
+    // Tags can be used for categorization instead
+
+    const { data: posts, error } = await query;
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
     }
 
-    sql += ` ORDER BY published_at DESC LIMIT ${limit} OFFSET ${offset}`;
-
-    const posts = await query(sql, params);
-
-    // Parse JSON fields
-    const postsWithParsedJSON = (posts as any[]).map(post => ({
+    // Generate excerpts if missing
+    const postsWithExcerpts = (posts || []).map(post => ({
       ...post,
-      tags: typeof post.tags === 'string' ? JSON.parse(post.tags) : post.tags
+      excerpt: post.excerpt || (post.content ? post.content.substring(0, 200).replace(/<[^>]*>/g, '') + '...' : ''),
+      category: post.tags?.[0] || 'General' // Use first tag as category
     }));
 
-    return NextResponse.json(postsWithParsedJSON);
+    return NextResponse.json(postsWithExcerpts);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Blog API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch blog posts' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to fetch blog posts',
+      details: error.message 
+    }, { status: 500 });
   }
 }

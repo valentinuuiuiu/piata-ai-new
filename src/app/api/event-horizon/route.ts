@@ -4,7 +4,8 @@ import {
   getAgentStoryFeed,
   recordStoryCompletion
 } from '@/lib/event-horizon-training'
-import { executeTask } from '@/lib/ai-orchestrator'
+import { AIOrchestrator } from '@/lib/ai-orchestrator'
+import { AgentCapability } from '@/lib/agents/types'
 
 /**
  * GET /api/event-horizon?agent=Claude
@@ -115,14 +116,21 @@ ${story.allies ? `🤝 ALLIES: ${story.allies.join(', ')}` : ''}
 What do you do? Provide your complete solution.
 `
 
-      const result = await executeTask({
-        task: fullPrompt,
-        preferredAgent: agentName.toLowerCase(),
-        temperature: 0.8, // More creative for storytelling
-        maxTokens: 2000
-      })
+      const orchestrator = new AIOrchestrator();
+      const agent = orchestrator.getAgent(agentName) || orchestrator.getAgent('Claude'); // Fallback
 
-      if (!result.success) {
+      if (!agent) {
+         throw new Error(`Agent ${agentName} not found`);
+      }
+
+      const result = await agent.run({
+        id: `story-${storyId}-${Date.now()}`,
+        type: AgentCapability.CONTENT,
+        goal: fullPrompt,
+        input: { temperature: 0.8, maxTokens: 2000 }
+      });
+
+      if (result.status !== 'success') {
         return NextResponse.json({
           success: false,
           error: result.error,
@@ -130,8 +138,8 @@ What do you do? Provide your complete solution.
         })
       }
 
-      // Evaluate the response quality (simple heuristic)
-      const response = result.result || ''
+      // Map result
+      const response = typeof result.output === 'string' ? result.output : JSON.stringify(result.output);
       let ending: 'perfect' | 'good' | 'acceptable' | 'learning' = 'learning'
 
       if (response.length > 800 && response.includes('step')) {

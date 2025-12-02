@@ -73,7 +73,7 @@ class JobScheduler {
     for (const key of keys) {
       const data = await this.redis.get(key);
       if (data) {
-        jobs.push(JSON.parse(data));
+        jobs.push(JSON.parse(String(data)));
       }
     }
     
