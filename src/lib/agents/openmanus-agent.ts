@@ -16,7 +16,7 @@ export class OpenManusAgent extends BaseAgent {
 
   async execute(task: AgentTask): Promise<AgentResult> {
     try {
-      // Prepare the payload for the Python bridge
+      // Prepare the payload for the Python bridge with functional operations
       const payload = {
         context: {
           name: this.name,
@@ -25,6 +25,7 @@ export class OpenManusAgent extends BaseAgent {
         task: {
           id: task.id,
           goal: task.goal,
+          operation: this.getOperationFromTask(task), // web_search, marketing, research
           input: task.input || {}
         }
       };
@@ -144,6 +145,7 @@ export class OpenManusAgent extends BaseAgent {
         task: {
           id: 'test-bridge',
           goal: 'test',
+          operation: 'web_search',
           input: { topic: 'bridge connectivity test' }
         }
       };
@@ -153,6 +155,28 @@ export class OpenManusAgent extends BaseAgent {
     } catch (error) {
       console.error('OpenManus bridge test failed:', error);
       return false;
+    }
+  }
+
+  // Helper method to determine operation type from task
+  private getOperationFromTask(task: AgentTask): string {
+    const goal = task.goal.toLowerCase();
+    const input = task.input || {};
+    
+    // Check if operation is explicitly specified
+    if (input.operation) {
+      return input.operation;
+    }
+    
+    // Infer operation from goal and input
+    if (goal.includes('web') || goal.includes('search')) {
+      return 'web_search';
+    } else if (goal.includes('marketing') || goal.includes('campaign')) {
+      return 'marketing';
+    } else if (input.topic) {
+      return 'research'; // Default to research for topic-based tasks
+    } else {
+      return 'research'; // Default operation
     }
   }
 }
