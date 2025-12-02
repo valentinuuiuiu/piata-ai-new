@@ -136,7 +136,7 @@ export class WebBrowsingSubagent {
       
       try {
         // Extract listings from current page
-        const pageListings = await page.evaluate((selectors) => {
+        const pageListings = await page.evaluate((selectors: any) => {
           const listingElements = document.querySelectorAll(selectors.listings);
           const listings: ScrapedListing[] = [];
 

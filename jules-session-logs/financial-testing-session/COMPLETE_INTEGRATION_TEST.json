@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-12-02T12:47:59.082Z",
+  "results": [
+    {
+      "step": "1. Database Connection Test",
+      "success": true,
+      "result": {
+        "package": {
+          "id": 6,
+          "name": "Pachet Mediu",
+          "credits": 10,
+          "price": 45
+        }
+      }
+    },
+    {
+      "step": "2. Get User Credits Test",
+      "success": true,
+      "result": {
+        "currentBalance": 1000,
+        "userName": "Ionut Baltag"
+      }
+    },
+    {
+      "step": "3. Create Stripe Payment Session",
+      "success": true,
+      "result": {
+        "sessionId": "cs_live_a1j577zritldCqprtVidnRpSKcSsDG0p9OnHL06pG1OXSncS4YQtJgnPWM",
+        "sessionUrl": "https://checkout.stripe.com/c/pay/cs_live_a1j577zritldCqprtVidnRpSKcSsDG0p9OnHL06pG1OXSncS4YQtJgnPWM#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdkdWxOYHwnPyd1blppbHNgWjA0SH1BYEtATzJER2JqRm1KV3NgYWhQUGI1XGQ9UF13VEt3ZjJwZEFvfENyfVIzNU9nZm5qcGtAd1dcdUZWYDA8QjdnUGptaEszRGBIVmZhPW9Cbkc1RkIzNTVoNXZ0X2M9TycpJ2N3amhWYHdzYHcnP3F3cGApJ2dkZm5id2pwa2FGamlqdyc%2FJyZjY2NjY2MnKSdpZHxqcHFRfHVgJz8ndmxrYmlgWmxxYGgnKSdga2RnaWBVaWRmYG1qaWFgd3YnP3F3cGB4JSUl",
+        "metadata": {
+          "credits": "10",
+          "packageId": "6",
+          "testTransaction": "jules-financial-test",
+          "userId": "ea7c45d5-0afa-4725-8ad0-352d15b97e92"
+        }
+      },
+      "error": null,
+      "details": "Test session created for 10 credits"
+    },
+    {
+      "step": "4. Simulate Payment Completion & Credit Update",
+      "success": true,
+      "result": {
+        "oldBalance": 1000,
+        "newBalance": 1010,
+        "creditsAdded": 10,
+        "transactionRecorded": 1
+      },
+      "error": null,
+      "details": "User credits updated: 1000 → 1010"
+    },
+    {
+      "step": "5. Get Transaction History",
+      "success": true,
+      "result": {
+        "recentTransactions": [
+          {
+            "id": 1,
+            "credits_amount": 10,
+            "status": "completed",
+            "stripe_payment_id": "cs_live_a1j577zritldCqprtVidnRpSKcSsDG0p9OnHL06pG1OXSncS4YQtJgnPWM",
+            "created_at": "2025-12-02T12:47:58.578"
+          }
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "successRate": "100.0%"
+  }
+}

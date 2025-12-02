@@ -40,6 +40,9 @@ function PostareAnuntContent() {
   });
 
   const [currentImageInput, setCurrentImageInput] = useState<string>('');
+  const [showCreditWarning, setShowCreditWarning] = useState(false);
+  const [creditRequired, setCreditRequired] = useState<{name: string, amount: number, current: number} | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -192,7 +195,7 @@ function PostareAnuntContent() {
         result = JSON.parse(responseText);
       } catch (e) {
         console.error('Failed to parse response as JSON:', responseText);
-        alert(`Eroare server: ${responseText.substring(0, 100)}`);
+        setError(`Eroare server: ${responseText.substring(0, 100)}`);
         return;
       }
 
@@ -201,13 +204,22 @@ function PostareAnuntContent() {
       if (res.ok) {
         alert('Anunț creat cu succes!');
         router.push('/dashboard');
+      } else if (res.status === 402 && result.redirectToCredits) {
+        // Insufficient credits - show credit warning
+        setCreditRequired({
+          name: result.categoryName,
+          amount: result.requiredCredits,
+          current: result.currentCredits
+        });
+        setShowCreditWarning(true);
+        console.log('📢 Insufficient credits detected, showing warning');
       } else {
-        alert(`Eroare: ${result.error || 'Eroare necunoscută'}`);
+        setError(`Eroare: ${result.error || 'Eroare necunoscută'}`);
       }
     } catch (error) {
       console.error('Network error details:', error);
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
-      alert(`Eroare de rețea: ${error instanceof Error ? error.message : 'Te rog să încerci din nou'}`);
+      setError(`Eroare de rețea: ${error instanceof Error ? error.message : 'Te rog să încerci din nou'}`);
     } finally {
       setSubmitting(false);
     }
@@ -437,6 +449,53 @@ function PostareAnuntContent() {
         >
           {submitting ? '🚀 Se publică...' : '🚀 Publică Anunțul ACUM!'}
         </button>
+      {/* Error Display */}
+      {error && (
+        <div className="glass p-4 rounded-xl border border-red-500/30 bg-red-500/10">
+          <p className="text-red-400 font-bold">❌ {error}</p>
+        </div>
+      )}
+
+      {/* Credit Warning Modal */}
+      {showCreditWarning && creditRequired && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowCreditWarning(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="glass p-8 rounded-3xl max-w-md w-full text-center border-2 border-red-500/50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-6xl mb-4">💳</div>
+            <h2 className="text-3xl font-bold text-red-400 mb-4">Credite Insuficiente</h2>
+            <p className="text-gray-300 mb-6">
+              Categoria <span className="font-bold text-[#ff00f0]">"{creditRequired.name}"</span> necesită{' '}
+              <span className="font-bold text-[#00ff88]">{creditRequired.amount} credite</span>.
+            </p>
+            <p className="text-gray-400 mb-6">
+              Ai doar <span className="font-bold text-yellow-400">{creditRequired.current} credite</span>.
+            </p>
+            <div className="space-y-4">
+              <Link
+                href="/credits"
+                className="block w-full py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all"
+              >
+                🛒 Cumpără Credite
+              </Link>
+              <button
+                onClick={() => setShowCreditWarning(false)}
+                className="block w-full py-3 px-6 bg-gray-600 text-white font-bold rounded-xl hover:bg-gray-700 transition-all"
+              >
+                Anulează
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
       </form>
 
       <div className="glass p-8 rounded-2xl text-center border-t-2 border-[#00f0ff]/30">
@@ -446,6 +505,14 @@ function PostareAnuntContent() {
           <span>⚡ Instant</span>
           <span>💯 Gratuit</span>
         </div>
+        <div className="flex justify-center space-x-8 text-sm text-gray-500">
+          <span>🛡️ Securizat</span>
+          <span>⚡ Instant</span>
+          <span>💯 Gratuit*</span>
+        </div>
+        <p className="text-xs text-gray-600 mt-2">
+          *Categoriile "Matrimoniale" și "Imobiliare" necesită credite
+        </p>
       </div>
     </div>
   );

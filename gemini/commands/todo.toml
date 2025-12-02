@@ -1,0 +1,76 @@
+name = "todo"
+description = "Manage your task list"
+runner_type = "python"
+
+[[subcommands]]
+name = "list"
+description = "List all todo items"
+parameters = []
+runner_script = """
+from gemini.commands.todo import list_todos
+list_todos()
+"""
+
+[[subcommands]]
+name = "add"
+description = "Add a new todo item"
+parameters = [
+    {
+        name = "description",
+        type = "string",
+        description = "The description of the new todo item",
+        required = true
+    }
+]
+runner_script = """
+from gemini.commands.todo import add_todo
+add_todo(description)
+"""
+
+[[subcommands]]
+name = "complete"
+description = "Mark a todo item as complete"
+parameters = [
+    {
+        name = "id",
+        type = "integer",
+        description = "The ID of the todo item to mark as complete",
+        required = true
+    }
+]
+runner_script = """
+from gemini.commands.todo import complete_todo
+complete_todo(id)
+"""
+
+[[subcommands]]
+name = "in_progress"
+description = "Mark a todo item as in progress"
+parameters = [
+    {
+        name = "id",
+        type = "integer",
+        description = "The ID of the todo item to mark as in progress",
+        required = true
+    }
+]
+runner_script = """
+from gemini.commands.todo import in_progress_todo
+in_progress_todo(id)
+"""
+
+[[subcommands]]
+name = "cancel"
+description = "Mark a todo item as cancelled"
+parameters = [
+    {
+        name = "id",
+        type = "integer",
+        description = "The ID of the todo item to mark as cancelled",
+        required = true
+    }
+]
+runner_script = """
+from gemini.commands.todo import cancel_todo
+cancel_todo(id)
+"""

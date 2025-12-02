@@ -1,0 +1,73 @@
+{
+  "name": "piata-ai-gemini-flow",
+  "displayName": "Piata AI Gemini Flow Integrations",
+  "version": "0.1.0",
+  "description": "Custom integrations for Piata AI project, inspired by Gemini Flow",
+  "author": "Gemini-CLI Agent",
+  "mcpServers": {
+    "computerUse": {
+      "command": "bash",
+      "args": ["gemini_extension/servers/run.sh"]
+    },
+    "gcloud": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@google-cloud/gcloud-mcp"
+      ]
+    }
+  },
+  "commands": [
+    {
+      "path": "gemini/commands/todo.toml"
+    },
+    {
+      "path": "gemini/commands/email.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/click.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/close.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/drag.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/googleSearch.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/help.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/init.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/javascript.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/macro.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/open.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/press.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/scroll.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/search.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/state.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/type.toml"
+    },
+    {
+      "path": "gemini_extension/commands/ComputerUse/wikiSearch.toml"
+    }
+  ]
+}

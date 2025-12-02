@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.23.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
@@ -42,6 +43,8 @@
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.554.0",
+    "module-alias": "^2.2.3",
+    "n8n-nodes-mcp": "^0.1.33",
     "next": "16.0.3",
     "pg": "^8.16.3",
     "pnpm": "^10.24.0",
@@ -55,8 +58,15 @@
     "stripe": "^20.0.0",
     "tailwind-merge": "^3.4.0",
     "three": "^0.181.2",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
     "user-agents": "^1.1.669",
     "zod": "^4.1.12"
+  },
+  "_moduleAliases": {
+    "@/lib": "src/lib",
+    "@/types": "src/types"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
@@ -80,6 +90,7 @@
     "nodemailer": "^7.0.10",
     "playwright": "^1.56.1",
     "postcss": "^8.5.6",
+    "supabase": "^2.64.2",
     "tailwindcss": "^3.4.18",
     "typescript": "^5",
     "uuid": "^13.0.0",

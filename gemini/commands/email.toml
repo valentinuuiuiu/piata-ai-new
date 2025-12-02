@@ -1,0 +1,37 @@
+name = "email"
+description = "Send emails using Resend API"
+
+[[subcommands]]
+name = "send"
+description = "Send an email"
+parameters = [
+    {
+        name = "to",
+        type = "string",
+        description = "The recipient email address",
+        required = true
+    },
+    {
+        name = "subject",
+        type = "string",
+        description = "The subject of the email",
+        required = true
+    },
+    {
+        name = "body",
+        type = "string",
+        description = "The body of the email",
+        required = true
+    },
+    {
+        name = "html",
+        type = "boolean",
+        description = "Whether the body content is HTML",
+        required = false,
+        default = false
+    }
+]
+runner_type = "shell"
+runner_script = """
+node gemini/commands/send-resend-email.js to="{{to}}" subject="{{subject}}" body="{{body}}" html="{{html}}"
+"""

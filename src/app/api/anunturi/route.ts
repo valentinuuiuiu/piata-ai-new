@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
 import { createServiceClient } from '@/lib/supabase/server';
 
+// Default contact email for all listings
+const DEFAULT_CONTACT_EMAIL = 'claude.dev@mail.com';
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
@@ -115,6 +116,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid category_id' }, { status: 400 });
     }
 
+    // 🎯 CREDIT SYSTEM: Check if category requires credits
+    const PAID_CATEGORIES = {
+      1: { name: 'Imobiliare', creditsRequired: 5 }, // Real Estate
+      11: { name: 'Matrimoniale', creditsRequired: 3 } // Matrimonial/Dating
+    };
+
+    const categoryInfo = PAID_CATEGORIES[rawData.categoryId as keyof typeof PAID_CATEGORIES];
+    
+    // Check user's credit balance (needed for both validation and deduction)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('credits_balance')
+      .eq('user_id', finalUserId)
+      .single();
+
+    const userCredits = (profile as any)?.credits_balance || 0;
+    
+    if (categoryInfo) {
+      console.log(`💰 Category "${categoryInfo.name}" requires ${categoryInfo.creditsRequired} credits`);
+      console.log(`User has ${userCredits} credits, needs ${categoryInfo.creditsRequired}`);
+
+      if (userCredits < categoryInfo.creditsRequired) {
+        console.log(`❌ Insufficient credits for ${categoryInfo.name}`);
+        return NextResponse.json({
+          error: 'Insufficient credits',
+          message: `Categoria "${categoryInfo.name}" necesită ${categoryInfo.creditsRequired} credite. Ai doar ${userCredits} credite.`,
+          requiredCredits: categoryInfo.creditsRequired,
+          currentCredits: userCredits,
+          redirectToCredits: true,
+          categoryName: categoryInfo.name
+        }, { status: 402 });
+      }
+
+      console.log(`✅ User has sufficient credits for ${categoryInfo.name}`);
+    } else {
+      console.log('📝 Free category - no credits required');
+    }
+
     console.log('Parsed data:', rawData);
 
     // Validate required fields
@@ -122,6 +161,10 @@ export async function POST(request: Request) {
       console.log('Validation failed: missing title or category');
       return NextResponse.json({ error: 'Title and category are required' }, { status: 400 });
     }
+
+    // Use default contact email for all listings
+    const contactEmail = DEFAULT_CONTACT_EMAIL;
+    console.log('Using default contact email for ad creation');
 
     // Handle image uploads
     const images: string[] = [];
@@ -199,6 +242,45 @@ export async function POST(request: Request) {
 
     console.log('✅ Listing created successfully:', listing);
 
+    // 💰 CREDIT DEDUCTION: Deduct credits if category requires them
+    if (categoryInfo && listing?.id) {
+      console.log(`💳 Deducting ${categoryInfo.creditsRequired} credits from user ${finalUserId}`);
+      
+      const creditsToDeduct = categoryInfo.creditsRequired;
+      
+      // Deduct credits from user profile
+      const { error: deductionError } = await supabase
+        .from('user_profiles')
+        .update({
+          credits_balance: (userCredits - creditsToDeduct)
+        })
+        .eq('user_id', finalUserId);
+
+      if (deductionError) {
+        console.error('❌ Credit deduction failed:', deductionError);
+        // Don't fail the whole operation, just log the error
+      } else {
+        console.log(`✅ Successfully deducted ${creditsToDeduct} credits`);
+        
+        // Record the transaction
+        const { error: transactionError } = await supabase
+          .from('credits_transactions')
+          .insert({
+            user_id: finalUserId,
+            credits_amount: -creditsToDeduct,
+            transaction_type: 'spend',
+            status: 'completed',
+            description: `Postare anunț în categoria "${categoryInfo.name}"`
+          });
+
+        if (transactionError) {
+          console.error('❌ Transaction record failed:', transactionError);
+        } else {
+          console.log('✅ Transaction recorded successfully');
+        }
+      }
+    }
+
     // Trigger AI validation asynchronously
     if (listing?.id) {
       console.log(`🚀 Triggering AI validation for listing ${listing.id}`);
@@ -218,13 +300,21 @@ export async function POST(request: Request) {
       });
     }
 
+    // Prepare success message
+    let successMessage = 'Anunț creat și trimis spre validare AI';
+    if (categoryInfo) {
+      successMessage = `Anunț creat în "${categoryInfo.name}" (-${categoryInfo.creditsRequired} credite) și trimis spre validare AI`;
+    }
+
     return NextResponse.json({
       success: true,
       listing: {
         id: listing.id,
         title: listing.title,
         status: listing.status,
-        message: 'Anunț creat și trimis spre validare AI'
+        message: successMessage,
+        creditsDeducted: categoryInfo?.creditsRequired || 0,
+        remainingCredits: categoryInfo ? (userCredits - categoryInfo.creditsRequired) : undefined
       }
     });
 
@@ -235,19 +325,11 @@ export async function POST(request: Request) {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-// New endpoint to handle email verification and ad posting
+}
+
 export async function PUT(request: Request) {
   try {
-    const { email, adData } = await request.json();
-
-    // Verify email is confirmed
-    const tokenData = verificationTokens.get(email);
-    if (!tokenData || !tokenData.verified) {
-      return NextResponse.json({
-        error: 'Email not verified',
-        message: 'Please verify your email first'
-      }, { status: 403 });
-    }
+    const { adData } = await request.json();
 
     // Create FormData from adData
     const formData = new FormData();
@@ -257,8 +339,8 @@ export async function PUT(request: Request) {
       }
     });
 
-    // Add email verification flag
-    formData.append('require_email_verification', 'false'); // Already verified
+    // Use default contact email
+    formData.append('contact_email', DEFAULT_CONTACT_EMAIL);
 
     // Create a new request with the FormData
     const newRequest = new Request(request.url, {
@@ -276,5 +358,4 @@ export async function PUT(request: Request) {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
 }
