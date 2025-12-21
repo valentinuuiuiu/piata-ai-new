@@ -1,124 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email-automation';
 
+interface DigestStats {
+  newListings: number;
+  activeUsers: number;
+  topCategories: string[];
+  topListings: any[];
+}
+
+interface DigestResult {
+  sent: number;
+  failed: number;
+}
+
 /**
- * Weekly Digest Email
- * Sends weekly marketplace summary to all active users
- * Runs every Monday at 9 AM
+ * Generates and sends a weekly marketplace summary email to all active users.
  */
-export async function GET(req: NextRequest) {
+export async function sendWeeklyDigest(): Promise<{ success: boolean; results: DigestResult; stats: Partial<DigestStats>; error?: string }> {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.warn('[DIGEST] Unauthorized cron request');
-    }
+    console.log('Starting weekly digest task...');
 
-    console.log('[DIGEST] Generating weekly digest...');
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Get marketplace stats
-    const { data: newListings } = await supabase
-      .from('anunturi')
-      .select('id', { count: 'exact' })
-      .gte('created_at', oneWeekAgo);
+    const { count: newListingsCount } = await supabase.from('anunturi').select('id', { count: 'exact' }).gte('created_at', oneWeekAgo);
+    const { count: activeUsersCount } = await supabase.from('user_profiles').select('user_id', { count: 'exact' }).gte('last_login_at', oneWeekAgo);
 
-    const { data: activeUsers } = await supabase
-      .from('user_profiles')
-      .select('id', { count: 'exact' })
-      .gte('last_login_at', oneWeekAgo);
-
-    // Get trending categories
-    const { data: trendingCategories } = await supabase
-      .from('anunturi')
-      .select('category_id, categories!inner(name)')
-      .gte('created_at', oneWeekAgo)
-      .limit(100);
-
+    const { data: trendingCategoriesData } = await supabase.from('anunturi').select('categories!inner(name)').gte('created_at', oneWeekAgo).limit(100);
     const categoryCounts: Record<string, number> = {};
-    trendingCategories?.forEach((item: any) => {
+    trendingCategoriesData?.forEach((item: any) => {
       const catName = item.categories?.name;
-      if (catName) {
-        categoryCounts[catName] = (categoryCounts[catName] || 0) + 1;
-      }
+      if (catName) categoryCounts[catName] = (categoryCounts[catName] || 0) + 1;
     });
+    const topCategories = Object.entries(categoryCounts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([name]) => name);
 
-    const topCategories = Object.entries(categoryCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([name]) => name);
+    const { data: topListings } = await supabase.from('anunturi').select('*').gte('created_at', oneWeekAgo).order('views', { ascending: false }).limit(5);
 
-    // Get top listings
-    const { data: topListings } = await supabase
-      .from('anunturi')
-      .select('*')
-      .gte('created_at', oneWeekAgo)
-      .order('views', { ascending: false })
-      .limit(10);
+    const stats: DigestStats = {
+      newListings: newListingsCount || 0,
+      activeUsers: activeUsersCount || 0,
+      topCategories,
+      topListings: topListings || []
+    };
 
-    // Get users who want weekly digest
-    const { data: users } = await supabase
-      .from('user_profiles')
-      .select('user_id, email, full_name')
-      .eq('email_notifications', true) // Assuming this field exists
-      .limit(100); // Process in batches
+    const { data: users } = await supabase.from('user_profiles').select('user_id, email, full_name').eq('email_notifications', true).limit(1000); // Batch size
 
     if (!users || users.length === 0) {
-      return NextResponse.json({ message: 'No users to send digest', sent: 0 });
+      console.log('No users subscribed to the weekly digest.');
+      return { success: true, results: { sent: 0, failed: 0 }, stats };
     }
 
     let sent = 0;
     let failed = 0;
-
     for (const user of users) {
       try {
-        const emailContent = generateDigestEmail(user, {
-          newListings: newListings?.length || 0,
-          activeUsers: activeUsers?.length || 0,
-          topCategories,
-          topListings: topListings || []
-        });
-
-        await sendEmail({
-          to: user.email,
-          subject: emailContent.subject,
-          html: emailContent.html
-        });
-
+        const emailContent = generateDigestEmail(user, stats);
+        await sendEmail({ to: user.email, subject: emailContent.subject, html: emailContent.html });
         sent++;
-        await new Promise(resolve => setTimeout(resolve, 100)); // Rate limiting
-
-      } catch (error) {
-        console.error(`[DIGEST] Error sending to ${user.email}:`, error);
+        await new Promise(resolve => setTimeout(resolve, 100)); // Rate limit
+      } catch (innerError: any) {
+        console.error(`Failed to send digest to ${user.email}:`, innerError);
         failed++;
       }
     }
 
-    console.log(`[DIGEST] Sent ${sent} digests, ${failed} failed`);
-
-    return NextResponse.json({
-      success: true,
-      sent,
-      failed,
-      stats: {
-        newListings: newListings?.length || 0,
-        activeUsers: activeUsers?.length || 0,
-        topCategories
-      }
-    });
-
-  } catch (error) {
-    console.error('[DIGEST] Error:', error);
-    return NextResponse.json({
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.log(`Weekly digest task complete. Sent: ${sent}, Failed: ${failed}`);
+    return { success: true, results: { sent, failed }, stats };
+  } catch (error: any) {
+    console.error('Weekly digest task failed:', error);
+    return { success: false, results: { sent: 0, failed: 0 }, stats: {}, error: error.message };
   }
 }
 
@@ -200,8 +150,4 @@ function generateDigestEmail(user: any, stats: any) {
       </html>
     `
   };
-}
-
-export async function POST(req: NextRequest) {
-  return GET(req);
 }

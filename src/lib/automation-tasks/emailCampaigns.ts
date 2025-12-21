@@ -1,59 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email-automation';
 
-/**
- * Marketing Email Campaign Cron Job
- * Sends personalized emails to inactive users
- * Runs daily at 10 AM
- */
-export async function GET(req: NextRequest) {
-  try {
-    const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.warn('[MARKETING] Unauthorized cron request');
-    }
+interface CampaignResult {
+  sent: number;
+  failed: number;
+  total: number;
+}
 
-    console.log('[MARKETING] Starting email campaign...');
+/**
+ * Finds inactive users and sends them a personalized re-engagement email.
+ */
+export async function runReEngagementEmailCampaign(): Promise<{ success: boolean; results: CampaignResult; error?: string }> {
+  try {
+    console.log('Starting re-engagement email campaign task...');
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Find inactive users (no login in last 7 days, no ads in last 14 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Get users who haven't posted ads recently
     const { data: users, error } = await supabase
       .from('user_profiles')
-      .select(`
-        user_id,
-        email,
-        full_name,
-        last_login_at,
-        created_at
-      `)
+      .select('user_id, email, full_name')
       .lt('last_login_at', sevenDaysAgo)
-      .limit(50); // Process 50 users per run
+      .limit(50);
 
     if (error) {
-      console.error('[MARKETING] Error fetching users:', error);
-      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+      throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
     if (!users || users.length === 0) {
-      return NextResponse.json({ message: 'No inactive users found', sent: 0 });
+      console.log('No inactive users found for this run.');
+      return { success: true, results: { sent: 0, failed: 0, total: 0 } };
     }
 
-    const results = [];
     let sent = 0;
     let failed = 0;
 
     for (const user of users) {
       try {
-        // Check if user has any recent ads
         const { data: recentAds } = await supabase
           .from('anunturi')
           .select('id')
@@ -62,23 +50,18 @@ export async function GET(req: NextRequest) {
           .limit(1);
 
         if (recentAds && recentAds.length > 0) {
-          // User is active, skip
           continue;
         }
 
-        // Get trending categories for personalization
         const { data: trendingCategories } = await supabase
           .from('anunturi')
-          .select('category_id, categories!inner(name)')
+          .select('categories!inner(name)')
           .gte('created_at', sevenDaysAgo)
           .limit(5);
 
         const categoryNames = trendingCategories?.map((c: any) => c.categories?.name).filter(Boolean) || [];
-
-        // Generate personalized email content
         const emailContent = generateReEngagementEmail(user, categoryNames);
 
-        // Send email
         await sendEmail({
           to: user.email,
           subject: emailContent.subject,
@@ -86,7 +69,6 @@ export async function GET(req: NextRequest) {
           text: emailContent.text
         });
 
-        // Log the campaign
         await supabase.from('email_campaigns').insert({
           user_id: user.user_id,
           campaign_type: 're-engagement',
@@ -94,50 +76,25 @@ export async function GET(req: NextRequest) {
           status: 'sent'
         });
 
-        results.push({
-          user_id: user.user_id,
-          email: user.email,
-          status: 'sent'
-        });
         sent++;
-
-        // Rate limiting: wait 100ms between emails
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-      } catch (error) {
-        console.error(`[MARKETING] Error sending to ${user.email}:`, error);
-        results.push({
-          user_id: user.user_id,
-          email: user.email,
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        await new Promise(resolve => setTimeout(resolve, 100)); // Rate limit
+      } catch (innerError: any) {
+        console.error(`Failed to send email to ${user.email}:`, innerError);
         failed++;
       }
     }
 
-    console.log(`[MARKETING] Campaign complete: ${sent} sent, ${failed} failed`);
+    console.log(`Re-engagement campaign complete. Sent: ${sent}, Failed: ${failed}`);
+    return { success: true, results: { sent, failed, total: users.length } };
 
-    return NextResponse.json({
-      success: true,
-      sent,
-      failed,
-      total: users.length,
-      results
-    });
-
-  } catch (error) {
-    console.error('[MARKETING] Campaign error:', error);
-    return NextResponse.json({
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+  } catch (error: any) {
+    console.error('Re-engagement email campaign task failed:', error);
+    return { success: false, results: { sent: 0, failed: 0, total: 0 }, error: error.message };
   }
 }
 
 function generateReEngagementEmail(user: any, trendingCategories: string[]) {
   const firstName = user.full_name?.split(' ')[0] || 'Utilizator';
-  
   const categoriesText = trendingCategories.length > 0
     ? `Categoriile populare acum: ${trendingCategories.slice(0, 3).join(', ')}.`
     : '';
@@ -223,8 +180,4 @@ function generateReEngagementEmail(user: any, trendingCategories: string[]) {
       Piata AI - Marketplace-ul inteligent al României
     `
   };
-}
-
-export async function POST(req: NextRequest) {
-  return GET(req);
 }
