@@ -16,6 +16,7 @@ export default function MarketingDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    document.title = 'Marketing Dashboard';
     fetch('/api/admin/automation-stats')
       .then(res => {
         if (!res.ok) {
@@ -52,13 +53,7 @@ export default function MarketingDashboard() {
         <StatCard title="Automation Success Rate (24h)" value={`${stats?.successRate || 0}%`} />
       </div>
 
-      {/* Here you could add more detailed components, like charts or logs */}
-      {/* For example:
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-        {/* Render a list of recent automation logs here */}
-      </div>
-      */}
+      {/* Additional components like charts or logs can be added here */}
     </div>
   );
 }
