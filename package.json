@@ -45,7 +45,7 @@
     "lucide-react": "^0.554.0",
     "module-alias": "^2.2.3",
     "n8n-nodes-mcp": "^0.1.33",
-    "next": "16.0.3",
+    "next": "16.0.10",
     "pg": "^8.16.3",
     "pnpm": "^10.24.0",
     "puppeteer": "^24.31.0",
