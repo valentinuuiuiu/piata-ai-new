@@ -124,3 +124,9 @@ export const agentMatches = pgTable('agent_matches', {
 export type ShoppingAgent = InferSelectModel<typeof shoppingAgents>;
 export type NewShoppingAgent = InferInsertModel<typeof shoppingAgents>;
 export type AgentMatch = InferSelectModel<typeof agentMatches>;
+
+export const marketingInsights = pgTable('marketing_insights', {
+  id: serial('id').primaryKey(),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
