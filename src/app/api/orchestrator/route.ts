@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AIOrchestrator } from '@/lib/ai-orchestrator'
 import { AgentCapability, AgentTask } from '@/lib/agents/types'
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
+import { mcpHub } from '@/lib/mcp-hub';
 
 type SmartSearchRequest = {
   query: string;
@@ -56,7 +57,12 @@ export async function POST(req: NextRequest) {
     } = body
 
     // SMART MARKETPLACE: deterministic recommendation endpoint
-    if (action === 'smart_search') {
+    if (action === 'smart_search' || action === 'smart_workflow') {
+      const runWorkflows = action === 'smart_workflow';
+
+      if (runWorkflows && (process.env.SMART_WORKFLOWS_ENABLED || 'false').toLowerCase() !== 'true') {
+        return NextResponse.json({ error: 'Smart workflows disabled' }, { status: 403 });
+      }
       if ((process.env.SMART_MARKETPLACE_ENABLED || 'true').toLowerCase() !== 'true') {
         return NextResponse.json({ error: 'Smart marketplace disabled' }, { status: 403 });
       }
@@ -197,6 +203,54 @@ export async function POST(req: NextRequest) {
 
       ranked.sort((a, b) => b.score - a.score);
       const top = ranked.slice(0, limit);
+
+      // If requested, run a workflow for each top result.
+      if (runWorkflows) {
+        const workflowId = (body as any).workflowId || (smart as any)?.workflowId || 'listing_boost_masterpiece';
+        const maxItems = Math.min(top.length, Number((body as any).maxItems || (smart as any)?.maxItems || 3));
+
+        const workflowRuns: any[] = [];
+        for (const item of top.slice(0, maxItems)) {
+          const listing = item.listing;
+          const args = {
+            text: `${listing.title}\n\n${listing.description}\n\nPret: ${listing.price} RON\nLocatie: ${listing.location}`,
+            topic: `${listing.title} ${listing.category_name || ''}`,
+            context: {
+              listingId: listing.id,
+              category: listing.category_slug,
+              locale: 'ro-RO',
+            },
+          };
+
+          try {
+            const wf = await mcpHub.runWorkflow(workflowId, args);
+            workflowRuns.push({
+              listingId: listing.id,
+              workflowId,
+              status: wf.status,
+              results: wf.results,
+            });
+          } catch (e: any) {
+            workflowRuns.push({
+              listingId: listing.id,
+              workflowId,
+              status: 'failed',
+              error: e?.message || String(e),
+            });
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          mode: 'smart_workflow',
+          query: q,
+          terms,
+          count: top.length,
+          results: top,
+          workflowRuns,
+          explanation: 'Ranked by keyword match, recency, views, and premium boost; then ran MCP workflows on top results.',
+        });
+      }
 
       return NextResponse.json({
         success: true,

@@ -67,7 +67,8 @@ export class MCPHub {
       execute: async (args) => {
         const { AIOrchestrator } = await import('./ai-orchestrator');
         const orchestrator = new AIOrchestrator();
-        return orchestrator.routeRequest(`Optimize this for SEO: ${args.text}`, args.context);
+        const text = args?.text || args?.lastStepResult?.output?.optimized || args?.lastStepResult?.optimized || '';
+        return orchestrator.routeRequest(`Optimize this for SEO: ${text}`, args?.context);
       }
     });
 
@@ -78,7 +79,18 @@ export class MCPHub {
       category: 'marketplace',
       execute: async (args) => {
         const { GROK_AGENT } = await import('./openrouter-agent');
-        return GROK_AGENT.execute(`Analyze the market impact of: ${args.topic}`, args.options);
+
+        // Workflows may pass data as { topic }, { text }, or via { lastStepResult }.
+        const topic =
+          args?.topic ||
+          args?.text ||
+          args?.lastStepResult?.optimized ||
+          args?.lastStepResult?.output?.optimized ||
+          args?.lastStepResult?.output ||
+          args?.lastStepResult ||
+          'Romanian marketplace trends';
+
+        return GROK_AGENT.execute(`Analyze the market impact of: ${String(topic)}`, args?.options);
       }
     });
 
