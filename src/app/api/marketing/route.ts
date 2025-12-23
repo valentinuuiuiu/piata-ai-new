@@ -1,5 +1,15 @@
-import { getNotebookLLM, MARKETING_WORKFLOWS } from '../../../lib/notebooklm-integration';
 import { NextResponse } from 'next/server';
+
+// Ensure this route is always executed dynamically (avoid build-time evaluation pitfalls)
+export const dynamic = 'force-dynamic';
+
+async function getNotebook() {
+  const mod = await import('../../../lib/notebooklm-integration');
+  return {
+    notebook: mod.getNotebookLLM(),
+    workflows: mod.MARKETING_WORKFLOWS,
+  };
+}
 
 /**
  * Marketing Automation API
@@ -14,7 +24,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const { action, data } = await request.json();
-    const notebook = getNotebookLLM();
+    const { notebook, workflows } = await getNotebook();
 
     switch (action) {
       case 'analyze':
@@ -55,7 +65,7 @@ export async function POST(request: Request) {
 
       case 'workflow':
         // Run preset workflow
-        const workflow = MARKETING_WORKFLOWS[data.workflowName as keyof typeof MARKETING_WORKFLOWS];
+        const workflow = workflows[data.workflowName as keyof typeof workflows];
         if (!workflow) {
           return NextResponse.json({
             success: false,
@@ -82,9 +92,10 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   // List available workflows
+  const { workflows } = await getNotebook();
   return NextResponse.json({
     success: true,
-    workflows: Object.keys(MARKETING_WORKFLOWS),
+    workflows: Object.keys(workflows),
     actions: [
       'analyze',
       'email-campaign',
