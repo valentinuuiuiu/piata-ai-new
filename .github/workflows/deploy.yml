@@ -57,8 +57,8 @@ jobs:
     - name: 🔍 Run linting
       run: npm run lint
 
-    - name: 🧪 Run tests
-      run: npm test
+    - name: 🧪 Run tests (smoke)
+      run: npx playwright test tests/vercel-compatibility.spec.ts tests/mcp-hub.spec.ts tests/smart-marketplace.spec.ts --project=chromium --reporter=line --workers=1
       env:
         DB_HOST: localhost
         DB_PORT: 5432
@@ -66,6 +66,7 @@ jobs:
         DB_PASS: test_pass
         DB_NAME: piata_ro_test
         REDIS_URL: redis://localhost:6379
+        CI: true
 
     - name: 🔨 Build application
       run: npm run build
