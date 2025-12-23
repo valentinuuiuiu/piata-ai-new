@@ -62,7 +62,12 @@ export async function POST(req: NextRequest) {
       }
 
       const req = (smart || body) as SmartSearchRequest;
-      const q = req.query || '';
+      const q =
+        req.query ||
+        (body as any).query ||
+        (body as any).q ||
+        (body as any).search ||
+        '';
       if (!q || q.length < 2) {
         return NextResponse.json({ error: 'Missing required field: query' }, { status: 400 });
       }
