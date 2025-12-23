@@ -153,6 +153,8 @@ describe('Memory Usage', () => {
 
 describe('Cold Start Performance', () => {
   test(process.env.CI ? 'First request after period of inactivity (skipped in CI)' : 'First request after period of inactivity', async ({ page }) => {
+    if (process.env.CI) test.skip();
+
     // Simulate cold start by waiting
     await page.waitForTimeout(60000); // 1 minute
 
