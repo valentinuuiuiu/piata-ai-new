@@ -36,7 +36,7 @@ export default function Categories() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/categories')
+    fetch('/api/categories?format=rich')
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -44,9 +44,13 @@ export default function Categories() {
         return res.json();
       })
       .then(data => {
-        if (data.categories && Array.isArray(data.categories)) {
+        // Handle both formats: array or object with categories property
+        if (Array.isArray(data)) {
+          setCategories(data);
+        } else if (data.categories && Array.isArray(data.categories)) {
           setCategories(data.categories);
         } else {
+          console.error('Unexpected data format:', data);
           setError('Date invalide primite de la server');
         }
         setLoading(false);
