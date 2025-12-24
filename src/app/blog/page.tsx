@@ -109,7 +109,11 @@ export default function BlogPage() {
                   {post.excerpt}
                 </p>
                 <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{new Date(post.published_at).toLocaleDateString('ro-RO')}</span>
+                  <span>{new Date(post.published_at).toLocaleDateString('ro-RO', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}</span>
                   <span className="text-[#00f0ff] hover:underline">Citește →</span>
                 </div>
               </div>
