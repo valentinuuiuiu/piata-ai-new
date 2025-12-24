@@ -16,9 +16,12 @@ export async function GET(
     // Use service client so public users can view active listings details (same pattern as /api/anunturi list)
     const supabase = createServiceClient();
     
+    // NOTE: Avoid fragile cross-table join syntax in production.
+    // Some environments differ in relationship naming, which causes join errors and false 404s.
+    // We fetch the listing first, then hydrate category + seller with separate queries.
     const { data: ad, error } = await supabase
       .from('anunturi')
-      .select('*, category:categories(name), seller:users!user_id(name, email)')
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -31,8 +34,34 @@ export async function GET(
       return NextResponse.json({ error: 'Ad not found' }, { status: 404 });
     }
 
+    // Hydrate category + seller (best-effort)
+    const adWithImages = ad as any;
+
+    try {
+      if (adWithImages.category_id) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('id', adWithImages.category_id)
+          .single();
+        if (cat) adWithImages.category = cat;
+      }
+    } catch {}
+
+    try {
+      if (adWithImages.user_id) {
+        const { data: seller } = await supabase
+          .from('users')
+          .select('name,email')
+          .eq('id', adWithImages.user_id)
+          .single();
+        if (seller) adWithImages.seller = seller;
+      }
+    } catch {}
+
     // Parse images for frontend - handle various formats
-    const adWithImages = ad as any; // Type assertion for database result
+    // (normalize to string[])
+
     
     try {
       if (!adWithImages.images) {
