@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +13,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // Use service client so public users can view active listings details (same pattern as /api/anunturi list)
+    const supabase = createServiceClient();
     
     const { data: ad, error } = await supabase
       .from('anunturi')
@@ -55,7 +56,8 @@ export async function GET(
       adWithImages.images = [];
     }
 
-    return NextResponse.json(ad);
+    // Return the normalized object (with images parsed)
+    return NextResponse.json(adWithImages);
   } catch (error) {
     console.error('Error fetching ad:', error);
     return NextResponse.json({ 
