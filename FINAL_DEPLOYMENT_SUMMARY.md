@@ -27,7 +27,7 @@
    - Ready for automation execution
 
 4. **Telegram Integration Added** ✅
-   - Bot token configured: `8361998278:AAEcALVmGl2o4vn7x99sThxa7lP_FAE7Kns`
+   - Bot token configured: `${TELEGRAM_BOT_TOKEN}` (set in .env)
    - Bot verified: @Ssyyvv_bot (Piata-ai.ro)
    - Human-in-the-Loop system ready
    - Demo script created: `tmp_rovodev_telegram_hitl.ts`
@@ -96,7 +96,7 @@ const counts = listings.reduce((acc, listing) => {
 
 ```bash
 # Telegram Human-in-the-Loop
-TELEGRAM_BOT_TOKEN=8361998278:AAEcALVmGl2o4vn7x99sThxa7lP_FAE7Kns
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
 
 # N8N API (already present)
 N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...

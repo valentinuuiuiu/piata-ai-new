@@ -4,7 +4,7 @@
  * Allows human oversight and intervention in automated processes
  */
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8361998278:AAEcALVmGl2o4vn7x99sThxa7lP_FAE7Kns';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 interface TelegramMessage {
