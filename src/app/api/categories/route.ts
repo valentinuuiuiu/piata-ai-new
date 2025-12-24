@@ -85,13 +85,21 @@ export async function GET(req: Request) {
 
     // Backwards-compatible default: return categories as an array (tests + simple clients)
     if (!format || format === 'array') {
-      return NextResponse.json(categoriesWithCounts);
+      return NextResponse.json(categoriesWithCounts, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400'
+        }
+      });
     }
 
     // Rich response for newer clients
     return NextResponse.json({
       categories: categoriesWithCounts,
       subcategories: subcategoriesWithCounts
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400'
+      }
     });
   } catch (error) {
     console.error('Database error in categories API:', error);

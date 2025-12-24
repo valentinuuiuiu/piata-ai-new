@@ -6,10 +6,12 @@ const DEFAULT_CONTACT_EMAIL = 'claude.dev@mail.com';
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
-// Configure route to handle larger payloads
-export const maxDuration = 60; // 60 seconds for Vercel Pro
-export const dynamic = 'force-dynamic';
+// Configure route
+export const maxDuration = 60;
 export const runtime = 'nodejs';
+
+// Allow caching at the edge/CDN for GET (we set explicit Cache-Control below)
+export const dynamic = 'force-static';
 
 export async function GET(request: Request) {
   try {
@@ -18,12 +20,23 @@ export async function GET(request: Request) {
 
     console.log('GET /api/anunturi - Starting Supabase query with service client');
 
-    // Query all anunturi
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get('limit') || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, 1),
+      MAX_LIMIT
+    );
+    const summary = (searchParams.get('summary') || '1') !== '0';
+
+    // OPTIMIZED: select only needed fields for list views
+    const select = summary
+      ? 'id,title,price,location,status,created_at,published_at,images,category_id,subcategory_id,user_id,views,is_premium,is_featured'
+      : '*';
+
     const { data: listings, error } = await supabase
       .from('anunturi')
-      .select('*')
+      .select(select)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(limit);
 
     if (error) {
       console.error('Supabase anunturi query error:', error);
@@ -36,38 +49,33 @@ export async function GET(request: Request) {
 
     console.log(`Successfully fetched ${listings?.length || 0} listings from Supabase`);
 
-    // Transform images if they're stored as JSON strings or blobs
-    const transformedListings = listings?.map((listing: any) => {
-      let images = [];
+    // Transform images (server-safe, no URL.createObjectURL)
+    const transformedListings = (listings || []).map((listing: any) => {
+      let images: string[] = [];
       try {
         if (Array.isArray(listing.images)) {
           images = listing.images;
         } else if (typeof listing.images === 'string') {
-          images = JSON.parse(listing.images || '[]');
-        } else if (listing.images && typeof listing.images === 'object') {
-          // Handle Supabase blob objects
-          if (listing.images.length !== undefined) {
-            images = Array.from({ length: listing.images.length }, (_, i) => {
-              const blob = listing.images[i];
-              return URL.createObjectURL(blob);
-            });
-          } else {
-            images = [];
+          const s = listing.images.trim();
+          if (s.startsWith('[')) {
+            const parsed = JSON.parse(s);
+            images = Array.isArray(parsed) ? parsed : [];
+          } else if (s.length > 0) {
+            images = [s];
           }
-        } else {
-          images = [];
         }
-      } catch (e) {
-        console.error('Error parsing images for listing', listing.id, e);
+      } catch {
         images = [];
       }
-      return {
-        ...listing,
-        images
-      };
-    }) || [];
+      return { ...listing, images };
+    });
 
-    return NextResponse.json(transformedListings);
+    // CDN cache (safe for public listings list)
+    return NextResponse.json(transformedListings, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=600'
+      }
+    });
   } catch (error) {
     console.error('API error:', error);
     // Return empty array instead of error to prevent frontend crash
