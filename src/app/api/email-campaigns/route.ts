@@ -7,7 +7,7 @@ import { EmailAutomationEngine } from '@/lib/email-automation';
 import { UserSegmentationEngine, createBehaviorDataFromActions } from '@/lib/user-segmentation';
 
 // Load market intelligence data
-import marketIntelligence from '@/data/market-intelligence.json';
+import marketIntelligence from '@/../data/market-intelligence.json';
 
 // Initialize email system components
 const emailSystem = new EmailMarketingSystem();

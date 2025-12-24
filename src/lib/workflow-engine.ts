@@ -9,6 +9,7 @@
 
 import { AIOrchestrator } from './ai-orchestrator'
 import { AgentCapability } from './agents/types'
+import { a2aSignalManager } from './a2a'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -214,6 +215,33 @@ export async function executeWorkflow(
   }
 
   console.log(`[Workflow] Starting: ${workflow.name}`)
+  
+  // Register Workflow Engine in A2A protocol
+  try {
+    await a2aSignalManager.updateAgentRegistry('workflow-engine', {
+      agentType: 'workflow_engine',
+      status: 'active',
+      capabilities: ['workflow_execution', 'step_coordination', 'agent_orchestration'],
+      metadata: {
+        description: 'Autonomous workflow engine for multi-step process execution',
+        workflowId,
+        workflowName: workflow.name,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('❌ [A2A] Failed to register Workflow Engine:', error);
+  }
+
+  // Log workflow execution start
+  await a2aSignalManager.broadcastEnhanced('WORKFLOW_EXECUTION_STARTED', {
+    workflowId,
+    workflowName: workflow.name,
+    description: workflow.description,
+    totalSteps: workflow.steps.length,
+    context,
+    timestamp: new Date()
+  }, 'workflow-engine', 'normal');
 
   const execution: WorkflowExecution = {
     workflowId,
@@ -244,6 +272,18 @@ export async function executeWorkflow(
       // No executable steps found - either blocked or failed
       console.error('[Workflow] Deadlock detected or all remaining steps have failed dependencies')
       execution.status = 'failed'
+      
+      // Log workflow deadlock/failure
+      await a2aSignalManager.broadcastEnhanced('WORKFLOW_DEADLOCK', {
+        workflowId,
+        workflowName: workflow.name,
+        reason: 'deadlock_detected',
+        remainingSteps: stepQueue.length,
+        completedSteps: execution.completedSteps.length,
+        failedSteps: execution.failedSteps.length,
+        timestamp: new Date()
+      }, 'workflow-engine', 'high');
+      
       break
     }
 
@@ -251,6 +291,17 @@ export async function executeWorkflow(
     stepQueue.splice(nextStepIndex, 1)
 
     console.log(`[Workflow] Executing step: ${step.name}`)
+    
+    // Log step execution attempt
+    await a2aSignalManager.broadcastEnhanced('WORKFLOW_STEP_ATTEMPT', {
+      workflowId,
+      workflowName: workflow.name,
+      stepId: step.id,
+      stepName: step.name,
+      assignedAgent: step.agent,
+      dependencies: step.dependsOn || [],
+      timestamp: new Date()
+    }, 'workflow-engine', 'normal');
 
     try {
       // Execute the step with retry logic
@@ -258,6 +309,7 @@ export async function executeWorkflow(
       let attempt = 0
       let success = false
       let lastError = null
+      const stepStartTime = Date.now()
 
       while (attempt <= retries && !success) {
         try {
@@ -272,6 +324,8 @@ export async function executeWorkflow(
           const orchestrator = new AIOrchestrator();
           
           let result;
+          let targetAgent = step.agent || 'orchestrator_decision';
+          
           // If step has a specific agent, use it
           if (step.agent) {
              const agent = orchestrator.getAgent(step.agent);
@@ -302,6 +356,45 @@ export async function executeWorkflow(
             execution.results[step.id] = output
             execution.completedSteps.push(step.id)
             success = true
+            
+            const stepDuration = Date.now() - stepStartTime;
+            
+            // Log successful step completion
+            await a2aSignalManager.broadcastEnhanced('WORKFLOW_STEP_COMPLETED', {
+              workflowId,
+              workflowName: workflow.name,
+              stepId: step.id,
+              stepName: step.name,
+              targetAgent,
+              duration: stepDuration,
+              attemptNumber: attempt + 1,
+              timestamp: new Date()
+            }, 'workflow-engine', 'normal');
+            
+            // Log agent interaction for learning
+            await a2aSignalManager.logAgentInteraction({
+              fromAgent: 'workflow-engine',
+              toAgent: targetAgent,
+              interactionType: 'workflow_step',
+              taskId: `workflow-${step.id}`,
+              taskDescription: step.task,
+              outcome: 'success',
+              duration: stepDuration,
+              context: {
+                workflowId,
+                stepId: step.id,
+                dependencies: step.dependsOn || []
+              }
+            });
+            
+            // Record performance metrics
+            await a2aSignalManager.recordPerformanceMetrics({
+              agentName: targetAgent,
+              metricType: 'workflow_step_duration',
+              value: stepDuration,
+              timeWindow: '5m'
+            });
+            
             console.log(`[Workflow] Step completed: ${step.name}`)
           } else {
             lastError = result.error
@@ -314,9 +407,34 @@ export async function executeWorkflow(
       }
 
       if (!success) {
+        const stepDuration = Date.now() - stepStartTime;
+        
         console.error(`[Workflow] Step failed after ${retries + 1} attempts: ${step.name}`)
         execution.failedSteps.push(step.id)
         execution.results[step.id] = { error: lastError }
+
+        // Log step failure
+        await a2aSignalManager.broadcastEnhanced('WORKFLOW_STEP_FAILED', {
+          workflowId,
+          workflowName: workflow.name,
+          stepId: step.id,
+          stepName: step.name,
+          targetAgent: step.agent || 'orchestrator_decision',
+          duration: stepDuration,
+          attempts: retries + 1,
+          error: lastError?.message || 'Unknown error',
+          timestamp: new Date()
+        }, 'workflow-engine', 'high');
+        
+        // Record error metrics
+        if (step.agent) {
+          await a2aSignalManager.recordPerformanceMetrics({
+            agentName: step.agent,
+            metricType: 'workflow_step_errors',
+            value: 1,
+            timeWindow: '5m'
+          });
+        }
 
         // If critical step fails, abort workflow
         if (!step.onFailure) {
@@ -325,10 +443,25 @@ export async function executeWorkflow(
         }
       }
     } catch (error: any) {
+      const stepDuration = Date.now() - Date.now(); // Default if stepStartTime not defined
+      
       console.error(`[Workflow] Fatal error in step ${step.name}:`, error)
       execution.failedSteps.push(step.id)
       execution.results[step.id] = { error: error.message }
       execution.status = 'failed'
+      
+      // Log fatal step error
+      await a2aSignalManager.broadcastEnhanced('WORKFLOW_STEP_FATAL_ERROR', {
+        workflowId,
+        workflowName: workflow.name,
+        stepId: step.id,
+        stepName: step.name,
+        targetAgent: step.agent || 'orchestrator_decision',
+        duration: stepDuration,
+        error: error.message,
+        timestamp: new Date()
+      }, 'workflow-engine', 'critical');
+      
       break
     }
   }
@@ -337,6 +470,30 @@ export async function executeWorkflow(
   if (execution.failedSteps.length === 0 && stepQueue.length === 0) {
     execution.status = 'completed'
     console.log(`[Workflow] Completed successfully: ${workflow.name}`)
+    
+    // Log successful workflow completion
+    await a2aSignalManager.broadcastEnhanced('WORKFLOW_COMPLETED', {
+      workflowId,
+      workflowName: workflow.name,
+      totalDuration: execution.startTime ? Date.now() - execution.startTime : 0,
+      completedSteps: execution.completedSteps.length,
+      totalSteps: workflow.steps.length,
+      successRate: execution.completedSteps.length / workflow.steps.length,
+      timestamp: new Date()
+    }, 'workflow-engine', 'normal');
+    
+  } else if (execution.status === 'failed') {
+    // Log workflow failure
+    await a2aSignalManager.broadcastEnhanced('WORKFLOW_FAILED', {
+      workflowId,
+      workflowName: workflow.name,
+      totalDuration: execution.startTime ? Date.now() - execution.startTime : 0,
+      completedSteps: execution.completedSteps.length,
+      failedSteps: execution.failedSteps.length,
+      totalSteps: workflow.steps.length,
+      successRate: execution.completedSteps.length / workflow.steps.length,
+      timestamp: new Date()
+    }, 'workflow-engine', 'high');
   }
 
   // Store workflow execution history

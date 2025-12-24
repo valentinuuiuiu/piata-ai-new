@@ -1,13 +1,18 @@
 // Email Automation Workflow System
 // Integrates with the email marketing system for automated campaigns
 
-import { 
-  EmailMarketingSystem, 
-  UserProfile, 
-  UserSegment, 
-  TriggerType, 
-  CampaignType 
+import {
+  EmailMarketingSystem,
+  UserProfile,
+  UserSegment,
+  TriggerType,
+  CampaignType,
 } from './email-system';
+
+// Compatibility exports for API routes
+import { randomBytes, createHash } from 'node:crypto';
+import type { EmailOptions } from './email';
+import { sendEmail as sendEmailService } from './email';
 
 interface AutomationRule {
   id: string;
@@ -30,7 +35,8 @@ interface AutomationCondition {
 
 interface AutomationAction {
   type: 'send_email' | 'segment_user' | 'wait' | 'update_field';
-  parameters: Record<string, any>;
+  // Some actions (e.g. 'wait') may not require parameters.
+  parameters?: Record<string, any>;
   delayMinutes?: number;
 }
 
@@ -46,6 +52,8 @@ interface EmailQueueItem {
 }
 
 export class EmailAutomationEngine {
+  // NOTE: This file also exports several helper utilities (token generation, basic email sending)
+  // used by API routes under `src/app/api/*`. Keep those exports stable for backwards compatibility.
   private emailSystem: EmailMarketingSystem;
   private automationRules: Map<string, AutomationRule> = new Map();
   private emailQueue: Map<string, EmailQueueItem> = new Map();
@@ -566,5 +574,143 @@ export class EmailAutomationEngine {
       this.automationRules.set(ruleId, rule);
       console.log(`Rule ${ruleId} ${isActive ? 'activated' : 'deactivated'}`);
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Compatibility layer for Next.js API routes
+// ---------------------------------------------------------------------------
+
+export type SendEmailParams = EmailOptions;
+
+/**
+ * Convenience wrapper used by cron routes.
+ * Delegates to `src/lib/email.ts` (Resend).
+ */
+export async function sendEmail(params: SendEmailParams) {
+  return sendEmailService(params);
+}
+
+export function generateVerificationToken(bytes: number = 32): string {
+  // URL-safe base64 without padding
+  return randomBytes(bytes)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+export function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+export async function sendAccountCreationEmail(email: string, token: string, name?: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const link = `${appUrl}/api/verify-confirmation?token=${encodeURIComponent(token)}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Bun venit${name ? `, ${name}` : ''}!</h2>
+      <p>Te rugăm să confirmi adresa de email pentru a finaliza crearea contului.</p>
+      <p style="margin: 24px 0;">
+        <a href="${link}" style="background:#667eea;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none;display:inline-block;">
+          Confirmă emailul →
+        </a>
+      </p>
+      <p style="color:#666;font-size:12px;">Dacă butonul nu funcționează, deschide linkul: ${link}</p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Confirmă crearea contului - Piata AI',
+    html,
+    text: `Confirmă crearea contului: ${link}`,
+  });
+}
+
+export async function sendAdPostingConfirmationEmail(
+  email: string,
+  adData: {
+    title: string;
+    platform?: string;
+    category?: string;
+    price?: number;
+    location?: string;
+  },
+  token: string
+) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const link = `${appUrl}/api/verify-confirmation?token=${encodeURIComponent(token)}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Confirmare postare anunț</h2>
+      <p>Te rugăm să confirmi postarea anunțului:</p>
+      <ul>
+        <li><strong>Titlu:</strong> ${adData.title}</li>
+        ${adData.price != null ? `<li><strong>Preț:</strong> ${adData.price}</li>` : ''}
+        ${adData.category ? `<li><strong>Categorie:</strong> ${adData.category}</li>` : ''}
+        ${adData.location ? `<li><strong>Locație:</strong> ${adData.location}</li>` : ''}
+        ${adData.platform ? `<li><strong>Platformă:</strong> ${adData.platform}</li>` : ''}
+      </ul>
+      <p style="margin: 24px 0;">
+        <a href="${link}" style="background:#22c55e;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none;display:inline-block;">
+          Confirmă postarea →
+        </a>
+      </p>
+      <p style="color:#666;font-size:12px;">Link: ${link}</p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Confirmă postarea anunțului - Piata AI',
+    html,
+    text: `Confirmă postarea anunțului: ${link}`,
+  });
+}
+
+export async function sendPermissionRequestEmail(
+  adminEmail: string,
+  data: {
+    requesterName: string;
+    requesterEmail: string;
+    platform?: string;
+    adTitle: string;
+    reason: string;
+    approvalLink: string;
+    rejectionLink: string;
+  }
+) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Cerere permisiune</h2>
+      <p><strong>Solicitant:</strong> ${data.requesterName} (${data.requesterEmail})</p>
+      <p><strong>Permisiune:</strong> ${data.adTitle}</p>
+      <p><strong>Motiv:</strong> ${data.reason}</p>
+      <p style="margin: 24px 0;">
+        <a href="${data.approvalLink}" style="background:#22c55e;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none;margin-right:10px;display:inline-block;">Aprobă</a>
+        <a href="${data.rejectionLink}" style="background:#ef4444;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">Respinge</a>
+      </p>
+      <p style="color:#666;font-size:12px;">Dacă butoanele nu funcționează: ${data.approvalLink} / ${data.rejectionLink}</p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: adminEmail,
+    subject: 'Aprobare necesară - Piata AI',
+    html,
+    text: `Aprobă: ${data.approvalLink}\nRespinge: ${data.rejectionLink}`,
+  });
+}
+
+export class EmailTestService {
+  static async testAllEmailServices() {
+    const resendConfigured = Boolean(process.env.RESEND_API_KEY);
+    return {
+      resendConfigured,
+      timestamp: new Date().toISOString(),
+    };
   }
 }

@@ -23,22 +23,41 @@ interface Listing {
   images: string | string[];
 }
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  listing_count: number;
+  subcat_count: number;
+}
+
 export default function Acasa() {
   const [recentListings, setRecentListings] = useState<Listing[]>([]);
-
-  const categories = [
-    { icon: '🏠', name: 'Imobiliare', slug: '1', count: 450 },
-    { icon: '🚗', name: 'Auto', slug: '2', count: 890 },
-    { icon: '📱', name: 'Electronice', slug: '3', count: 1250 },
-    { icon: '👕', name: 'Îmbrăcăminte', slug: '4', count: 320 },
-    { icon: '🔧', name: 'Servicii', slug: '5', count: 210 },
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
+    // Fetch recent listings
     fetch('/api/anunturi?limit=6')
       .then(res => res.json())
       .then(data => setRecentListings(Array.isArray(data) ? data : []))
       .catch(err => console.error('Failed to fetch listings:', err));
+
+    // Fetch real categories from API
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        // API returns array format by default
+        if (Array.isArray(data)) {
+          setCategories(data.slice(0, 5)); // Show top 5 on homepage
+        }
+        setLoadingCategories(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch categories:', err);
+        setLoadingCategories(false);
+      });
   }, []);
 
   // Generate structured data
@@ -186,28 +205,38 @@ export default function Acasa() {
 
         <section className="relative overflow-hidden rounded-2xl border border-slate-700/50 shadow-xl shadow-black/40 p-12 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]">
           <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent mb-12 text-center">Categorii Populare</h2>
-          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-8">
-            {categories.map((cat, i) => (
-              <AnimatedCard key={i} delay={i * 0.1}>
-                <Link
-                  href={`/categories/${cat.slug}`}
-                  className="block p-8 md:p-10 rounded-2xl bg-gradient-to-b from-slate-800/40 to-slate-900/40 border border-slate-700/50 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-900/30 transition-all duration-300 text-center group"
-                >
-                  <motion.div
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    className="text-5xl md:text-6xl mb-6 mx-auto group-hover:scale-110 transition-transform duration-300"
+          {loadingCategories ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="text-center py-20 text-slate-400">
+              <p className="text-xl">Nu s-au putut încărca categoriile</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-8">
+              {categories.map((cat, i) => (
+                <AnimatedCard key={cat.id} delay={i * 0.1}>
+                  <Link
+                    href={`/categories/${cat.slug}`}
+                    className="block p-8 md:p-10 rounded-2xl bg-gradient-to-b from-slate-800/40 to-slate-900/40 border border-slate-700/50 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-900/30 transition-all duration-300 text-center group"
                   >
-                    {cat.icon}
-                  </motion.div>
-                  <h3 className="font-black text-lg md:text-2xl lg:text-3xl mb-4 text-white">{cat.name}</h3>
-                  <p className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                    {cat.count.toLocaleString()} anunțuri
-                  </p>
-                </Link>
-              </AnimatedCard>
-            ))}
-          </div>
+                    <motion.div
+                      animate={{ y: [0, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="text-5xl md:text-6xl mb-6 mx-auto group-hover:scale-110 transition-transform duration-300"
+                    >
+                      {cat.icon}
+                    </motion.div>
+                    <h3 className="font-black text-lg md:text-2xl lg:text-3xl mb-4 text-white">{cat.name}</h3>
+                    <p className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                      {cat.listing_count.toLocaleString()} anunțuri
+                    </p>
+                  </Link>
+                </AnimatedCard>
+              ))}
+            </div>
+          )}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

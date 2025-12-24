@@ -60,22 +60,33 @@ interface EngagementResponse {
 }
 
 export class RomanianSocialMediaAutomation {
-  private supabase: any;
+  private supabase: any | null = null;
   private marketData: RomanianMarketData;
   private romanianHashtags: Map<string, string[]> = new Map();
   private contentTemplates: Map<string, string[]> = new Map();
   private optimalSchedule: Map<string, string[]> = new Map();
 
   constructor() {
-    this.supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
-    
+    // Do NOT eagerly initialize Supabase at import/build time.
+    // Some environments (e.g. `next build`) intentionally do not provide runtime secrets.
     this.initializeRomanianMarketData();
     this.initializeRomanianHashtags();
     this.initializeContentTemplates();
     this.initializeOptimalSchedule();
+  }
+
+  private getSupabase() {
+    if (this.supabase) return this.supabase;
+
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+      throw new Error('Supabase is not configured: set SUPABASE_URL and SUPABASE_ANON_KEY');
+    }
+
+    this.supabase = createClient(url, key);
+    return this.supabase;
   }
 
   private initializeRomanianMarketData() {
@@ -350,7 +361,8 @@ export class RomanianSocialMediaAutomation {
    * Log engagement for analytics
    */
   private async logEngagement(platform: string, engagementType: string, postId: string): Promise<void> {
-    const { error } = await this.supabase
+    const supabase = this.getSupabase();
+    const { error } = await supabase
       .from('social_media_engagement')
       .insert({
         platform,
@@ -368,7 +380,8 @@ export class RomanianSocialMediaAutomation {
    * Save content to database
    */
   private async saveContentToDatabase(content: ContentPost): Promise<void> {
-    const { error } = await this.supabase
+    const supabase = this.getSupabase();
+    const { error } = await supabase
       .from('scheduled_content')
       .insert({
         id: content.id,
@@ -388,7 +401,8 @@ export class RomanianSocialMediaAutomation {
    * Get analytics dashboard data
    */
   async getAnalytics(): Promise<any> {
-    const { data, error } = await this.supabase
+    const supabase = this.getSupabase();
+    const { data, error } = await supabase
       .from('social_media_analytics')
       .select('*')
       .order('date', { ascending: false })

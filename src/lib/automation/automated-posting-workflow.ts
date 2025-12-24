@@ -89,7 +89,7 @@ export class AutomatedPostingWorkflow {
     this.automation = new RomanianSocialMediaAutomation();
     this.scheduler = new CrossPlatformScheduler();
     this.engagementMonitor = new EngagementMonitor();
-    this.hashtagOptimizer = new RomanianHashtagOptimizer();
+    this.hashtagOptimizer = new RomanianHashtagOptimizer(this.automation);
     this.competitorMonitor = new CompetitorMonitor(this.automation);
     
     this.facebookAutomation = new FacebookAutomation(this.automation);

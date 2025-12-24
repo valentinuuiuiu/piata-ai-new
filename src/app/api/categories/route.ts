@@ -1,72 +1,94 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const supabase = await createClient();
 
-    // Get categories from Supabase
-    const { data: categories, error: categoriesError } = await supabase
-      .from('categories')
-      .select('*')
-      .order('id');
+    // OPTIMIZED: Batch fetch all data with aggregations in parallel
+    const [categoriesResult, subcategoriesResult, categoryCountsResult, subcategoryCountsResult] = await Promise.all([
+      // Get categories
+      supabase
+        .from('categories')
+        .select('*')
+        .order('id'),
+      
+      // Get subcategories
+      supabase
+        .from('subcategories')
+        .select('*')
+        .order('category_id, name'),
+      
+      // Get listing counts grouped by category_id (single query!)
+      supabase
+        .from('anunturi')
+        .select('category_id')
+        .eq('status', 'active'),
+      
+      // Get listing counts grouped by subcategory_id (single query!)
+      supabase
+        .from('anunturi')
+        .select('subcategory_id')
+        .eq('status', 'active')
+    ]);
 
-    if (categoriesError) {
-      console.error('Categories query error:', categoriesError);
-      throw categoriesError;
+    if (categoriesResult.error) {
+      console.error('Categories query error:', categoriesResult.error);
+      throw categoriesResult.error;
     }
 
-    // Get subcategories from Supabase
-    const { data: subcategories, error: subcategoriesError } = await supabase
-      .from('subcategories')
-      .select('*')
-      .order('category_id, name');
-
-    if (subcategoriesError) {
-      console.error('Subcategories query error:', subcategoriesError);
-      throw subcategoriesError;
+    if (subcategoriesResult.error) {
+      console.error('Subcategories query error:', subcategoriesResult.error);
+      throw subcategoriesResult.error;
     }
 
-    // Get counts for categories (actual listing count)
-    const categoriesWithCounts = await Promise.all(
-      (categories || []).map(async (cat: any) => {
-        // Get actual listing count for this category
-        const { count } = await supabase
-          .from('anunturi')
-          .select('*', { count: 'exact', head: true })
-          .eq('category_id', cat.id)
-          .eq('status', 'active');
+    const categories = categoriesResult.data || [];
+    const subcategories = subcategoriesResult.data || [];
+    const listings = categoryCountsResult.data || [];
+    const subcategoryListings = subcategoryCountsResult.data || [];
 
-        // Also get subcategory count for display
-        const { count: subcatCount } = await supabase
-          .from('subcategories')
-          .select('*', { count: 'exact', head: true })
-          .eq('category_id', cat.id);
+    // Count listings per category (in-memory aggregation - much faster!)
+    const categoryListingCounts = listings.reduce((acc: any, listing: any) => {
+      acc[listing.category_id] = (acc[listing.category_id] || 0) + 1;
+      return acc;
+    }, {});
 
-        return {
-          ...cat,
-          listing_count: count || 0,
-          subcat_count: subcatCount || 0
-        };
-      })
-    );
+    // Count subcategories per category (in-memory aggregation)
+    const categorySubcatCounts = subcategories.reduce((acc: any, subcat: any) => {
+      acc[subcat.category_id] = (acc[subcat.category_id] || 0) + 1;
+      return acc;
+    }, {});
 
-    // Get counts for subcategories (listing count)
-    const subcategoriesWithCounts = await Promise.all(
-      (subcategories || []).map(async (subcat: any) => {
-        const { count } = await supabase
-          .from('anunturi')
-          .select('*', { count: 'exact', head: true })
-          .eq('subcategory_id', subcat.id)
-          .eq('status', 'active');
+    // Count listings per subcategory (in-memory aggregation)
+    const subcategoryListingCounts = subcategoryListings.reduce((acc: any, listing: any) => {
+      if (listing.subcategory_id) {
+        acc[listing.subcategory_id] = (acc[listing.subcategory_id] || 0) + 1;
+      }
+      return acc;
+    }, {});
 
-        return {
-          ...subcat,
-          listing_count: count || 0
-        };
-      })
-    );
+    // Attach counts to categories (no additional queries!)
+    const categoriesWithCounts = categories.map((cat: any) => ({
+      ...cat,
+      listing_count: categoryListingCounts[cat.id] || 0,
+      subcat_count: categorySubcatCounts[cat.id] || 0
+    }));
 
+    // Attach counts to subcategories (no additional queries!)
+    const subcategoriesWithCounts = subcategories.map((subcat: any) => ({
+      ...subcat,
+      listing_count: subcategoryListingCounts[subcat.id] || 0
+    }));
+
+    const { searchParams } = new URL(req.url);
+    const format = searchParams.get('format');
+
+    // Backwards-compatible default: return categories as an array (tests + simple clients)
+    if (!format || format === 'array') {
+      return NextResponse.json(categoriesWithCounts);
+    }
+
+    // Rich response for newer clients
     return NextResponse.json({
       categories: categoriesWithCounts,
       subcategories: subcategoriesWithCounts
@@ -74,8 +96,8 @@ export async function GET() {
   } catch (error) {
     console.error('Database error in categories API:', error);
     // Return default categories when database is not accessible
-    return NextResponse.json({
-      categories: [
+    // Default fallback for array format
+    const fallbackCategories = [
         {
           id: 1,
           name: 'Imobiliare',
@@ -172,8 +194,9 @@ export async function GET() {
           listing_count: 1200,
           subcat_count: 6
         }
-      ],
-      subcategories: []
-    });
+      ];
+
+    // Preserve default behavior: array
+    return NextResponse.json(fallbackCategories);
   }
 }

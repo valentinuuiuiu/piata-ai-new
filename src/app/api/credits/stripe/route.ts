@@ -3,10 +3,11 @@ import Stripe from 'stripe';
 
 // Initialize Stripe lazily to avoid top-level errors if env var is missing
 const getStripe = () => {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) {
     throw new Error('STRIPE_SECRET_KEY is missing');
   }
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+  return new Stripe(key, {
     apiVersion: '2024-06-20' as any,
   });
 };

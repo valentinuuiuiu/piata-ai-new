@@ -85,7 +85,7 @@ CREATE POLICY "Admins can view social posts"
   USING (
     EXISTS (
       SELECT 1 FROM user_profiles
-      WHERE user_id = auth.uid() AND is_admin = true
+      WHERE user_id = auth.uid() AND role = 'admin'
     )
   );
 
@@ -94,7 +94,7 @@ CREATE POLICY "Admins can view automation logs"
   USING (
     EXISTS (
       SELECT 1 FROM user_profiles
-      WHERE user_id = auth.uid() AND is_admin = true
+      WHERE user_id = auth.uid() AND role = 'admin'
     )
   );
 

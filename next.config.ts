@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'ndzoavaveppnclkujjhh.supabase.co',
+      },
+      {
+        protocol: 'https',
         hostname: '**',
       },
     ],

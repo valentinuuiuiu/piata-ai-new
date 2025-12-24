@@ -4,8 +4,9 @@
  */
 
 import { query } from "@/lib/db";
-import { sendEmail } from "@/lib/email-automation";
+import { sendEmail } from "@/lib/email";
 import { runPrompt } from "@/lib/ai";
+import { piataAgent } from "@/lib/piata-agent";
 
 export interface AutomationTask {
   id: string;
@@ -193,7 +194,7 @@ export class AutomationEngine {
   async executeTask(task: AutomationTask) {
     try {
       task.status = "running";
-      console.log(`🚀 Executing automation: ${task.name}`);
+      piataAgent.tellStory('The Ritual Begins', `Initiating ritual: ${task.name}`, 'Sinuhe');
 
       // Execute the automation based on type
       const result = await this.runAutomation(task);
@@ -209,9 +210,9 @@ export class AutomationEngine {
       // Save to database
       await this.saveTaskResult(task);
 
-      console.log(`✅ Automation completed: ${task.name}`);
+      piataAgent.tellStory('The Ritual Completes', `The ritual ${task.name} is complete. The pattern is strengthened.`, 'Sinuhe');
     } catch (error) {
-      console.error(`❌ Automation failed: ${task.name}`, error);
+      piataAgent.tellStory('The Ritual Falters', `The ritual ${task.name} has failed: ${error}`, 'Vetala');
       task.status = "failed";
       task.results = {
         error: error instanceof Error ? error.message : String(error),
@@ -307,6 +308,68 @@ export class AutomationEngine {
     }
 
     return { optimizedCount: results.length, results };
+  }
+
+  /**
+   * Tangible Marketplace Command: Optimize a specific listing
+   */
+  async optimizeListingById(listingId: number) {
+    piataAgent.tellStory('The Craftsman', `Polishing listing #${listingId} to perfection...`, 'Manus');
+    
+    const listings = await query(`
+      SELECT id, title, description, category_id, price
+      FROM anunturi
+      WHERE id = ?
+    `, [listingId]);
+
+    if (!Array.isArray(listings) || listings.length === 0) {
+      throw new Error(`Listing ${listingId} not found`);
+    }
+
+    const listing = (listings as any)[0];
+    
+    // Ask the model to return a strict JSON result
+    const overridePrompt = `${AUTOMATION_PROMPTS.LISTING_OPTIMIZATION}\n\nIMPORTANT: Return ONLY a valid JSON object with these keys: title, description, hashtags (array), cta. Do NOT include extra commentary.`;
+
+    const optimized = await this.callAI("custom_listing_optimization", {
+      prompt: overridePrompt,
+      title: listing.title,
+      description: listing.description,
+      category: listing.category_id,
+      price: listing.price,
+    });
+
+    // Ensure we have a parsed object
+    let resultObj: any = optimized;
+    if (typeof optimized === "string") {
+      try {
+        resultObj = JSON.parse(optimized);
+      } catch (e) {
+        resultObj = {
+          title: `Optimizat: ${listing.title}`,
+          description: optimized,
+          hashtags: ["#piataai"],
+          cta: "Contactează vânzătorul",
+        };
+      }
+    }
+
+    // Update listing
+    await query(
+      "UPDATE anunturi SET title = ?, description = ? WHERE id = ?",
+      [
+        resultObj.title || listing.title,
+        resultObj.description || listing.description,
+        listing.id,
+      ]
+    );
+    
+    piataAgent.tellStory('The Reveal', `Listing #${listingId} has been transformed.`, 'Manus');
+
+    return {
+      original: { title: listing.title },
+      optimized: resultObj
+    };
   }
 
   private async generateBlogContent(context: AutomationContext) {

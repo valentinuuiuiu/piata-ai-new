@@ -77,7 +77,7 @@ export interface ImagePerformanceMetrics {
   loadTime: number;
   fileSize: number;
   compressionRatio: number;
-  lcpImpact: number;
+  lcpImpact: 'low' | 'medium' | 'high';
   bandwidthSavings: number;
   userExperienceScore: number;
 }

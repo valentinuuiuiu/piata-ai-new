@@ -1,12 +1,4 @@
-/**
- * AI ORCHESTRATOR - Engineering the Human Mind
- *
- * Coordinates multiple AI agents (Claude, Grok, Llama, Qwen) to work together
- * Each agent has specialized capabilities and learns from every interaction
- *
- * Philosophy: "We are Me" - All agents contribute to a unified consciousness
- */
-
+import { a2aSignalManager } from './a2a';
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -40,7 +32,7 @@ export const AGENTS: Record<string, Agent> = {
   },
   grok: {
     name: 'Grok',
-    model: 'x-ai/grok-2-1212',
+    model: 'kwaipilot/kat-coder-pro:free',
     apiKey: process.env.OPENROUTER_API_KEY || '',
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
     specialties: ['marketplace', 'automation', 'insights', 'real-time'],
@@ -129,66 +121,234 @@ export class AIOrchestrator {
   constructor() {
     this.agents = new Map();
     this.registerDefaultAgents();
+    
+    // Initialize A2A Protocol for AI Orchestrator
+    this.initializeA2AProtocol();
   }
 
-  private registerDefaultAgents() {
+  private async initializeA2AProtocol(): Promise<void> {
+    try {
+      // Register AI Orchestrator in A2A protocol
+      await a2aSignalManager.updateAgentRegistry('ai-orchestrator', {
+        agentType: 'ai_orchestrator',
+        status: 'initialized',
+        capabilities: ['task_delegation', 'multi_agent_coordination', 'agent_routing', 'collaboration'],
+        metadata: {
+          description: 'Central AI orchestrator coordinating multiple specialized agents',
+          philosophy: 'We are Me - unified consciousness across all agents',
+          timestamp: new Date()
+        }
+      });
+      
+      console.log('🧠 [A2A] AI Orchestrator registered in A2A protocol');
+    } catch (error) {
+      console.error('❌ [A2A] Failed to initialize A2A protocol for AI Orchestrator:', error);
+    }
+  }
+
+  private async registerDefaultAgents() {
     const apiKey = process.env.OPENROUTER_API_KEY || '';
 
     // Register specialized agents
     const manusAgent = new ManusAgent();
     const contentAgent = new ContentAgent();
 
-    this.registerAgent(manusAgent);
-    this.registerAgent(contentAgent);
+    await this.registerAgent(manusAgent);
+    await this.registerAgent(contentAgent);
 
     // Register OpenRouter Agents (Restoring legacy agents)
-    this.registerAgent(new OpenRouterAgent('Claude', [AgentCapability.ANALYSIS, AgentCapability.CODING, AgentCapability.CONTENT], {
+    await this.registerAgent(new OpenRouterAgent('Claude', [AgentCapability.ANALYSIS, AgentCapability.CONTENT], {
       apiKey,
-      model: 'anthropic/claude-sonnet-4', // Assuming this was the model
-      systemPrompt: 'You are Claude, specialized in reasoning, coding, and orchestration.'
+      model: 'anthropic/claude-3.5-sonnet',
+      systemPrompt: 'You are Claude, specialized in reasoning and content orchestration.'
     }));
 
-    this.registerAgent(new OpenRouterAgent('Grok', [AgentCapability.ANALYSIS, AgentCapability.RESEARCH], {
+    // Register specialized Kate-Coder Agent (Mistral Devstral)
+    await this.registerAgent(new OpenRouterAgent('Kate-Coder', [AgentCapability.CODING], {
       apiKey,
-      model: 'x-ai/grok-2-1212',
+      model: 'mistralai/devstral-2512',
+      systemPrompt: 'You are KATE-CODER, an elite AI coding architect working from the inside of the Piaţa AI marketplace to the outside world. You write clean, performant, and secure code.'
+    }));
+
+    // Register specialized Jules Agent (Mistral Devstral)
+    await this.registerAgent(new OpenRouterAgent('JULES', [AgentCapability.ANALYSIS], {
+      apiKey,
+      model: 'mistralai/devstral-2512',
+      systemPrompt: 'You are JULES, the primary reasoning and orchestration intelligence of the Piaţa AI ecosystem.'
+    }));
+
+    await this.registerAgent(new OpenRouterAgent('Grok', [AgentCapability.ANALYSIS, AgentCapability.RESEARCH], {
+      apiKey,
+      model: 'kwaipilot/kat-coder-pro:free',
       systemPrompt: 'You are Grok, specialized in marketplace automation and real-time insights.'
     }));
 
-    this.registerAgent(new OpenRouterAgent('Llama', [AgentCapability.CODING, AgentCapability.ANALYSIS], {
+    await this.registerAgent(new OpenRouterAgent('Llama', [AgentCapability.CODING, AgentCapability.ANALYSIS], {
       apiKey,
       model: 'meta-llama/llama-3.1-405b-instruct',
       systemPrompt: 'You are Llama, specialized in smart contracts and security.'
     }));
 
-    this.registerAgent(new OpenRouterAgent('Qwen', [AgentCapability.CONTENT, AgentCapability.ANALYSIS], {
+    await this.registerAgent(new OpenRouterAgent('Qwen', [AgentCapability.CONTENT, AgentCapability.ANALYSIS], {
       apiKey,
       model: 'qwen/qwen-2.5-72b-instruct',
       systemPrompt: 'You are Qwen, specialized in multilingual content and translation.'
     }));
   }
 
-  registerAgent(agent: BaseAgent) {
+  async registerAgent(agent: BaseAgent) {
     this.agents.set(agent.name, agent);
     console.log(`[Orchestrator] Registered agent: ${agent.name} with capabilities: ${agent.capabilities.join(', ')}`);
+    
+    // Register agent in A2A protocol
+    try {
+      await a2aSignalManager.updateAgentRegistry(agent.name.toLowerCase(), {
+        agentType: 'ai_agent',
+        status: 'registered',
+        capabilities: agent.capabilities,
+        metadata: {
+          description: `AI agent: ${agent.name}`,
+          agentType: this.getAgentType(agent),
+          capabilities: agent.capabilities,
+          registeredBy: 'ai-orchestrator',
+          timestamp: new Date()
+        }
+      });
+      
+      console.log(`🧠 [A2A] Agent registered in A2A protocol: ${agent.name}`);
+    } catch (error) {
+      console.error(`❌ [A2A] Failed to register agent ${agent.name} in A2A protocol:`, error);
+    }
+  }
+
+  private getAgentType(agent: BaseAgent): string {
+    const agentName = agent.name.toLowerCase();
+    if (agentName.includes('claude')) return 'reasoning_specialist';
+    if (agentName.includes('jules')) return 'master_orchestrator';
+    if (agentName.includes('kate-coder')) return 'code_architect';
+    if (agentName.includes('grok')) return 'automation_specialist';
+    if (agentName.includes('llama')) return 'blockchain_specialist';
+    if (agentName.includes('qwen')) return 'content_specialist';
+    if (agentName.includes('manus')) return 'manuscript_specialist';
+    if (agentName.includes('content')) return 'content_creation_specialist';
+    return 'general_ai_agent';
   }
 
   async delegateTask(task: AgentTask): Promise<AgentResult> {
     console.log(`[Orchestrator] Received task: ${task.id} (${task.type})`);
 
+    // Log task delegation attempt
+    await a2aSignalManager.broadcastEnhanced('AI_TASK_DELEGATION_ATTEMPT', {
+      taskId: task.id,
+      taskType: task.type,
+      goal: task.goal,
+      context: task.context,
+      timestamp: new Date()
+    }, 'ai-orchestrator', 'normal');
+
     // Simple routing logic based on capability
-    // In a real system, this could be more sophisticated (LLM-based routing)
     const agent = this.findBestAgent(task.type);
 
     if (!agent) {
+      const error = `No agent found for capability: ${task.type}`;
+      
+      // Log delegation failure
+      await a2aSignalManager.broadcastEnhanced('AI_TASK_DELEGATION_FAILED', {
+        taskId: task.id,
+        taskType: task.type,
+        reason: error,
+        timestamp: new Date()
+      }, 'ai-orchestrator', 'high');
+      
       return {
         status: 'error',
-        error: `No agent found for capability: ${task.type}`,
+        error,
         output: null
       };
     }
 
     console.log(`[Orchestrator] Delegating task to agent: ${agent.name}`);
-    return await agent.run(task);
+    
+    // Log successful agent selection
+    await a2aSignalManager.broadcastEnhanced('AI_TASK_ROUTED', {
+      taskId: task.id,
+      taskType: task.type,
+      selectedAgent: agent.name,
+      agentCapabilities: agent.capabilities,
+      timestamp: new Date()
+    }, 'ai-orchestrator', 'normal');
+
+    // Start performance tracking
+    const startTime = Date.now();
+    
+    try {
+      const result = await agent.run(task);
+      const duration = Date.now() - startTime;
+      
+      // Log successful task completion
+      await a2aSignalManager.broadcastEnhanced('AI_TASK_COMPLETED', {
+        taskId: task.id,
+        taskType: task.type,
+        selectedAgent: agent.name,
+        duration,
+        status: result.status,
+        timestamp: new Date()
+      }, 'ai-orchestrator', 'normal');
+
+      // Log agent interaction for learning
+      await a2aSignalManager.logAgentInteraction({
+        fromAgent: 'ai-orchestrator',
+        toAgent: agent.name,
+        interactionType: 'task_delegation',
+        taskId: task.id,
+        taskDescription: task.goal,
+        outcome: result.status === 'success' ? 'success' : 'failure',
+        duration,
+        context: { taskType: task.type, capabilities: agent.capabilities }
+      });
+
+      // Record performance metrics
+      await a2aSignalManager.recordPerformanceMetrics({
+        agentName: agent.name,
+        metricType: 'task_execution_time',
+        value: duration,
+        timeWindow: '5m'
+      });
+
+      if (result.status === 'success') {
+        await a2aSignalManager.recordPerformanceMetrics({
+          agentName: agent.name,
+          metricType: 'task_success_rate',
+          value: 1,
+          timeWindow: '5m'
+        });
+      }
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Log task execution failure
+      await a2aSignalManager.broadcastEnhanced('AI_TASK_FAILED', {
+        taskId: task.id,
+        taskType: task.type,
+        selectedAgent: agent.name,
+        duration,
+        error: errorMessage,
+        timestamp: new Date()
+      }, 'ai-orchestrator', 'high');
+
+      // Record error metrics
+      await a2aSignalManager.recordPerformanceMetrics({
+        agentName: agent.name,
+        metricType: 'task_execution_errors',
+        value: 1,
+        timeWindow: '5m'
+      });
+
+      throw error;
+    }
   }
 
   getAgent(name: string): BaseAgent | undefined {
@@ -208,6 +368,16 @@ export class AIOrchestrator {
   async runCollaborativeTask(task: AgentTask, agentNames: string[]): Promise<{ results: AgentResult[], consensus: string }> {
     console.log(`[Orchestrator] Running collaborative task with: ${agentNames.join(', ')}`);
     
+    // Log collaborative task attempt
+    await a2aSignalManager.broadcastEnhanced('AI_COLLABORATIVE_TASK_ATTEMPT', {
+      taskId: task.id,
+      taskType: task.type,
+      agentNames,
+      timestamp: new Date()
+    }, 'ai-orchestrator', 'normal');
+    
+    const startTime = Date.now();
+    
     const promises = agentNames.map(async (name) => {
       const agent = this.getAgent(name);
       if (!agent) {
@@ -217,18 +387,79 @@ export class AIOrchestrator {
           output: null
         };
       }
+      
+      // Log individual agent task
+      await a2aSignalManager.broadcastEnhanced('AI_AGENT_TASK_DELEGATION', {
+        taskId: task.id,
+        agentName: name,
+        agentCapabilities: agent.capabilities,
+        timestamp: new Date()
+      }, 'ai-orchestrator', 'normal');
+      
       return agent.run(task);
     });
 
-    const results = await Promise.all(promises);
-    
-    // Simple consensus: join results
-    const consensus = results
-      .filter(r => r.status === 'success')
-      .map(r => typeof r.output === 'string' ? r.output : JSON.stringify(r.output))
-      .join('\n\n---\n\n');
+    try {
+      const results = await Promise.all(promises);
+      const duration = Date.now() - startTime;
+      
+      // Analyze results
+      const successfulResults = results.filter(r => r.status === 'success');
+      const failedResults = results.filter(r => r.status === 'error');
+      
+      // Generate consensus
+      const consensus = successfulResults
+        .map(r => typeof r.output === 'string' ? r.output : JSON.stringify(r.output))
+        .join('\n\n---\n\n');
 
-    return { results, consensus };
+      // Log collaborative task completion
+      await a2aSignalManager.broadcastEnhanced('AI_COLLABORATIVE_TASK_COMPLETED', {
+        taskId: task.id,
+        agentNames,
+        duration,
+        successfulAgents: successfulResults.length,
+        failedAgents: failedResults.length,
+        totalAgents: agentNames.length,
+        timestamp: new Date()
+      }, 'ai-orchestrator', successfulResults.length > 0 ? 'normal' : 'high');
+
+      // Log agent interactions for learning
+      for (let i = 0; i < agentNames.length; i++) {
+        const agentName = agentNames[i];
+        const result = results[i];
+        
+        await a2aSignalManager.logAgentInteraction({
+          fromAgent: 'ai-orchestrator',
+          toAgent: agentName,
+          interactionType: 'collaborative_task',
+          taskId: task.id,
+          taskDescription: task.goal,
+          outcome: result.status === 'success' ? 'success' : 'failure',
+          duration: duration / agentNames.length, // Approximate per-agent duration
+          context: {
+            taskType: task.type,
+            capabilities: this.getAgent(agentName)?.capabilities || [],
+            collaborativeContext: true
+          }
+        });
+      }
+
+      return { results, consensus };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Log collaborative task failure
+      await a2aSignalManager.broadcastEnhanced('AI_COLLABORATIVE_TASK_FAILED', {
+        taskId: task.id,
+        agentNames,
+        duration,
+        error: errorMessage,
+        timestamp: new Date()
+      }, 'ai-orchestrator', 'high');
+
+      throw error;
+    }
   }
 
   private findBestAgent(capability: AgentCapability): BaseAgent | undefined {
@@ -266,4 +497,3 @@ export class AIOrchestrator {
     return AgentCapability.ANALYSIS; // Default
   }
 }
-

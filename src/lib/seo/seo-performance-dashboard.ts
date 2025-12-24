@@ -340,6 +340,7 @@ export interface OrganicLocalRanking {
   previousPosition: number;
   searchVolume: number;
   difficulty: number;
+  trend?: 'up' | 'down' | 'stable';
 }
 
 export interface VisibilityTrend {
@@ -1278,6 +1279,38 @@ export class SEOPerformanceDashboard {
             timeframe: '2-4 weeks'
           }
         ]
+      },
+      contentGaps: {
+        gaps: [
+          {
+            topic: 'anunturi verificate',
+            searchVolume: 9600,
+            difficulty: 48,
+            contentType: 'blog',
+            priority: 'high',
+            targetKeywords: ['anunturi verificate', 'vanzari sigure online']
+          }
+        ],
+        opportunities: [
+          {
+            title: 'Cum recunoști anunțurile false (ghid complet)',
+            description: 'Content focused on scam prevention and safe transactions.',
+            searchVolume: 14500,
+            difficulty: 50,
+            potentialTraffic: 2800,
+            effort: 'medium',
+            roi: 160
+          }
+        ],
+        competitorGaps: [
+          {
+            competitor: 'OLX',
+            contentType: 'landing',
+            topics: ['cumparare cu verificare', 'protectia cumparatorului'],
+            estimatedTraffic: 3800,
+            difficulty: 46
+          }
+        ]
       }
     };
   }
@@ -1398,7 +1431,7 @@ export class SEOPerformanceDashboard {
           }
         ]
       },
-      anchorTextDistribution: [
+      anchorText: [
         {
           anchorText: 'marketplace romania',
           count: 145,
@@ -1452,7 +1485,7 @@ export class SEOPerformanceDashboard {
         title: 'Create content for high-volume keywords',
         description: 'Target keywords like "cumparaturi online sigure" with significant search volume',
         impact: 'High',
-        effort: 'Medium',
+        effort: 'medium',
         timeframe: '4-6 weeks'
       },
       {
@@ -1461,7 +1494,7 @@ export class SEOPerformanceDashboard {
         title: 'Fix Core Web Vitals issues',
         description: 'Optimize images and reduce server response time',
         impact: 'High',
-        effort: 'Low',
+        effort: 'low',
         timeframe: '2-3 weeks'
       }
     ];

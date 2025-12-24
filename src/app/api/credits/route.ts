@@ -11,7 +11,7 @@ interface CreditsPackageRow {
   is_active?: boolean;
 }
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
 const stripe = stripeSecretKey 
   ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' as any })
   : null;
@@ -116,13 +116,23 @@ export async function POST(request: Request) {
   }
 
   const pkg = pkgData as any;
+  const price = typeof pkg.price === 'string' ? parseFloat(pkg.price) : pkg.price;
+
+  if (typeof price !== 'number' || isNaN(price)) {
+    console.error('Invalid package price:', pkg.price);
+    return NextResponse.json({ error: 'Invalid package price' }, { status: 400 });
+  }
 
   // If no Stripe price ID, create a direct Stripe session
   if (!pkg.stripe_price_id) {
     try {
       if (!stripe) {
+        console.error('Stripe not configured - missing STRIPE_SECRET_KEY');
         return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
       }
+
+      const origin = request.headers.get('origin') || process.env.NEXTAUTH_URL || 'https://piata-ai.ro';
+      console.log('Creating Stripe checkout session for package:', pkg.id, 'price:', price, 'origin:', origin);
 
       const checkoutSession = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -133,24 +143,25 @@ export async function POST(request: Request) {
               name: `${pkg.credits} Credite Piata AI`,
               description: `Pachet: ${pkg.name}`,
             },
-            unit_amount: Math.round(pkg.price * 100), // Convert to bani (RON cents)
+            unit_amount: Math.round(price * 100), // Convert to bani (RON cents)
           },
           quantity: 1,
         }],
         mode: 'payment',
-        success_url: `${request.headers.get('origin') || 'https://piata-ai.ro'}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${request.headers.get('origin') || 'https://piata-ai.ro'}/credits?cancelled=true`,
+        success_url: `${origin}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/credits?cancelled=true`,
         metadata: {
           user_id: user.id,
           package_id: packageId.toString(),
           credits: pkg.credits.toString(),
-          price: pkg.price.toString(),
+          price: price.toString(),
         },
       });
 
+      console.log('Stripe session created:', checkoutSession.id);
       return NextResponse.json({ url: checkoutSession.url });
     } catch (error: unknown) {
-      console.error('Stripe error:', error);
+      console.error('Stripe error creating session:', error);
       const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
       return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
@@ -162,6 +173,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
     }
 
+    const origin = request.headers.get('origin') || process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -169,8 +181,8 @@ export async function POST(request: Request) {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${request.headers.get('origin') || 'http://localhost:3000'}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.headers.get('origin') || 'http://localhost:3000'}/credits?cancelled=true`,
+      success_url: `${origin}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/credits?cancelled=true`,
       metadata: {
         user_id: user.id,
         package_id: packageId.toString(),

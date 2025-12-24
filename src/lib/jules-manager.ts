@@ -1,5 +1,6 @@
 import { MCPClient } from './mcp-client';
-import { OpenRouterAgent, KATE_AGENT, GROK_AGENT } from './openrouter-agent';
+import { OpenRouterAgent, KATE_CODER_AGENT, JULES_REASONING_AGENT, GROK_AGENT } from './openrouter-agent';
+import { a2aSignalManager, a2aSignalFilter, a2aPerformanceDashboard } from './a2a';
 import path from 'path';
 
 /**
@@ -57,6 +58,13 @@ export class JulesManager {
         description: 'The Financial Architect - handles payment operations'
       },
       {
+        name: 'GoogleSheets',
+        type: 'mcp',
+        scriptPath: path.join(this.baseDir, 'subagents/stripe-sheets-mcp-agent.sh'),
+        enabled: true,
+        description: 'The Data Organizer - manages Stripe payments and Google Sheets analytics'
+      },
+      {
         name: 'Redis',
         type: 'mcp',
         scriptPath: path.join(this.baseDir, 'subagents/redis-agent.sh'),
@@ -72,18 +80,25 @@ export class JulesManager {
       },
       // OpenRouter-based LLM agents
       {
-        name: 'KATE',
+        name: 'Kate-Coder',
         type: 'openrouter',
-        model: 'kat-coder-pro:free',
+        model: 'mistralai/devstral-2512',
         enabled: this.openRouterConfig !== null,
-        description: 'The Code Specialist - expert coding assistant (Free via OpenRouter)'
+        description: 'The Code Architect - expert elite coding from inside to outside'
+      },
+      {
+        name: 'JULES',
+        type: 'openrouter',
+        model: 'mistralai/devstral-2512',
+        enabled: this.openRouterConfig !== null,
+        description: 'The Master Orchestrator - primary reasoning and strategy agent'
       },
       {
         name: 'Grok',
         type: 'openrouter',
         model: 'x-ai/grok-2-1212:free',
         enabled: this.openRouterConfig !== null,
-        description: 'The Fast Thinker - rapid insights and automation (Free via OpenRouter)'
+        description: 'The Fast Thinker - rapid marketplace insights'
       }
     ];
 
@@ -100,19 +115,44 @@ export class JulesManager {
           const client = new MCPClient(subagent.name, subagent.scriptPath, []);
           this.clients.set(subagent.name.toLowerCase(), client);
           console.log(`[Jules] ✅ ${subagent.name} registered (MCP)`);
+          
+          // Register agent in A2A protocol
+          await a2aSignalManager.updateAgentRegistry(subagent.name.toLowerCase(), {
+            agentType: 'mcp_subagent',
+            status: 'initialized',
+            capabilities: ['task_execution', 'tool_calling'],
+            metadata: { description: subagent.description, scriptPath: subagent.scriptPath }
+          });
         } else if (subagent.type === 'openrouter') {
           // Register OpenRouter agents
-          if (subagent.name === 'KATE') {
-            this.openRouterAgents.set('kate', KATE_AGENT);
+          if (subagent.name === 'Kate-Coder') {
+            this.openRouterAgents.set('kate-coder', KATE_CODER_AGENT);
+          } else if (subagent.name === 'JULES') {
+            this.openRouterAgents.set('jules', JULES_REASONING_AGENT);
           } else if (subagent.name === 'Grok') {
             this.openRouterAgents.set('grok', GROK_AGENT);
           }
           console.log(`[Jules] ✅ ${subagent.name} registered (OpenRouter: ${subagent.model})`);
+          
+          // Register OpenRouter agent in A2A protocol
+          await a2aSignalManager.updateAgentRegistry(subagent.name.toLowerCase(), {
+            agentType: 'llm_agent',
+            status: 'initialized',
+            capabilities: ['ai_reasoning', 'natural_language_processing'],
+            metadata: { model: subagent.model, description: subagent.description }
+          });
         }
       } catch (error) {
         console.error(`[Jules] ❌ Failed to register ${subagent.name}:`, error);
       }
     }
+
+    // Log Jules Manager initialization as A2A broadcast
+    await a2aSignalManager.broadcastEnhanced('JULES_INITIALIZED', {
+      totalAgents: subagents.filter(s => s.enabled).length,
+      agents: subagents.filter(s => s.enabled).map(s => s.name.toLowerCase()),
+      timestamp: new Date()
+    }, 'jules-manager', 'high');
   }
 
   /**
@@ -143,12 +183,70 @@ export class JulesManager {
       throw new Error(`Agent "${agentName}" not found`);
     }
 
+    const startTime = Date.now();
+    
+    // Log A2A signal for tool call
+    const signalContext = await a2aSignalManager.callAgentEnhanced(
+      agentName.toLowerCase(),
+      { tool: toolName, arguments: args },
+      'jules-manager',
+      'normal'
+    );
+
     try {
       const result = await client.callTool(toolName, args);
+      const duration = Date.now() - startTime;
+      
       console.log(`[Jules] ${agentName}.${toolName} executed successfully`);
+      
+      // Complete A2A signal logging
+      await signalContext.complete('success', result, undefined);
+      
+      // Record performance metrics
+      await a2aSignalManager.recordPerformanceMetrics({
+        agentName: agentName.toLowerCase(),
+        metricType: 'tool_execution_time',
+        value: duration,
+        timeWindow: '5m'
+      });
+      
+      // Log successful execution
+      await a2aSignalManager.broadcastEnhanced('TOOL_EXECUTED', {
+        agent: agentName.toLowerCase(),
+        tool: toolName,
+        duration,
+        success: true,
+        args: args
+      }, 'jules-manager', 'normal');
+
       return result;
     } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
       console.error(`[Jules] Error calling ${agentName}.${toolName}:`, error);
+      
+      // Complete A2A signal logging with failure
+      await signalContext.complete('failure', undefined, errorMessage);
+      
+      // Record error metrics
+      await a2aSignalManager.recordPerformanceMetrics({
+        agentName: agentName.toLowerCase(),
+        metricType: 'tool_execution_errors',
+        value: 1,
+        timeWindow: '5m'
+      });
+      
+      // Log failure
+      await a2aSignalManager.broadcastEnhanced('TOOL_FAILED', {
+        agent: agentName.toLowerCase(),
+        tool: toolName,
+        duration,
+        success: false,
+        error: errorMessage,
+        args: args
+      }, 'jules-manager', 'high');
+
       throw error;
     }
   }
@@ -183,37 +281,151 @@ export class JulesManager {
   async executeTask(taskDescription: string, toolName?: string, args?: any): Promise<any> {
     const task = taskDescription.toLowerCase();
 
-    // Route to KATE for coding tasks
-    if (task.includes('code') || task.includes('debug') || task.includes('function') || 
+    // Log task routing attempt
+    await a2aSignalManager.broadcastEnhanced('TASK_ROUTING_ATTEMPT', {
+      task: taskDescription,
+      toolName,
+      args,
+      timestamp: new Date()
+    }, 'jules-manager', 'normal');
+
+    // Route to KATE-CODER for coding tasks (TOON Optimized)
+    if (task.includes('code') || task.includes('debug') || task.includes('function') ||
         task.includes('class') || task.includes('bug') || task.includes('optimize code')) {
-      console.log('[Jules] Routing to KATE (Code Specialist)...');
-      return this.callOpenRouterAgent('kate', taskDescription);
+      
+      // TOON: Compact signal
+      await a2aSignalManager.broadcastEnhanced('T_RTD', { t: 'kate-coder', r: 'code' }, 'jules-manager');
+      
+      return this.callOpenRouterAgent('kate-coder', taskDescription);
     }
 
-    // Route to Grok for fast insights and automation
+    // Route to Grok for fast insights and automation (TOON Optimized)
     if (task.includes('analyze') || task.includes('insight') || task.includes('automate') ||
         task.includes('optimize listing') || task.includes('marketplace')) {
-      console.log('[Jules] Routing to Grok (Fast Thinker)...');
+      
+      await a2aSignalManager.broadcastEnhanced('T_RTD', { t: 'grok', r: 'auto' }, 'jules-manager');
+      
       return this.callOpenRouterAgent('grok', taskDescription);
     }
 
     // Route to Stripe for payment-related tasks
-    if (task.includes('payment') || task.includes('stripe') || task.includes('charge') || task.includes('refund')) {
+    if (task.includes('payment') || task.includes('stripe') || task.includes('charge') || task.includes('refund') || task.includes('invoice')) {
       console.log('[Jules] Routing to Stripe Agent...');
+      
+      await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
+        task: taskDescription,
+        routedTo: 'stripe',
+        reason: 'payment_operations',
+        timestamp: new Date()
+      }, 'jules-manager', 'normal');
+
+      // If no specific tool is provided, use JULES to determine the best tool and arguments
+      if (!toolName) {
+        console.log('[Jules] Using JULES to plan Stripe task...');
+        const planPrompt = `You are JULES, the orchestrator. The user wants to perform a Stripe operation: "${taskDescription}".
+        Available Stripe tools:
+        - create_customer(name, email)
+        - list_customers(limit, email)
+        - create_product(name, description)
+        - list_products(limit)
+        - create_price(product, unit_amount, currency)
+        - list_prices(product, limit)
+        - create_payment_link(price, quantity, redirect_url)
+        - create_invoice(customer, days_until_due)
+        - list_invoices(customer, limit)
+        - create_invoice_item(customer, price, invoice)
+        - finalize_invoice(invoice)
+        - retrieve_balance()
+        - create_refund(payment_intent, amount, reason)
+        - list_payment_intents(customer, limit)
+        - list_subscriptions(customer, price, status, limit)
+        - cancel_subscription(subscription)
+        - update_subscription(subscription, items, proration_behavior)
+        - search_stripe_documentation(question, language)
+
+        Respond ONLY with a JSON object in this format:
+        {
+          "toolName": "name_of_tool",
+          "args": { "arg1": "value1", ... }
+        }`;
+
+        const planResult = await this.callOpenRouterAgent('jules', planPrompt);
+        if (planResult.success) {
+          try {
+            const plan = JSON.parse(planResult.content.replace(/```json|```/g, '').trim());
+            toolName = plan.toolName;
+            args = plan.args;
+            console.log(`[Jules] JULES planned tool: ${toolName} with args:`, args);
+          } catch (e) {
+            console.error('[Jules] Failed to parse JULES plan:', e);
+          }
+        }
+      }
+      
+      await a2aSignalManager.logAgentInteraction({
+        fromAgent: 'jules-manager',
+        toAgent: 'stripe',
+        interactionType: 'task_execution',
+        taskDescription,
+        outcome: 'success',
+        context: { toolName: toolName || 'list_products', args, reason: 'payment_operations' }
+      });
+      
       return this.callTool('stripe', toolName || 'list_products', args || {});
     }
 
     // Route to Redis for cache/session tasks
     if (task.includes('cache') || task.includes('redis') || task.includes('session') || task.includes('store')) {
       console.log('[Jules] Routing to Redis Agent...');
+      
+      await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
+        task: taskDescription,
+        routedTo: 'redis',
+        reason: 'cache_management',
+        timestamp: new Date()
+      }, 'jules-manager', 'normal');
+      
+      await a2aSignalManager.logAgentInteraction({
+        fromAgent: 'jules-manager',
+        toAgent: 'redis',
+        interactionType: 'task_execution',
+        taskDescription,
+        outcome: 'success',
+        context: { toolName: toolName || 'get', args, reason: 'cache_management' }
+      });
+      
       return this.callTool('redis', toolName || 'get', args || {});
     }
 
     // Route to GitHub for repo tasks
     if (task.includes('github') || task.includes('repo') || task.includes('repository') || task.includes('commit')) {
       console.log('[Jules] Routing to GitHub Agent...');
+      
+      await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
+        task: taskDescription,
+        routedTo: 'github',
+        reason: 'repository_operations',
+        timestamp: new Date()
+      }, 'jules-manager', 'normal');
+      
+      await a2aSignalManager.logAgentInteraction({
+        fromAgent: 'jules-manager',
+        toAgent: 'github',
+        interactionType: 'task_execution',
+        taskDescription,
+        outcome: 'success',
+        context: { toolName: toolName || 'search_repositories', args, reason: 'repository_operations' }
+      });
+      
       return this.callTool('github', toolName || 'search_repositories', args || {});
     }
+
+    // Log routing failure
+    await a2aSignalManager.broadcastEnhanced('TASK_ROUTING_FAILED', {
+      task: taskDescription,
+      reason: 'no_suitable_agent',
+      timestamp: new Date()
+    }, 'jules-manager', 'high');
 
     throw new Error('No suitable subagent found for this task');
   }

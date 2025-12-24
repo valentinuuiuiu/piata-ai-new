@@ -1,0 +1,275 @@
+{
+  "name": "Piata AI Marketing Automation Hub",
+  "workflows": [
+    {
+      "id": "piata_blog_generator",
+      "name": "Daily Blog Content Generator",
+      "description": "Fetches trending listings from Supabase, generates SEO-optimized Romanian blog posts",
+      "trigger": "schedule",
+      "schedule": "0 9 * * *",
+      "nodes": [
+        {
+          "type": "Schedule",
+          "cron": "0 9 * * *"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/anunturi",
+          "method": "GET",
+          "headers": {
+            "apikey": "${SUPABASE_SERVICE_KEY}"
+          },
+          "query": "select=id,title,price,category_id,views&order=views.desc&limit=10"
+        },
+        {
+          "type": "Function",
+          "code": "// Analyze trending topics\nconst items = $input.all();\nconst categories = {};\nitems.forEach(item => {\n  const cat = item.json.category_id;\n  categories[cat] = (categories[cat] || 0) + 1;\n});\nreturn [{ json: { trending: categories, listings: items } }];"
+        },
+        {
+          "type": "AI Agent",
+          "model": "gpt-4o-mini",
+          "prompt": "Generate a 600-word Romanian blog post about marketplace trends. Data: {{$json.trending}}. Include SEO keywords, engaging title, and actionable tips for buyers/sellers."
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/blog_posts",
+          "method": "POST",
+          "body": {
+            "title": "{{$json.title}}",
+            "content": "{{$json.content}}",
+            "published": true,
+            "author": "AI Marketplace Bot"
+          }
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "id": "piata_social_media_generator",
+      "name": "Social Media Content Generator",
+      "description": "Creates Facebook, Instagram, and Twitter posts from top listings",
+      "trigger": "schedule",
+      "schedule": "0 */6 * * *",
+      "nodes": [
+        {
+          "type": "Schedule",
+          "cron": "0 */6 * * *"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/anunturi",
+          "method": "GET",
+          "query": "select=id,title,price,location,images,views&eq.status=active&order=views.desc&limit=5"
+        },
+        {
+          "type": "Split In Batches",
+          "batchSize": 1
+        },
+        {
+          "type": "Function",
+          "code": "// Generate platform-specific content\nconst listing = $json;\nreturn [\n  {\n    platform: 'facebook',\n    content: `🔥 OFERTĂ POPULARĂ!\\n\\n${listing.title}\\n💰 ${listing.price} RON\\n📍 ${listing.location}\\n\\n🔗 Vezi detalii: piata-ai.vercel.app/anunt/${listing.id}`,\n    listing_id: listing.id\n  },\n  {\n    platform: 'instagram',\n    content: `🎯 ${listing.title}\\n\\n💰 ${listing.price} RON | 📍 ${listing.location}\\n\\n#piataai #marketplace #romania`,\n    listing_id: listing.id\n  },\n  {\n    platform: 'twitter',\n    content: `🔥 ${listing.title}\\n\\n💰 ${listing.price} RON\\n📍 ${listing.location}\\n\\n👀 ${listing.views} views!\\n\\n#PiataAI`,\n    listing_id: listing.id\n  }\n];"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/social_media_posts",
+          "method": "POST",
+          "body": "={{$json}}"
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "id": "piata_shopping_agents",
+      "name": "Shopping Agents Runner",
+      "description": "Matches user shopping agents with new listings and sends notifications",
+      "trigger": "schedule",
+      "schedule": "0 * * * *",
+      "nodes": [
+        {
+          "type": "Schedule",
+          "cron": "0 * * * *"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/shopping_agents",
+          "method": "GET",
+          "query": "select=*&eq.is_active=true"
+        },
+        {
+          "type": "Split In Batches",
+          "batchSize": 1
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/anunturi",
+          "method": "GET",
+          "query": "select=*&eq.status=active&gte.created_at={{$now.minus({hours: 1}).toISO()}}"
+        },
+        {
+          "type": "Function",
+          "code": "// Match listings to agent criteria\nconst agent = $('Split In Batches').item.json;\nconst listings = $input.all();\nconst matches = listings.filter(l => {\n  const filters = agent.filters;\n  if (filters.category && l.json.category_id !== filters.category) return false;\n  if (filters.minPrice && l.json.price < filters.minPrice) return false;\n  if (filters.maxPrice && l.json.price > filters.maxPrice) return false;\n  if (filters.location && !l.json.location.includes(filters.location)) return false;\n  return true;\n});\nreturn matches.length > 0 ? [{ json: { agent, matches } }] : [];"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/agent_matches",
+          "method": "POST",
+          "body": {
+            "agent_id": "={{$json.agent.id}}",
+            "listing_id": "={{$json.matches[0].json.id}}",
+            "match_score": 0.95
+          }
+        },
+        {
+          "type": "Send Email",
+          "to": "={{$json.agent.user_email}}",
+          "subject": "🎯 Piata AI: {{$json.matches.length}} oferte noi găsite!",
+          "html": "<h2>Agentul tău de shopping a găsit oferte!</h2><p>{{$json.matches[0].json.title}}</p>"
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "id": "piata_email_reengagement",
+      "name": "Email Re-engagement Campaign",
+      "description": "Sends personalized emails to inactive users with relevant offers",
+      "trigger": "schedule",
+      "schedule": "0 10 * * *",
+      "nodes": [
+        {
+          "type": "Schedule",
+          "cron": "0 10 * * *"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/user_profiles",
+          "method": "GET",
+          "query": "select=user_id,email,last_login,preferences&lt.last_login={{$now.minus({days: 14}).toISO()}}"
+        },
+        {
+          "type": "Split In Batches",
+          "batchSize": 50
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/anunturi",
+          "method": "GET",
+          "query": "select=*&eq.status=active&order=created_at.desc&limit=3"
+        },
+        {
+          "type": "Function",
+          "code": "// Personalize email content\nconst user = $('Split In Batches').item.json;\nconst listings = $input.all();\nreturn [{\n  email: user.email,\n  name: user.name || 'Prieten',\n  listings: listings.slice(0, 3),\n  daysInactive: Math.floor((Date.now() - new Date(user.last_login).getTime()) / 86400000)\n}];"
+        },
+        {
+          "type": "Send Email",
+          "to": "={{$json.email}}",
+          "subject": "Ne-ai lipsit pe Piata AI! 🎁",
+          "html": "<h2>Salut {{$json.name}}!</h2><p>N-am mai vorbit de {{$json.daysInactive}} zile. Iată oferte noi pentru tine...</p>"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/email_campaigns",
+          "method": "POST",
+          "body": {
+            "user_id": "={{$('Split In Batches').item.json.user_id}}",
+            "campaign_type": "re-engagement",
+            "status": "sent"
+          }
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "id": "piata_listing_optimizer",
+      "name": "AI Listing Optimizer",
+      "description": "Analyzes old listings and suggests optimizations for better visibility",
+      "trigger": "schedule",
+      "schedule": "0 3 * * 1",
+      "nodes": [
+        {
+          "type": "Schedule",
+          "cron": "0 3 * * 1"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/anunturi",
+          "method": "GET",
+          "query": "select=*&eq.status=active&lt.views=10&lt.created_at={{$now.minus({days: 7}).toISO()}}"
+        },
+        {
+          "type": "Split In Batches",
+          "batchSize": 10
+        },
+        {
+          "type": "AI Agent",
+          "model": "gpt-4o-mini",
+          "prompt": "Analyze this Romanian marketplace listing and suggest improvements for title, description, and tags to increase visibility: {{$json}}"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/listing_suggestions",
+          "method": "POST",
+          "body": {
+            "listing_id": "={{$('Split In Batches').item.json.id}}",
+            "suggestions": "={{$json.suggestions}}",
+            "created_at": "={{$now.toISO()}}"
+          }
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "id": "piata_webhook_handler",
+      "name": "New Listing Webhook Handler",
+      "description": "Processes new listings: validates, generates AI description, sends to social media",
+      "trigger": "webhook",
+      "webhook_path": "/webhook/new-listing",
+      "nodes": [
+        {
+          "type": "Webhook",
+          "path": "/webhook/new-listing",
+          "method": "POST"
+        },
+        {
+          "type": "AI Agent",
+          "model": "gpt-4o-mini",
+          "prompt": "Improve this Romanian product description to be more appealing and SEO-friendly: {{$json.description}}"
+        },
+        {
+          "type": "HTTP Request",
+          "url": "https://ndzoavaveppnclkujjhh.supabase.co/rest/v1/anunturi",
+          "method": "PATCH",
+          "body": {
+            "id": "={{$('Webhook').json.listing_id}}",
+            "ai_enhanced_description": "={{$json.enhanced_description}}"
+          }
+        },
+        {
+          "type": "HTTP Request",
+          "url": "http://localhost:3001/api/cron/social-media-generator",
+          "method": "POST",
+          "body": {
+            "listing_id": "={{$('Webhook').json.listing_id}}"
+          }
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "implementation_notes": {
+    "n8n_setup": [
+      "1. Import each workflow into N8N instance at localhost:5678",
+      "2. Configure credentials: Supabase API key, OpenRouter API key, Email service",
+      "3. Activate schedules for automated execution",
+      "4. Set up webhooks with proper authentication"
+    ],
+    "supabase_config": [
+      "SUPABASE_URL: https://ndzoavaveppnclkujjhh.supabase.co",
+      "SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    ],
+    "monitoring": [
+      "Use automation_logs table to track execution",
+      "Check email_campaigns for delivery status",
+      "Monitor social_media_posts for publishing status"
+    ]
+  }
+}

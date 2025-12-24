@@ -688,8 +688,9 @@ export interface SEOReport {
 }
 
 // Export all SEO automation components
+export type { RomanianKeyword };
+
 export {
-  RomanianKeyword,
   AIContentGenerator,
   BulkContentGenerator,
   TechnicalSEOOptimizer,

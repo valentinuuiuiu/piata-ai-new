@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  taita:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taita-agent
+    environment:
+      - AGENT_ROLE=architect
+    networks:
+      - antigravity
+
+  fanny-mae:
+    build:
+      context: .
+      dockerfile: Dockerfile.fanny-mae
+    container_name: fanny-mae-agent
+    environment:
+      - AGENT_ROLE=treasurer
+    networks:
+      - antigravity
+
+  redis:
+    image: redis:alpine
+    container_name: piata-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - antigravity
+    restart: always
+
+  n8n:
+    image: n8nio/n8n
+    container_name: piata-n8n
+    user: root
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_USER_FOLDER=/root/.n8n
+    volumes:
+      - n8n_data:/root/.n8n
+    networks:
+      - antigravity
+    restart: always
+
+networks:
+  antigravity:
+    driver: bridge
+
+volumes:
+  n8n_data:

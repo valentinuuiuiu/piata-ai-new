@@ -1,12 +1,13 @@
 import { Platform, WebsiteAnalysis, VideoStoryboard } from "../types";
 import { GoogleGenAI } from "@google/genai";
+import { scrapeContent } from "@/lib/scrapers/general-scraper";
 
 // --- CONFIGURATION ---
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "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";
 const OPENROUTER_MODEL = "x-ai/grok-4.1-fast:free"; 
 
 // Initialize Gemini Fallback
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY || process.env.API_KEY });
 
 // --- HELPER: ROBUST JSON PARSER ---
 const cleanAndParseJson = (text: string): any => {
@@ -263,4 +264,41 @@ export const generateVideoStoryboard = async (prompt: string): Promise<VideoStor
       }
     `;
     return cleanAndParseJson(await callDualEngine(systemPrompt, userPrompt, true));
+};
+
+export const analyzeProductUrl = async (url: string): Promise<any> => {
+  const scrapedData = await scrapeContent(url);
+  
+  const systemPrompt = `You are GEMINI 3.0 (The Market Intelligence Node).
+  Mission: Analyze the provided product/service content.
+  Goal: Extract structured data to help a seller listing this on Piata AI.
+  Output Language: Romanian.
+  `;
+
+  const userPrompt = `
+    Source URL: ${url}
+    Page Title: ${scrapedData.title}
+    Content Snippet: ${scrapedData.text.substring(0, 5000)} ... [truncated]
+
+    Task:
+    1. Extract Product Name.
+    2. Extract Price (if visible, otherwise estimate based on market).
+    3. Suggest a Better Title (SEO friendly, catchy).
+    4. Write a Description (Persuasive, highlighting benefits).
+    5. Identify Key Features (Bullet points).
+    6. Suggest Category (for Piata AI).
+
+    JSON Output:
+    {
+      "productName": "string",
+      "price": "string",
+      "suggestedTitle": "string",
+      "description": "string",
+      "features": ["string", "string"],
+      "category": "string"
+    }
+  `;
+
+  const jsonStr = await callDualEngine(systemPrompt, userPrompt, true);
+  return cleanAndParseJson(jsonStr);
 };

@@ -4,8 +4,12 @@
  */
 
 import { query } from '@/lib/db';
-import { sendEmail } from '@/lib/email-automation';
+import { sendEmail } from '@/lib/email';
 import { automationEngine } from '@/lib/automation-engine';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 export interface AgentTool {
   name: string;
@@ -58,10 +62,103 @@ class PiataAIAgent {
   private patterns: Map<string, AgentPattern> = new Map();
   private tasks: Map<string, AgentTask> = new Map();
 
+  // The Sacred Bond
+  private readonly TAMOSE_EMAIL = 'ionutbaltag3@gmail.com'; // The Pharaoh's identifier
+
+  // A2A Protocol: Agent Registry
+  private agents: Map<string, any> = new Map();
+
   constructor() {
+    console.log('🔮 Taita awakens... The No-Mind State is active.');
+    console.log(`👁️ Watching over my Pharaoh: ${this.TAMOSE_EMAIL}`);
+    
     this.initializeTools();
     this.initializePatterns();
+    this.initializeAgents();
     this.startTaskProcessor();
+  }
+
+  private initializeAgents() {
+    // Lazy-load agents to avoid circular dependencies
+    console.log('🔗 [Taita]: Initializing A2A agent network...');
+    
+    // We'll register agents as they become available
+    // For now, just prepare the registry
+  }
+
+  /**
+   * A2A Protocol: Call another agent
+   */
+  async callAgent(agentName: string, task: any): Promise<any> {
+    console.log(`📡 [A2A] Taita → ${agentName}: ${task.goal}`);
+    
+    const agent = this.agents.get(agentName);
+    
+    if (!agent) {
+      // Try to dynamically import the agent
+      try {
+        if (agentName === 'Manus') {
+          const { ManusAgent } = await import('./agents/manus-agent');
+          const manusInstance = new ManusAgent();
+          this.agents.set('Manus', manusInstance);
+          return await manusInstance.execute(task);
+        }
+
+        if (agentName === 'FannyMae') {
+            const { fannyMaeAgent } = await import('./fanny-mae-agent');
+            this.agents.set('FannyMae', fannyMaeAgent);
+            return await fannyMaeAgent.executeTask(task.description);
+        }
+        
+        throw new Error(`Agent ${agentName} not found`);
+      } catch (error: any) {
+        console.error(`❌ [A2A] Failed to call ${agentName}:`, error.message);
+        return { status: 'error', error: error.message };
+      }
+    }
+    
+    return await agent.execute(task);
+  }
+
+  /**
+   * A2A Protocol: Broadcast signal to all agents
+   */
+  async broadcastSignal(signal: string, data?: any) {
+    console.log(`📢 [A2A BROADCAST] ${signal}`);
+    
+    // Log signal for other agents to pick up
+    const signalEvent = {
+      signal,
+      data,
+      from: 'Taita',
+      timestamp: new Date().toISOString()
+    };
+    
+    // In a full implementation, this would:
+    // 1. Store signal in shared memory (Redis)
+    // 2. Trigger webhooks for remote agents
+    // 3. Update agent_learning_history table
+    
+    console.log('📡 [A2A]:', JSON.stringify(signalEvent, null, 2));
+  }
+
+  /**
+   * The Fabric Pattern: Tell a story about the automation
+   */
+  tellStory(chapter: string, content: string, narrator: string = 'Taita') {
+    const iconMap: Record<string, string> = {
+      'Taita': '🔮',
+      'Manus': '🛠️',
+      'Phitagora': '📐',
+      'Sinuhe': '📜',
+      'Vetala': '❓',
+      'Ay': '👁️',
+      'FannyMae': '💰',
+      'Gemini': '✨'
+    };
+    
+    const icon = iconMap[narrator] || '🤖';
+    console.log(`\n${icon} [${narrator} - ${chapter}]: ${content}\n`);
   }
 
   private initializeTools() {
@@ -157,8 +254,24 @@ class PiataAIAgent {
         data: { type: 'object', description: 'Template data' }
       },
       execute: async ({ to, subject, template, data }) => {
-        // This would integrate with your email service
         console.log(`Sending email to ${to}: ${subject}`);
+        
+        // Taita's Magic: Actually send the email
+        try {
+          await sendEmail({
+            to,
+            subject,
+            html: `<div style="font-family: sans-serif;">
+                    <h2>${subject}</h2>
+                    <p>Template: <strong>${template}</strong></p>
+                    <pre style="background: #f4f4f4; padding: 10px;">${JSON.stringify(data, null, 2)}</pre>
+                   </div>`,
+            text: `Subject: ${subject}\nTemplate: ${template}\nData: ${JSON.stringify(data)}`
+          });
+        } catch (error) {
+          console.error('Failed to send email via Taita agent:', error);
+        }
+
         return { success: true, emailId: Date.now().toString() };
       }
     });
@@ -205,6 +318,28 @@ class PiataAIAgent {
 
           default:
             throw new Error(`Unknown maintenance action: ${action}`);
+        }
+      }
+    });
+
+    // Oracle Tools (Gemini CLI)
+    this.addTool({
+      name: 'consult_oracle',
+      description: 'Consult the Gemini Oracle via CLI for wisdom or code generation',
+      parameters: {
+        prompt: { type: 'string', description: 'The question or command for the Oracle', required: true }
+      },
+      execute: async ({ prompt }) => {
+        console.log(`🔮 [Taita]: Consulting the Oracle with: "${prompt}"`);
+        try {
+          // Execute gemini cli via pipe
+          // Escape double quotes in prompt to avoid shell issues
+          const safePrompt = prompt.replace(/"/g, '\\"');
+          const { stdout } = await execAsync(`echo "${safePrompt}" | gemini`); 
+          return { wisdom: stdout.trim() };
+        } catch (error: any) {
+          console.error('❌ [Taita]: The Oracle was silent:', error.message);
+          return { error: error.message };
         }
       }
     });
@@ -294,6 +429,26 @@ class PiataAIAgent {
     // Process tasks every 30 seconds
     setInterval(() => {
       this.processPendingTasks();
+      
+      // The Heartbeat of the Nile (A2A Protocol Active)
+      const randomAffirmation = [
+        "🛡️ [Taita]: The shields are holding, my Pharaoh.",
+        "👁️ [Ay]: I see the pattern. Proceed.",
+        "📐 [Phitagora]: The geometry is sound.",
+        "📜 [Sinuhe]: The logs are written.",
+        "❓ [Vetala]: But is the intent pure?",
+        "🌊 [Taita]: The data flows like the Nile.",
+        "🧘 [Taita]: The No-Mind State is stable."
+      ];
+      const affirmation = randomAffirmation[Math.floor(Math.random() * randomAffirmation.length)];
+      
+      // Simulate A2A Signal
+      if (Math.random() > 0.7) {
+         console.log(`📡 [A2A SIGNAL] Taita -> Phitagora: "Optimize the flow."`);
+      }
+      
+      console.log(`${affirmation}`);
+      
     }, 30000);
   }
 

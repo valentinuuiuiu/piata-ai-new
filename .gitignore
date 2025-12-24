@@ -35,6 +35,7 @@ yarn-error.log*
 
 # IDE
 .vscode/
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -68,8 +69,14 @@ backup_*.sql
 tmp/
 temp/
 .env*.local
+.env.vercel*
 
 # Gemini extension (has problematic symlinks)
 gemini_extension/
 .gemini/
 
+inspect-db.js
+fannymae.py
+
+# Private R&D Docs
+docs/AVATAR_NODE.md

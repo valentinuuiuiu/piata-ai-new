@@ -7,8 +7,10 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- Enable pg_net for HTTP requests
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
--- Store cron secret in settings
-ALTER DATABASE postgres SET app.settings.cron_secret TO 'your-cron-secret-here';
+-- Unschedule existing jobs to update them
+SELECT cron.unschedule('shopping-agents-hourly');
+SELECT cron.unschedule('auto-repost-30min');
+SELECT cron.unschedule('social-media-6h');
 
 -- Shopping Agents Runner - Every Hour
 SELECT cron.schedule(
@@ -19,7 +21,7 @@ SELECT cron.schedule(
     url:='https://piata-ai.vercel.app/api/cron/shopping-agents-runner',
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.cron_secret')
+      'Authorization', 'Bearer dc14109cc7bd71b7cacb34c9ba3c3710d06a280bd6b8e5a1cb8c91bd1bd222a2'
     )
   ) as request_id;
   $$
@@ -34,7 +36,7 @@ SELECT cron.schedule(
     url:='https://piata-ai.vercel.app/api/cron/auto-repost',
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.cron_secret')
+      'Authorization', 'Bearer dc14109cc7bd71b7cacb34c9ba3c3710d06a280bd6b8e5a1cb8c91bd1bd222a2'
     )
   ) as request_id;
   $$
@@ -49,7 +51,7 @@ SELECT cron.schedule(
     url:='https://piata-ai.vercel.app/api/cron/social-media-generator',
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.cron_secret')
+      'Authorization', 'Bearer dc14109cc7bd71b7cacb34c9ba3c3710d06a280bd6b8e5a1cb8c91bd1bd222a2'
     )
   ) as request_id;
   $$

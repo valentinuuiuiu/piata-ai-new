@@ -39,6 +39,7 @@
   ],
   "exclude": [
     "node_modules",
-    "gemini_extension"
+    "gemini_extension",
+    "scripts"
   ]
 }

@@ -8,7 +8,7 @@ import { RomanianSocialMediaAutomation } from '../social-media-automation';
 interface RomanianContentTemplate {
   id: string;
   category: 'competitive' | 'educational' | 'promotional' | 'community' | 'seasonal';
-  platform: 'facebook' | 'instagram' | 'tiktok' | 'linkedin';
+  platform: 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'all';
   language: 'romanian' | 'english';
   template: string;
   variables: string[];

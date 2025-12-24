@@ -451,7 +451,7 @@ export class LocalSEOManager {
       businessDensity: 68,
       competitionLevel: 'medium',
       mobileUsage: 83,
-      ecommerceAdruption: 61
+      ecommerceAdoption: 61
     },
     {
       name: 'Constanța',
@@ -854,7 +854,7 @@ export class LocalSEOManager {
   }
 
   private static getLocalDirectories(city: RomanianCity): LocalDirectory[] {
-    const directories = [
+    const directories: LocalDirectory[] = [
       {
         name: `Business Directory ${city.name}`,
         url: `https://business-${city.name.toLowerCase()}.ro`,
@@ -1096,14 +1096,10 @@ export class LocalSEOManager {
   }
 
   private static getLocalEventHashtags(city: RomanianCity): string[] {
-    return [`#${city.name}Events`, '#LocalCommunity', '#Business${city.name}`];
+    return [`#${city.name}Events`, '#LocalCommunity', `#Business${city.name}`];
   }
 
   private static getLocalNewsPartnerships(city: RomanianCity): LocalNewsPartnership[] {
-    return [];
-  }
-
-  private static getLocalInfluencers(city: RomanianCity): LocalInfluencer[] {
     return [];
   }
 

@@ -290,8 +290,14 @@ export class RomanianHashtagOptimizer {
   /**
    * Add hashtag performance data
    */
-  private addHashtagPerformance(hashtag: string, performance: HashtagPerformance): void {
-    this.hashtagDatabase.set(hashtag, performance);
+  private addHashtagPerformance(
+    hashtag: string,
+    performance: Omit<HashtagPerformance, 'hashtag'>
+  ): void {
+    this.hashtagDatabase.set(hashtag, {
+      hashtag,
+      ...performance,
+    });
   }
 
   /**

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { kael } from '../../../lib/kael/orchestrator';
+import { getJulesManager } from '../../../lib/jules-manager';
 
 // PAI PUBLIC ENDPOINT - Event Horizon technique
 // PAI thinks it's calling the full KAI backend, but gets simplified public access
@@ -228,10 +230,39 @@ function updateUserProfile(userMessage: string) {
   return currentProfile;
 }
 
+async function readStream(reader: ReadableStreamDefaultReader<Uint8Array>, onChunk: (text: string) => void) {
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.trim() === '') continue;
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          const chunk = parsed.choices[0]?.delta?.content;
+          if (chunk) onChunk(chunk);
+        } catch (e) {
+          // Ignore parse errors from partial chunks
+        }
+      }
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, model } = body;
+    const { message, model, attachments, stream = false } = body;
 
     // Load and update user profile for learning
     const userProfile = updateUserProfile(message);
@@ -239,7 +270,39 @@ export async function POST(req: NextRequest) {
     // Get conversation context
     const conversationContext = getConversationContext();
 
+    // Jules Manager Integration for Automations
+    const jules = getJulesManager();
+    const isAutomationRequest = /automate|status|payment|stripe|github|redis|cache/i.test(message);
 
+    if (isAutomationRequest) {
+      console.log(`[PAI] Automation request detected, routing to Jules Manager: ${message}`);
+      try {
+        const result = await jules.executeTask(message);
+        
+        // Handle Stripe results specifically for better UX
+        let reply = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+        
+        if (typeof result === 'object' && result !== null) {
+          if ((result as any).url) {
+            reply = `✅ Am generat link-ul de plată: ${(result as any).url}\n\nPoți finaliza tranzacția accesând link-ul de mai sus.`;
+          } else if ((result as any).id && (result as any).object === 'checkout.session') {
+            reply = `✅ Sesiune de checkout creată: ${(result as any).id}\nLink: ${(result as any).url}`;
+          } else if ((result as any).hosted_invoice_url) {
+            reply = `✅ Factură generată: ${(result as any).hosted_invoice_url}`;
+          }
+        }
+
+        return NextResponse.json({
+          reply,
+          isComplex: true,
+          model: 'jules-orchestrator',
+          learned: true
+        });
+      } catch (error) {
+        console.error('[PAI] Jules execution error:', error);
+        // Fall back to normal LLM if Jules fails
+      }
+    }
 
     // Input validation
     if (!message || typeof message !== 'string' || message.length > 5000) {
@@ -316,10 +379,30 @@ REGULI ABSOLUTE:
     // Add conversation context
     systemPrompt += conversationContext;
 
-    // Simple routing - Frontend Smart Router already selected the best model
-    const selectedModel = model || 'x-ai/grok-4-fast';
+    // Use Enhanced KAEL Orchestrator for intelligent routing
+    const context = kael.analyzeTask(message);
+    const route = kael.route(context);
+    
+    // Force multimodal model if attachments are present
+    let selectedModel = model || route.model;
+    if (attachments && attachments.length > 0) {
+      selectedModel = 'google/gemini-2.0-flash-exp:free'; // Best multimodal free model
+    }
 
-    console.log(`PAI using model: ${selectedModel}`);
+    console.log(`PAI using model: ${selectedModel} (Reasoning: ${route.reasoning}, Multimodal: ${!!attachments?.length}, Streaming: ${stream})`);
+
+    // Prepare content for multimodal models
+    const content: any[] = [{ type: 'text', text: message || 'Analizează fișierele atașate.' }];
+
+    if (attachments && attachments.length > 0) {
+      attachments.forEach((url: string) => {
+        if (url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+          content.push({ type: 'image_url', image_url: { url } });
+        } else {
+          content.push({ type: 'text', text: `[Document atașat: ${url}]` });
+        }
+      });
+    }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -333,10 +416,11 @@ REGULI ABSOLUTE:
         model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          { role: 'user', content: content }
         ],
-        max_tokens: 500,
+        max_tokens: 1000,
         temperature: 0.7,
+        stream: stream
       }),
     });
 
@@ -391,10 +475,43 @@ REGULI ABSOLUTE:
       throw new Error(`OpenRouter Error ${response.status}: ${errorText}`);
     }
 
+    if (stream) {
+      const responseStream = new TransformStream();
+      const writer = responseStream.writable.getWriter();
+      const encoder = new TextEncoder();
+
+      // Handle streaming in background
+      (async () => {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          writer.write(encoder.encode('data: {"error": "No reader available"}\n\n'));
+          writer.close();
+          return;
+        }
+
+        let fullReply = '';
+        await readStream(reader, (chunk) => {
+          fullReply += chunk;
+          writer.write(encoder.encode(`data: ${JSON.stringify({ chunk })}\n\n`));
+        });
+
+        // Add to memory when done
+        addToMemory(message, fullReply);
+        writer.write(encoder.encode('data: [DONE]\n\n'));
+        writer.close();
+      })();
+
+      return new Response(responseStream.readable, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
     const data = await response.json();
     let reply = data.choices[0]?.message?.content || '❌ Nu am putut genera un răspuns.';
-
-
 
     // Save conversation to memory for learning
     addToMemory(message, reply);

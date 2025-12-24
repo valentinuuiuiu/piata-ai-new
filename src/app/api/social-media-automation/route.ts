@@ -11,12 +11,18 @@ import { EngagementMonitor } from '@/lib/automation/engagement-monitor';
 import { CompetitorMonitor } from '@/lib/monitoring/competitor-monitor';
 import { RomanianHashtagOptimizer } from '@/lib/optimization/hashtag-optimizer';
 
-const automation = new RomanianSocialMediaAutomation();
-const workflow = new AutomatedPostingWorkflow();
-const scheduler = new CrossPlatformScheduler();
-const engagementMonitor = new EngagementMonitor();
-const competitorMonitor = new CompetitorMonitor(automation);
-const hashtagOptimizer = new RomanianHashtagOptimizer(automation);
+function getAutomation() {
+  // instantiate lazily to avoid build-time env evaluation
+  const automation = new RomanianSocialMediaAutomation();
+  return {
+    automation,
+    workflow: new AutomatedPostingWorkflow(),
+    scheduler: new CrossPlatformScheduler(),
+    engagementMonitor: new EngagementMonitor(),
+    competitorMonitor: new CompetitorMonitor(automation),
+    hashtagOptimizer: new RomanianHashtagOptimizer(automation)
+  };
+}
 
 /**
  * POST /api/social-media-automation
@@ -25,24 +31,25 @@ const hashtagOptimizer = new RomanianHashtagOptimizer(automation);
 export async function POST(request: NextRequest) {
   try {
     const { action, platform, campaignType, customContent } = await request.json();
+    const ctx = getAutomation();
 
     switch (action) {
       case 'initialize':
-        await workflow.initialize();
+        await ctx.workflow.initialize();
         return NextResponse.json({ 
           success: true, 
           message: 'Romanian social media automation initialized' 
         });
 
       case 'start':
-        await workflow.start();
+        await ctx.workflow.start();
         return NextResponse.json({ 
           success: true, 
           message: 'Automation workflow started' 
         });
 
       case 'stop':
-        await workflow.stop();
+        await ctx.workflow.stop();
         return NextResponse.json({ 
           success: true, 
           message: 'Automation workflow stopped' 
@@ -56,7 +63,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const result = await workflow.triggerManualPost(platform, campaignType, customContent);
+        const result = await ctx.workflow.triggerManualPost(platform, campaignType, customContent);
         return NextResponse.json({ 
           success: true, 
           data: result 
@@ -64,7 +71,7 @@ export async function POST(request: NextRequest) {
 
       case 'schedule_campaign':
         const { startDate, duration } = await request.json();
-        const scheduledPosts = await scheduler.scheduleCampaign(campaignType, new Date(startDate), duration);
+        const scheduledPosts = await ctx.scheduler.scheduleCampaign(campaignType, new Date(startDate), duration);
         return NextResponse.json({ 
           success: true, 
           data: scheduledPosts 
@@ -93,41 +100,48 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
+    const ctx = getAutomation();
 
     switch (action) {
       case 'status':
-        const status = workflow.getStatus();
-        return NextResponse.json({ success: true, data: status });
+        const status = ctx.workflow.getStatus();
+        return NextResponse.json({
+          success: true,
+          data: {
+            ...status,
+            system_status: status
+          }
+        });
 
       case 'analytics':
-        const analytics = await workflow.getAnalytics();
+        const analytics = await ctx.workflow.getAnalytics();
         return NextResponse.json({ success: true, data: analytics });
 
       case 'engagement':
         const platform = searchParams.get('platform');
-        const engagementAnalytics = await engagementMonitor.getEngagementAnalytics(platform || undefined);
+        const engagementAnalytics = await ctx.engagementMonitor.getEngagementAnalytics(platform || undefined);
         return NextResponse.json({ success: true, data: engagementAnalytics });
 
       case 'competitors':
-        const competitorData = await competitorMonitor.getCompetitiveIntelligence();
+        const competitorData = await ctx.competitorMonitor.getCompetitiveIntelligence();
         return NextResponse.json({ success: true, data: competitorData });
 
       case 'hashtags':
         const hashtagPlatform = searchParams.get('platform') || 'facebook';
         const campaign = searchParams.get('campaign') || 'general';
-        const hashtagStrategy = await hashtagOptimizer.getOptimizedHashtagStrategy(
+        const hashtagStrategy = await ctx.hashtagOptimizer.getOptimizedHashtagStrategy(
           hashtagPlatform as any,
           campaign as any
         );
         return NextResponse.json({ success: true, data: hashtagStrategy });
 
       case 'calendar':
-        const calendarAnalytics = await scheduler.getCalendarAnalytics();
+        const calendarAnalytics = await ctx.scheduler.getCalendarAnalytics();
         return NextResponse.json({ success: true, data: calendarAnalytics });
 
       default:
         const overview = {
-          system_status: workflow.getStatus(),
+          system_status: ctx.workflow.getStatus(),
           total_campaigns: 3,
           active_platforms: ['facebook', 'instagram', 'tiktok', 'linkedin'],
           romanian_market_data: {
@@ -155,7 +169,8 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const config = await request.json();
-    workflow.updateConfiguration(config);
+    const ctx = getAutomation();
+    ctx.workflow.updateConfiguration(config);
     
     return NextResponse.json({ 
       success: true, 

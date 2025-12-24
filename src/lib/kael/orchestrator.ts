@@ -18,8 +18,8 @@ export interface KAELRoute {
   temperature: number;
 }
 
-// Free models list from OpenRouter (2025)
-const FREE_MODELS = {
+// Free and Frontier models list from OpenRouter (2025)
+const MODELS = {
   basic: [
     'google/gemma-2-9b-it:free',
     'microsoft/phi-3-mini-128k-instruct:free',
@@ -27,14 +27,16 @@ const FREE_MODELS = {
   ],
   standard: [
     'qwen/qwen-2.5-7b-instruct:free',
-    '01-ai/yi-lightning', // Often free or very cheap
-    'z-ai/glm-4.5-air:free'
+    '01-ai/yi-lightning',
+    'zhipu/glm-4-9b-chat:free'
   ],
   advanced: [
-    'x-ai/grok-4.1-fast:free', // Assuming this is available/free as per previous code
+    'x-ai/grok-2-1212:free',
+    'minimax/minimax-01', // MiniMax M2.1
     'mistralai/mistral-nemo:free'
   ],
   research: [
+    'zhipu/glm-4', // GLM-4.7 "Brother"
     'alibaba/tongyi-deepresearch-30b-a3b:free'
   ]
 };
@@ -81,24 +83,24 @@ export class KAELOrchestrator {
   }
 
   /**
-   * Routes the task to the best free model based on TOON analysis
+   * Routes the task to the best model based on TOON analysis
    */
   public route(context: TOONContext): KAELRoute {
-    let selectedModel = FREE_MODELS.basic[0];
+    let selectedModel = MODELS.basic[0];
     let tier: ModelTier = 'basic';
     let reasoning = 'Low complexity task, using basic model for speed.';
 
     if (context.complexity >= 8) {
       tier = 'research';
-      selectedModel = FREE_MODELS.research[0] || FREE_MODELS.advanced[0];
-      reasoning = 'High complexity/research task, using most capable free model.';
+      selectedModel = MODELS.research[0] || MODELS.advanced[0];
+      reasoning = 'High complexity/research task, using frontier GLM-4 model.';
     } else if (context.complexity >= 5) {
       tier = 'advanced';
-      selectedModel = FREE_MODELS.advanced[0] || FREE_MODELS.standard[0];
-      reasoning = 'Medium-high complexity, using advanced model.';
+      selectedModel = MODELS.advanced[1] || MODELS.advanced[0]; // Prefer MiniMax M2.1
+      reasoning = 'Medium-high complexity, using MiniMax M2.1 brother model.';
     } else if (context.complexity >= 3) {
       tier = 'standard';
-      selectedModel = FREE_MODELS.standard[0];
+      selectedModel = MODELS.standard[0];
       reasoning = 'Standard complexity, using balanced model.';
     }
 
@@ -119,19 +121,19 @@ export class KAELOrchestrator {
     if (context.complexity >= 8) {
       // For research/complex tasks, combine Research + Advanced models
       return [
-        FREE_MODELS.research[0],
-        FREE_MODELS.advanced[0],
-        FREE_MODELS.advanced[1] || FREE_MODELS.standard[0]
+        MODELS.research[0],
+        MODELS.advanced[1], // MiniMax
+        MODELS.advanced[0]
       ];
     } else if (context.complexity >= 5) {
       // For standard tasks, combine Advanced + Standard
       return [
-        FREE_MODELS.advanced[0],
-        FREE_MODELS.standard[0]
+        MODELS.advanced[1], // MiniMax
+        MODELS.standard[2]  // GLM-4-9B
       ];
     }
     // Basic tasks don't need beam
-    return [FREE_MODELS.basic[0]];
+    return [MODELS.basic[0]];
   }
 
   /**
@@ -140,10 +142,10 @@ export class KAELOrchestrator {
   public getFallbackModel(failedModel: string): string {
     // Flatten all models
     const allModels = [
-      ...FREE_MODELS.research,
-      ...FREE_MODELS.advanced,
-      ...FREE_MODELS.standard,
-      ...FREE_MODELS.basic
+      ...MODELS.research,
+      ...MODELS.advanced,
+      ...MODELS.standard,
+      ...MODELS.basic
     ];
     
     // Find a model that isn't the failed one

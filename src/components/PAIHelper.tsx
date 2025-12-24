@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '../lib/supabase/client';
 
 interface UserContext {
   interests: string[];
@@ -18,10 +19,15 @@ export default function PAIHelper() {
   const [message, setMessage] = useState('');
   const [selectedModel, setSelectedModel] = useState('x-ai/grok-4-fast');
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [messages, setMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
+  const [messages, setMessages] = useState<{role: 'user'|'assistant', content: string, attachments?: string[]}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [attachments, setAttachments] = useState<{name: string, url: string}[]>([]);
   const [context, setContext] = useState<UserContext>({interests: [], searchHistory: [], preferences: {language: 'ro', currency: 'RON', location: 'RO'}});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const supabase = createClient();
 
   // Learn from user behavior (privacy-preserving, local only)
   useEffect(() => {
@@ -71,24 +77,74 @@ export default function PAIHelper() {
     return 'x-ai/grok-4-fast';
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    const newAttachments = [...attachments];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `user-uploads/${fileName}`;
+
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from('pai-attachments')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('pai-attachments')
+          .getPublicUrl(filePath);
+
+        newAttachments.push({ name: file.name, url: publicUrl });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
+    }
+
+    setAttachments(newAttachments);
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const sendMessage = async () => {
-    if (!message.trim() || isLoading) return;
+    if ((!message.trim() && attachments.length === 0) || isLoading) return;
 
     const userMessage = message;
+    const currentAttachments = [...attachments];
 
     // Smart routing: Auto-select best model for this query
     const routedModel = selectBestModel(userMessage);
-    setSelectedModel(routedModel); // Update state (hidden from user)
+    setSelectedModel(routedModel); 
     setMessage('');
+    setAttachments([]);
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user' as const, content: userMessage }]);
+    
+    setMessages(prev => [...prev, { 
+      role: 'user' as const, 
+      content: userMessage || '📎 Fișiere atașate',
+      attachments: currentAttachments.map(a => a.url)
+    }]);
 
     try {
       // PAI Public Assistant with Smart Routing
       const paiResponse = await fetch('/api/pai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage, model: routedModel }),
+        body: JSON.stringify({ 
+          message: userMessage, 
+          model: routedModel,
+          attachments: currentAttachments.map(a => a.url)
+        }),
       });
       
       let aiReply: string;
@@ -178,6 +234,19 @@ export default function PAIHelper() {
                     {messages.map((msg, i) => (
                       <div key={i} className={`mb-3 ${msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}`}>
                         <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-[#00f0ff]/20 rounded-br-sm' : 'bg-[#ff00f0]/20 rounded-bl-sm'}`}>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {msg.attachments.map((url, idx) => (
+                                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block relative">
+                                  {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                    <img src={url} alt="Attachment" className="w-20 h-20 object-cover rounded-lg border border-white/20" />
+                                  ) : (
+                                    <div className="w-20 h-20 bg-black/40 rounded-lg border border-white/20 flex items-center justify-center text-xs">📄 DOC</div>
+                                  )}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           <p className="text-xs md:text-sm whitespace-pre-wrap break-words text-white">{msg.content}</p>
                         </div>
                       </div>
@@ -195,6 +264,25 @@ export default function PAIHelper() {
 
               {/* Input Area - Fixed at bottom */}
               <div className="flex-shrink-0 p-3 md:p-4 bg-[#1a1a2e]/80 border-t border-[#00f0ff]/30">
+                {/* File Previews */}
+                {attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {attachments.map((file, idx) => (
+                      <div key={idx} className="relative group">
+                        <div className="w-12 h-12 rounded-lg bg-[#0d0d1a] border border-[#00f0ff]/40 overflow-hidden text-[8px] flex items-center justify-center">
+                           {file.url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <img src={file.url} className="w-full h-full object-cover" /> : '📄'}
+                        </div>
+                        <button 
+                          onClick={() => removeAttachment(idx)}
+                          className="absolute -top-1 -right-1 bg-red-500 rounded-full w-4 h-4 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 {/* Smart Router Info - No model selection for users */}
                 <div className="mb-2 px-3 py-2 rounded-lg bg-[#0d0d1a]/50 border border-[#00f0ff]/20">
                   <div className="flex items-center justify-between text-xs">
@@ -205,6 +293,20 @@ export default function PAIHelper() {
 
                 {/* Message input */}
                 <div className="flex gap-2 mb-2">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading || isUploading}
+                    className="p-2 rounded-xl bg-[#0d0d1a] border-2 border-[#00f0ff]/30 text-xl hover:border-[#00f0ff] transition-colors"
+                  >
+                    {isUploading ? '⏳' : '📎'}
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                    multiple 
+                    className="hidden" 
+                  />
                   <input
                     type="text"
                     value={message}
@@ -221,7 +323,7 @@ export default function PAIHelper() {
                   />
                   <button
                     onClick={sendMessage}
-                    disabled={isLoading || !message.trim()}
+                    disabled={isLoading || isUploading || (!message.trim() && attachments.length === 0)}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#ff00f0] to-[#00f0ff] font-bold hover:shadow-[0_0_30px_rgba(255,0,240,0.6)] transition-all disabled:opacity-50 text-xl flex-shrink-0"
                   >
                     {isLoading ? '🤔' : '🚀'}

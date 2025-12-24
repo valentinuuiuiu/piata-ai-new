@@ -24,13 +24,16 @@
         "get_edge_function", "list_branches", "merge_branch", "delete_branch", "rebase_branch", "reset_branch"
       ]
     },
-    // Stripe server removed for security - configure locally if needed
     // "stripe": {
     //   "command": "npx",
     //   "args": ["-y", "@stripe/mcp", "--tools=all"],
     //   "env": {
     //     "STRIPE_SECRET_KEY": "your_stripe_key_here"  // Set in local environment only
     //   }
-    // }
+    // },
+    "taita": {
+      "command": "npx",
+      "args": ["ts-node", "-r", "tsconfig-paths/register", "src/lib/mcp-server-taita.ts"]
+    }
   }
 }

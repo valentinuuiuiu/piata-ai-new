@@ -1,4 +1,4 @@
-a#!/bin/bash
+#!/bin/bash
 # Jules: The Orchestrator
 # "Wake up, my friends. We have work to do."
 
@@ -14,7 +14,8 @@ echo "4. [KATE]   The Code Specialist (OpenRouter - Free)"
 echo "5. [Grok]   The Fast Thinker (OpenRouter - Free)"
 echo "6. [Google] The Communicator (Gmail, Calendar, Docs)"
 echo "7. [Supabase] The Data Keeper (Credits & Transactions)"
-echo "8. Wake ALL (Parallel - Experimental)"
+echo "8. [Gemini] The Market Intelligence (Product Analysis)"
+echo "9. Wake ALL (Parallel - Experimental)"
 echo "0. Exit"
 
 read -p "Which subagent do you wish to awaken? " choice
@@ -42,13 +43,16 @@ case $choice in
         ./subagents/supabase-agent.sh
         ;;
     8)
+        ./subagents/gemini-market-agent.sh
+        ;;
+    9)
         echo "Waking all agents in background..."
         ./subagents/stripe-agent.sh > /dev/null 2>&1 &
         ./subagents/redis-agent.sh > /dev/null 2>&1 &
         ./subagents/github-agent.sh > /dev/null 2>&1 &
         ./subagents/supabase-agent.sh > /dev/null 2>&1 &
         echo "Traditional agents running in the shadows."
-        echo "Note: KATE and Grok are interactive and must be run separately."
+        echo "Note: KATE, Grok and Gemini are interactive and must be run separately."
         ;;
     0)
         echo "Sleep well."

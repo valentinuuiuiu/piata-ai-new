@@ -22,6 +22,19 @@ export interface GeneratedContent {
   metaKeywords: string;
 }
 
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/ă/g, 'a')
+    .replace(/î/g, 'i')
+    .replace(/â/g, 'a')
+    .replace(/ț/g, 't')
+    .replace(/ș/g, 's')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .trim();
+}
+
 export class AIContentGenerator {
   private static readonly CONTENT_TEMPLATES = {
     blog: {
@@ -119,19 +132,19 @@ export class AIContentGenerator {
     const title = categoryTitles[Math.floor(Math.random() * categoryTitles.length)];
 
     const h1 = title;
-    const slug = this.generateSlug(title);
-    const metaDescription = this.generateMetaDescription(keyword, title);
+    const slug = generateSlug(title);
+    const metaDescription = (AIContentGenerator as any).generateMetaDescription(keyword, title);
 
-    const content = await this.generateBlogContent(keyword, title, wordCount, request);
+    const content = await (AIContentGenerator as any).generateBlogContent(keyword, title, wordCount, request);
 
-    const keywords = this.extractKeywords(content, keyword);
+    const keywords = AIContentGenerator.extractKeywords(content, keyword);
 
     return {
       title,
       metaDescription,
       content,
       keywords,
-      structuredData: this.generateBlogStructuredData(keyword, title, content),
+      structuredData: (AIContentGenerator as any).generateBlogStructuredData(keyword, title, content),
       slug,
       h1,
       metaKeywords: keywords.slice(0, 10).join(', ')
@@ -145,10 +158,10 @@ export class AIContentGenerator {
   ): Promise<GeneratedContent> {
     const title = `Produse ${keyword.keyword} - Calitate Premium la Prețuri Imbătibile`;
     const h1 = title;
-    const slug = this.generateSlug(`produse-${keyword.keyword}`);
+    const slug = generateSlug(`produse-${keyword.keyword}`);
     const metaDescription = `Descoperă cea mai mare selecție de ${keyword.keyword} la cele mai bune prețuri. Calitate garantată, livrare rapidă în toată România.`;
 
-    const content = this.generateProductContentStructure(keyword, wordCount);
+    const content = (AIContentGenerator as any).generateProductContentStructure(keyword, wordCount);
     const keywords = [`${keyword.keyword}`, `cumparaturi online`, `romania`, `piata online`];
 
     return {
@@ -156,7 +169,7 @@ export class AIContentGenerator {
       metaDescription,
       content,
       keywords,
-      structuredData: this.generateProductStructuredData(keyword, title),
+      structuredData: (AIContentGenerator as any).generateProductStructuredData(keyword, title),
       slug,
       h1,
       metaKeywords: keywords.join(', ')
@@ -173,18 +186,18 @@ export class AIContentGenerator {
       : `${keyword.keyword} - Marketplace-ul modern pentru România`;
     
     const h1 = title;
-    const slug = this.generateSlug(keyword.keyword);
+    const slug = generateSlug(keyword.keyword);
     const metaDescription = `Descoperă ${keyword.keyword}. Marketplace-ul sigur și modern pentru cumpărături și vânzări online în România.`;
 
-    const content = this.generateLandingContent(keyword, wordCount, request);
-    const keywords = this.generateLandingKeywords(keyword);
+    const content = (AIContentGenerator as any).generateLandingContent(keyword, wordCount, request);
+    const keywords = (AIContentGenerator as any).generateLandingKeywords(keyword);
 
     return {
       title,
       metaDescription,
       content,
       keywords,
-      structuredData: this.generateLandingStructuredData(keyword, title),
+      structuredData: (AIContentGenerator as any).generateLandingStructuredData(keyword, title),
       slug,
       h1,
       metaKeywords: keywords.slice(0, 10).join(', ')
@@ -197,10 +210,10 @@ export class AIContentGenerator {
   ): Promise<GeneratedContent> {
     const title = `Postare socială pentru ${keyword.keyword}`;
     const h1 = title;
-    const slug = this.generateSlug(`social-${keyword.keyword}`);
+    const slug = generateSlug(`social-${keyword.keyword}`);
     const metaDescription = `Conținut social media optimizat pentru ${keyword.keyword}`;
 
-    const content = this.generateSocialContentStructure(keyword);
+    const content = (AIContentGenerator as any).generateSocialContentStructure(keyword);
     const keywords = [`${keyword.keyword}`, 'social media', 'romania'];
 
     return {
@@ -214,37 +227,37 @@ export class AIContentGenerator {
     };
   }
 
-  private static generateBlogContent(keyword: RomanianKeyword, title: string, wordCount: number, request: ContentGenerationRequest): string {
+  static generateBlogContent(keyword: RomanianKeyword, title: string, wordCount: number, request: ContentGenerationRequest): string {
     const sections = [];
     
     // Introduction
     sections.push(`## ${title.split(':')[0]}`);
-    sections.push(this.generateIntroduction(keyword, request));
+    sections.push(AIContentGenerator.generateIntroduction(keyword, request));
     
     // Main content sections
-    const mainPoints = this.generateMainPoints(keyword, request);
+    const mainPoints = AIContentGenerator.generateMainPoints(keyword, request);
     sections.push(...mainPoints);
     
     // Benefits section
-    sections.push(this.generateBenefitsSection(keyword));
+    sections.push(AIContentGenerator.generateBenefitsSection(keyword));
     
     // Comparison section (if competitor)
     if (keyword.competitor) {
-      sections.push(this.generateComparisonSection(keyword));
+      sections.push(AIContentGenerator.generateComparisonSection(keyword));
     }
     
     // Local section (if city-specific)
     if (keyword.city) {
-      sections.push(this.generateLocalSection(keyword));
+      sections.push(AIContentGenerator.generateLocalSection(keyword));
     }
     
     // Conclusion
-    sections.push(this.generateConclusion(keyword));
+    sections.push(AIContentGenerator.generateConclusion(keyword));
 
     return sections.join('\n\n');
   }
 
-  private static generateIntroduction(keyword: RomanianKeyword, request: ContentGenerationRequest): string {
+  static generateIntroduction(keyword: RomanianKeyword, request: ContentGenerationRequest): string {
     const introTemplates = {
       competitor: `În peisajul actual al pieței online din România, ${keyword.keyword} se remarcă prin caracteristicile sale unice și avantajele competitive. În acest articol, vom explora de ce tot mai mulți români aleg această soluție în detrimentul alternativelor tradiționale.`,
       local: `${keyword.city ? `În ${keyword.city}` : 'În România'}, piața online cunoaște o evoluție constantă, iar ${keyword.keyword} devine din ce în ce mai popular printre consumatori. Să descoperim împreună toate avantajele acestei soluții.`,
@@ -256,7 +269,7 @@ export class AIContentGenerator {
     return template;
   }
 
-  private static generateMainPoints(keyword: RomanianKeyword, request: ContentGenerationRequest): string[] {
+  static generateMainPoints(keyword: RomanianKeyword, request: ContentGenerationRequest): string[] {
     const points = [];
 
     if (keyword.competitor) {
@@ -281,7 +294,7 @@ export class AIContentGenerator {
     return points;
   }
 
-  private static generateBenefitsSection(keyword: RomanianKeyword): string {
+  static generateBenefitsSection(keyword: RomanianKeyword): string {
     return `### Avantajele distinctive ale ${keyword.keyword}
 
 **Pentru cumpărători:**
@@ -302,7 +315,7 @@ export class AIContentGenerator {
 - Aplicație mobilă optimizată`;
   }
 
-  private static generateComparisonSection(keyword: RomanianKeyword): string {
+  static generateComparisonSection(keyword: RomanianKeyword): string {
     if (!keyword.competitor) return '';
 
     return `### ${keyword.keyword} vs ${keyword.competitor.toUpperCase()} - Analiză detaliată
@@ -318,7 +331,7 @@ export class AIContentGenerator {
 Această analiză demonstrează superioritatea ${keyword.keyword} în majoritatea aspectelor critice pentru utilizatori.`;
   }
 
-  private static generateLocalSection(keyword: RomanianKeyword): string {
+  static generateLocalSection(keyword: RomanianKeyword): string {
     if (!keyword.city) return '';
 
     return `### ${keyword.keyword} în ${keyword.city}
@@ -333,7 +346,7 @@ Piața din ${keyword.city} cunoaște o creștere accelerată a interesului pentr
 Utilizatorii din ${keyword.city} raportează o experiență superioară față de alternativele existente.`;
   }
 
-  private static generateConclusion(keyword: RomanianKeyword): string {
+  static generateConclusion(keyword: RomanianKeyword): string {
     return `### Concluzie
 
 ${keyword.keyword} reprezintă următoarea evoluție în peisajul marketplace-urilor din România. Cu o abordare centrată pe utilizator, tehnologie avansată și prețuri competitive, această platformă oferă o experiență de shopping și vânzare fără egal.
@@ -347,7 +360,7 @@ ${keyword.keyword} reprezintă următoarea evoluție în peisajul marketplace-ur
 Alege ${keyword.keyword} și experimentează viitorul cumpărăturilor online în România!`;
   }
 
-  private static generateProductContentStructure(keyword: RomanianKeyword, wordCount: number): string {
+  static generateProductContentStructure(keyword: RomanianKeyword, wordCount: number): string {
     return `# Produse ${keyword.keyword} - Calitate Premium
 
 ## Descriere generală
@@ -368,7 +381,7 @@ Colecția noastră de ${keyword.keyword} cuprinde cele mai căutate și apreciat
 Fii printre primii care descoperă calitatea superioară a produselor noastre ${keyword.keyword}!`;
   }
 
-  private static generateLandingContent(keyword: RomanianKeyword, wordCount: number, request: ContentGenerationRequest): string {
+  static generateLandingContent(keyword: RomanianKeyword, wordCount: number, request: ContentGenerationRequest): string {
     return `${keyword.competitor 
       ? `# Înlocuiește ${keyword.competitor.toUpperCase()} cu o soluție superioară`
       : `# ${keyword.keyword} - Marketplace-ul viitorului`
@@ -397,7 +410,7 @@ ${keyword.competitor
 ✅ **Platformă sigură și de încredere**
 ✅ **Aplicație mobilă optimizată**
 ✅ **Community activ și moderat**
-✅ **Tehnologie de vârf pentru siguranță`
+✅ **Tehnologie de vârf pentru siguranță**
 
 ## Garanția noastră pentru tine
 - **Returnare în 30 de zile** - Nu ești mulțumit? Îți returnăm banii
@@ -423,7 +436,7 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
 *Deja peste 50,000 de români au ales ${keyword.keyword}. Alătură-te comunității noastre astăzi!*`;
   }
 
-  private static generateSocialContentStructure(keyword: RomanianKeyword): string {
+  static generateSocialContentStructure(keyword: RomanianKeyword): string {
     return `Post social media optimizat pentru ${keyword.keyword}:
 
 🔥 Să știi că ${keyword.keyword} este soluția pe care o căutai?
@@ -436,11 +449,11 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
 #${keyword.keyword.replace(/ /g, '')} #MarketplaceRomania #CumparaturiOnline #VanzariOnline`;
   }
 
-  private static generateMetaDescription(keyword: RomanianKeyword, title: string): string {
+  static generateMetaDescription(keyword: RomanianKeyword, title: string): string {
     return `Descoperă ${keyword.keyword}. Marketplace-ul sigur și modern pentru cumpărături și vânzări online în România. Calitate garantată, prețuri competitive.`;
   }
 
-  private static generateSlug(title: string): string {
+  static generateSlug(title: string): string {
     return title
       .toLowerCase()
       .replace(/ă/g, 'a')
@@ -453,7 +466,7 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
       .trim();
   }
 
-  private static extractKeywords(content: string, primaryKeyword: RomanianKeyword): string[] {
+  static extractKeywords(content: string, primaryKeyword: RomanianKeyword): string[] {
     const keywords = [primaryKeyword.keyword];
     
     // Add related Romanian marketplace terms
@@ -475,7 +488,7 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
     return keywords;
   }
 
-  private static generateLandingKeywords(keyword: RomanianKeyword): string[] {
+  static generateLandingKeywords(keyword: RomanianKeyword): string[] {
     const keywords = [keyword.keyword];
     
     if (keyword.competitor) {
@@ -492,7 +505,7 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
     return keywords;
   }
 
-  private static generateBlogStructuredData(keyword: RomanianKeyword, title: string, content: string): object {
+  static generateBlogStructuredData(keyword: RomanianKeyword, title: string, content: string): object {
     return {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
@@ -515,7 +528,7 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
       "dateModified": new Date().toISOString(),
       "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": `https://piata-ai.ro/blog/${this.generateSlug(title)}`
+        "@id": `https://piata-ai.ro/blog/${AIContentGenerator.generateSlug(title)}`
       },
       "keywords": keyword.keyword,
       "articleSection": "Marketplace Romania",
@@ -523,13 +536,13 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
     };
   }
 
-  private static generateProductStructuredData(keyword: RomanianKeyword, title: string): object {
+  static generateProductStructuredData(keyword: RomanianKeyword, title: string): object {
     return {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       "name": title,
       "description": `Colecție completă de ${keyword.keyword} la prețuri competitive`,
-      "url": `https://piata-ai.ro/categorii/${this.generateSlug(keyword.keyword)}`,
+      "url": `https://piata-ai.ro/categorii/${AIContentGenerator.generateSlug(keyword.keyword)}`, 
       "publisher": {
         "@type": "Organization",
         "name": "Piata AI RO"
@@ -537,13 +550,13 @@ Nu mai aștepta să profiți de avantajele unei platforme moderne. Fă pasul că
     };
   }
 
-  private static generateLandingStructuredData(keyword: RomanianKeyword, title: string): object {
+  static generateLandingStructuredData(keyword: RomanianKeyword, title: string): object {
     return {
       "@context": "https://schema.org",
       "@type": "WebPage",
       "name": title,
       "description": `Descoperă ${keyword.keyword} - Marketplace-ul modern pentru România`,
-      "url": `https://piata-ai.ro/${this.generateSlug(keyword.keyword)}`,
+      "url": `https://piata-ai.ro/${AIContentGenerator.generateSlug(keyword.keyword)}`, 
       "isPartOf": {
         "@type": "WebSite",
         "name": "Piata AI RO",
@@ -656,7 +669,7 @@ export class ContentOptimizer {
     return (keywordCount / words.length) * 100;
   }
 
-  private static generateRecommendations(content: GeneratedContent): string[] {
+  static generateRecommendations(content: GeneratedContent): string[] {
     const recommendations = [];
     
     if (content.title.length > 60) {
