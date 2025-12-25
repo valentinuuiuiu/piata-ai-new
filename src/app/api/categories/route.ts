@@ -209,6 +209,35 @@ export async function GET(req: Request) {
         }
       ];
 
+    const { searchParams } = new URL(req.url);
+    const format = searchParams.get('format');
+
+    // If client asked for rich, include fallback subcategories too.
+    if (format && format !== 'array') {
+      const fallbackSubcategories = [
+        { id: 1, name: 'Apartamente', slug: 'apartamente', category_id: 1 },
+        { id: 2, name: 'Case', slug: 'case', category_id: 1 },
+        { id: 3, name: 'Terenuri', slug: 'terenuri', category_id: 1 },
+        { id: 4, name: 'Mașini', slug: 'masini', category_id: 2 },
+        { id: 5, name: 'Motociclete', slug: 'motociclete', category_id: 2 },
+        { id: 6, name: 'Piese Auto', slug: 'piese-auto', category_id: 2 },
+        { id: 7, name: 'Telefoane', slug: 'telefoane', category_id: 3 },
+        { id: 8, name: 'Laptopuri', slug: 'laptopuri', category_id: 3 },
+        { id: 9, name: 'TV & Audio', slug: 'tv-audio', category_id: 3 },
+        { id: 10, name: 'Îmbrăcăminte', slug: 'imbracaminte', category_id: 4 },
+        { id: 11, name: 'Încălțăminte', slug: 'incaltaminte', category_id: 4 },
+        { id: 12, name: 'Accesorii', slug: 'accesorii', category_id: 4 },
+        { id: 13, name: 'Reparații', slug: 'reparatii', category_id: 5 },
+        { id: 14, name: 'Curățenie', slug: 'curatenie', category_id: 5 },
+        { id: 15, name: 'Transport', slug: 'transport', category_id: 5 }
+      ];
+
+      return NextResponse.json({
+        categories: fallbackCategories,
+        subcategories: fallbackSubcategories
+      });
+    }
+
     // Preserve default behavior: array
     return NextResponse.json(fallbackCategories);
   }

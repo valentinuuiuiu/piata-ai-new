@@ -63,13 +63,24 @@ function PostareAnuntContent() {
       console.log('User authenticated, proceeding to load data');
 
       // Load categories
-      fetch('/api/categories')
-        .then(res => res.json())
-        .then(data => {
-          setCategories(data.categories || []);
+      fetch('/api/categories?format=rich')
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Failed to load categories: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            // Back-compat: older API shape
+            setCategories(data);
+          } else {
+            setCategories(data.categories || []);
+          }
           setLoadingData(false);
         })
-        .catch(() => setLoadingData(false));
+        .catch((err) => {
+          console.error('Failed to load categories:', err);
+          setLoadingData(false);
+        });
 
       // Pre-fill from URL params
       const categoryId = searchParams.get('category_id');
@@ -88,15 +99,24 @@ function PostareAnuntContent() {
   // Load subcategories when category changes
   useEffect(() => {
     if (formData.category_id) {
-      fetch('/api/categories')
-        .then(res => res.json())
-        .then(data => {
-          const categorySubs = data.subcategories?.filter(
-            (sub: Subcategory) => sub.category_id === parseInt(formData.category_id)
-          ) || [];
+      fetch('/api/categories?format=rich')
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Failed to load subcategories: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          // The rich API returns `{ categories, subcategories }`.
+          const allSubcategories = Array.isArray(data) ? [] : (data.subcategories || []);
+          const categoryIdNum = parseInt(formData.category_id, 10);
+          const categorySubs = allSubcategories.filter(
+            (sub: Subcategory) => sub.category_id === categoryIdNum
+          );
           setSubcategories(categorySubs);
         })
-        .catch(() => setSubcategories([]));
+        .catch((err) => {
+          console.error('Failed to load subcategories:', err);
+          setSubcategories([]);
+        });
     } else {
       setSubcategories([]);
     }
