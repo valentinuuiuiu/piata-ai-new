@@ -80,3 +80,6 @@ fannymae.py
 
 # Private R&D Docs
 docs/AVATAR_NODE.md
+
+# Local secrets file used during investigations — keep out of repo
+mcp_settings.json

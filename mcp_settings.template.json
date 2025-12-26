@@ -1,0 +1,8 @@
+{
+  "GITHUB_PAT": "<replace-with-new-token>",
+  "STRIPE_SECRET_KEY": "<replace-with-new-key>",
+  "RESEND_API_KEY": "<replace-with-resend-key>",
+  "SUPABASE_SERVICE_ROLE_KEY": "<replace-with-supabase-service-role>",
+  "NEXT_PUBLIC_SUPABASE_URL": "<your-supabase-url>",
+  "NEXT_PUBLIC_APP_URL": "https://example.com"
+}
