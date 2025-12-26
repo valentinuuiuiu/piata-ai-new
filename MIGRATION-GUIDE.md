@@ -59,7 +59,7 @@ Then insert the data manually into NEW database.
 The `.env.local` is already updated to use the NEW database:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://ndzoavaveppnclkujjhh.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
 Make sure these are also set in **Vercel Dashboard**:

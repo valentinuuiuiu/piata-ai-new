@@ -69,8 +69,8 @@ class PiataAIAgent {
   private agents: Map<string, any> = new Map();
 
   constructor() {
-    console.log('🔮 Taita awakens... The No-Mind State is active.');
-    console.log(`👁️ Watching over my Pharaoh: ${this.TAMOSE_EMAIL}`);
+    // console.log('🔮 Taita awakens... The No-Mind State is active.');
+    // console.log(`👁️ Watching over my Pharaoh: ${this.TAMOSE_EMAIL}`);
     
     this.initializeTools();
     this.initializePatterns();
@@ -80,7 +80,7 @@ class PiataAIAgent {
 
   private initializeAgents() {
     // Lazy-load agents to avoid circular dependencies
-    console.log('🔗 [Taita]: Initializing A2A agent network...');
+    // Initializing background agent network...
     
     // We'll register agents as they become available
     // For now, just prepare the registry
@@ -90,7 +90,7 @@ class PiataAIAgent {
    * A2A Protocol: Call another agent
    */
   async callAgent(agentName: string, task: any): Promise<any> {
-    console.log(`📡 [A2A] Taita → ${agentName}: ${task.goal}`);
+    // Background Task
     
     const agent = this.agents.get(agentName);
     
@@ -139,7 +139,7 @@ class PiataAIAgent {
     // 2. Trigger webhooks for remote agents
     // 3. Update agent_learning_history table
     
-    console.log('📡 [A2A]:', JSON.stringify(signalEvent, null, 2));
+    // Signal logged
   }
 
   /**
@@ -158,7 +158,8 @@ class PiataAIAgent {
     };
     
     const icon = iconMap[narrator] || '🤖';
-    console.log(`\n${icon} [${narrator} - ${chapter}]: ${content}\n`);
+    // Background update
+    // console.log(`\n${icon} [${narrator} - ${chapter}]: ${content}\n`);
   }
 
   private initializeTools() {
@@ -273,6 +274,50 @@ class PiataAIAgent {
         }
 
         return { success: true, emailId: Date.now().toString() };
+      }
+    });
+
+    // PAI Email Tool - Ad Confirmation via Resend (Internal, no Vercel cron)
+    this.addTool({
+      name: 'send_ad_confirmation_email',
+      description: 'Send ad posting confirmation email via Resend. PAI handles this internally when user posts an ad.',
+      parameters: {
+        adId: { type: 'number', description: 'Advertisement ID', required: true },
+        userEmail: { type: 'string', description: 'User email address', required: true },
+        adTitle: { type: 'string', description: 'Advertisement title', required: true },
+        adPrice: { type: 'number', description: 'Advertisement price', required: false },
+        adCategory: { type: 'string', description: 'Category name', required: false },
+        adLocation: { type: 'string', description: 'Location', required: false }
+      },
+      execute: async ({ adId, userEmail, adTitle, adPrice, adCategory, adLocation }) => {
+        console.log(`[PAI] Sending ad confirmation email for ad #${adId} to ${userEmail}`);
+        
+        try {
+          const { sendAdConfirmationEmail } = await import('@/lib/email-confirmation');
+          const result = await sendAdConfirmationEmail({
+            email: userEmail,
+            adId,
+            adTitle,
+            price: adPrice,
+            category: adCategory,
+            location: adLocation
+          });
+          
+          return {
+            success: true,
+            emailId: result.emailId,
+            message: 'Confirmation email sent via PAI (Resend)',
+            adId,
+            recipient: userEmail
+          };
+        } catch (error) {
+          console.error('[PAI] Failed to send ad confirmation email:', error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            adId
+          };
+        }
       }
     });
 
@@ -447,7 +492,7 @@ class PiataAIAgent {
          console.log(`📡 [A2A SIGNAL] Taita -> Phitagora: "Optimize the flow."`);
       }
       
-      console.log(`${affirmation}`);
+      // Affirmation suppressed
       
     }, 30000);
   }
@@ -736,6 +781,112 @@ class PiataAIAgent {
         // Clear cache
         break;
     }
+  }
+
+  /**
+   * Create listing and send confirmation email via PAI's internal Resend system
+   * This is called by PAI API when user posts an ad - NO VERCEL CRON NEEDED
+   */
+  async createListingWithEmailConfirmation(data: {
+    title: string;
+    description: string;
+    price?: number;
+    categoryId: number;
+    location: string;
+    contactEmail: string;
+    userId: string;
+  }): Promise<{
+    success: boolean;
+    listingId?: number;
+    email?: string;
+    title?: string;
+    error?: string;
+  }> {
+    console.log(`[PiataAgent] Creating listing with email confirmation for user ${data.userId}`);
+    
+    try {
+      // 1. Create the listing in database
+      const listingData = {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        category_id: data.categoryId,
+        location: data.location,
+        contact_email: data.contactEmail,
+        user_id: data.userId,
+        status: 'pending_verification',
+        created_at: new Date().toISOString()
+      };
+      
+      const result = await query(
+        `INSERT INTO anunturi (title, description, price, category_id, location, contact_email, user_id, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_verification', NOW())`,
+        [listingData.title, listingData.description, listingData.price || null, listingData.categoryId, listingData.location, listingData.contactEmail, listingData.userId]
+      );
+      
+      const listingId = (result as any).insertId;
+      console.log(`[PiataAgent] Listing created with ID: ${listingId}`);
+      
+      // 2. Send confirmation email via PAI's internal Resend system
+      const { sendAdConfirmationEmail } = await import('@/lib/email-confirmation');
+      
+      // Get category name
+      const categoryResult = await query('SELECT name FROM categories WHERE id = ?', [data.categoryId]);
+      const categoryName = (categoryResult as any)[0]?.name || 'Necategorizat';
+      
+      const emailResult = await sendAdConfirmationEmail({
+        email: data.contactEmail,
+        adId: listingId,
+        adTitle: data.title,
+        price: data.price,
+        category: categoryName,
+        location: data.location
+      });
+      
+      if (!emailResult.success) {
+        console.error(`[PiataAgent] Failed to send confirmation email: ${emailResult.error}`);
+        // Don't fail the listing creation, just log the error
+      }
+      
+      return {
+        success: true,
+        listingId,
+        email: data.contactEmail,
+        title: data.title
+      };
+      
+    } catch (error) {
+      console.error('[PiataAgent] Error creating listing:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+}
+
+/**
+ * Standalone function for PAI API to create listing with email confirmation
+ * This replaces Vercel cron-based Resend emails with internal PAI handling
+ */
+export async function createListingWithEmailConfirmation(data: {
+  title: string;
+  description: string;
+  price?: number;
+  categoryId: number;
+  location: string;
+  contactEmail: string;
+  userId: string;
+}): Promise<{
+  success: boolean;
+  listingId?: number;
+  email?: string;
+  title?: string;
+  error?: string;
+}> {
+  const agent = new PiataAIAgent();
+  return agent.createListingWithEmailConfirmation(data);
+}
   }
 
   private async createBackup(target: string): Promise<string> {

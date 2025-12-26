@@ -3,7 +3,8 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 
 const SUPABASE_URL = 'https://ndzoavaveppnclkujjhh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kem9hdmF2ZXBwbmNsa3VqamhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzOTc5MTEsImV4cCI6MjA3OTk3MzkxMX0._oXCgFOwNA5quaIH8bYTK-Jz5RVKp6pqvkpSNfxs-3o';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+if (!SUPABASE_KEY) throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 

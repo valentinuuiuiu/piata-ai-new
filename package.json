@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:with-tracing": "ts-node -r tsconfig-paths/register scripts/start-with-tracing.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -23,11 +24,18 @@
     "agent": "ts-node -r tsconfig-paths/register scripts/start-agent.ts",
     "agent:fanny-mae": "ts-node -r tsconfig-paths/register scripts/start-fanny-mae-agent.ts",
     "demo:a2a": "ts-node -r tsconfig-paths/register scripts/demo-a2a-protocol.ts",
-    "test:mcp": "ts-node scripts/test-mcp-connection.ts"
+    "test:mcp": "ts-node scripts/test-mcp-connection.ts",
+    "tracing:status": "ts-node -r tsconfig-paths/register scripts/tracing-status.ts"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
     "@modelcontextprotocol/sdk": "^1.24.2",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.203.0",
+    "@opentelemetry/instrumentation": "^0.203.0",
+    "@opentelemetry/instrumentation-fetch": "^0.203.0",
+    "@opentelemetry/instrumentation-http": "^0.203.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-trace-node": "^2.2.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",

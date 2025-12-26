@@ -119,6 +119,9 @@ export async function POST(request: Request) {
       phone: formData.get('contact_phone') as string,
     };
 
+    // Use provided contact email or fallback to defaults
+    const contactEmail = rawData.contactEmail || DEFAULT_CONTACT_EMAIL;
+
     // Validate category_id
     if (isNaN(rawData.categoryId)) {
       return NextResponse.json({ error: 'Invalid category_id' }, { status: 400 });
@@ -127,13 +130,13 @@ export async function POST(request: Request) {
     // 🎯 CREDIT SYSTEM: Check if category requires credits
     const PAID_CATEGORIES = {
       1: { name: 'Imobiliare', creditsRequired: 5 }, // Real Estate
-      11: { name: 'Matrimoniale', creditsRequired: 3 } // Matrimonial/Dating
+      10: { name: 'Matrimoniale', creditsRequired: 3 } // Matrimonial (Corrected ID to 10)
     };
 
     const categoryInfo = PAID_CATEGORIES[rawData.categoryId as keyof typeof PAID_CATEGORIES];
     
-    // Check user's credit balance (needed for both validation and deduction)
-    const { data: profile, error: profileError } = await supabase
+    // Check user's credit balance
+    const { data: profile } = await supabase
       .from('user_profiles')
       .select('credits_balance')
       .eq('user_id', finalUserId)
@@ -142,85 +145,62 @@ export async function POST(request: Request) {
     const userCredits = (profile as any)?.credits_balance || 0;
     
     if (categoryInfo) {
-      console.log(`💰 Category "${categoryInfo.name}" requires ${categoryInfo.creditsRequired} credits`);
-      console.log(`User has ${userCredits} credits, needs ${categoryInfo.creditsRequired}`);
-
       if (userCredits < categoryInfo.creditsRequired) {
-        console.log(`❌ Insufficient credits for ${categoryInfo.name}`);
         return NextResponse.json({
           error: 'Insufficient credits',
           message: `Categoria "${categoryInfo.name}" necesită ${categoryInfo.creditsRequired} credite. Ai doar ${userCredits} credite.`,
           requiredCredits: categoryInfo.creditsRequired,
           currentCredits: userCredits,
-          redirectToCredits: true,
-          categoryName: categoryInfo.name
+          redirectToCredits: true
         }, { status: 402 });
       }
-
-      console.log(`✅ User has sufficient credits for ${categoryInfo.name}`);
-    } else {
-      console.log('📝 Free category - no credits required');
     }
 
-    console.log('Parsed data:', rawData);
-
-    // Validate required fields
-    if (!rawData.title || !rawData.categoryId) {
-      console.log('Validation failed: missing title or category');
-      return NextResponse.json({ error: 'Title and category are required' }, { status: 400 });
-    }
-
-    // Use default contact email for all listings
-    const contactEmail = DEFAULT_CONTACT_EMAIL;
-    console.log('Using default contact email for ad creation');
-
-    // Handle image uploads
-    const images: string[] = [];
-    for (let i = 0; i < 10; i++) {
+    // Handle image uploads in PARALLEL for speed and to avoid timeouts
+    const uploadPromises: Promise<string | null>[] = [];
+    for (let i = 0; i < 5; i++) {
       const file = formData.get(`image_${i}`) as File;
       if (file && file.size > 0) {
-        // Validate file
-        if (!file.type.startsWith('image/')) {
-          return NextResponse.json({ error: 'Only image files allowed' }, { status: 400 });
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          return NextResponse.json({ error: 'Image too large (max 5MB)' }, { status: 400 });
-        }
-
-        // Upload to Supabase Storage
+        if (!file.type.startsWith('image/')) continue;
+        
         const filename = `listing_${userId}_${Date.now()}_${i}.${file.name.split('.').pop()}`;
+        
+        uploadPromises.push((async () => {
+          try {
+            const fileBuffer = await file.arrayBuffer();
+            const { error: uploadError } = await supabase.storage
+              .from('listings')
+              .upload(filename, new Uint8Array(fileBuffer), {
+                contentType: file.type,
+                cacheControl: '3600',
+                upsert: false
+              });
 
-        // Convert File to ArrayBuffer for Supabase
-        const fileBuffer = await file.arrayBuffer();
+            if (uploadError) throw uploadError;
 
-        const { error: uploadError } = await supabase.storage
-          .from('listings')
-          .upload(filename, fileBuffer, {
-            contentType: file.type,
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
-        }
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('listings')
-          .getPublicUrl(filename);
-
-        console.log(`Uploaded image ${i}: ${filename} -> ${publicUrl}`);
-        images.push(publicUrl);
+            const { data: { publicUrl } } = supabase.storage
+              .from('listings')
+              .getPublicUrl(filename);
+            
+            return publicUrl;
+          } catch (err) {
+            console.error(`Upload error for image ${i}:`, err);
+            return null;
+          }
+        })());
       }
     }
 
-    if (images.length === 0) {
+    const uploadedImages = (await Promise.all(uploadPromises)).filter((url): url is string => url !== null);
+
+    if (uploadedImages.length === 0) {
       return NextResponse.json({ error: 'At least 1 image required' }, { status: 400 });
     }
 
-    // Insert listing
+    // Generate unique confirmation token
+    const confirmationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    // Insert listing with status 'pending_verification'
     const { data: listing, error: insertError } = await (supabase as any)
       .from('anunturi')
       .insert({
@@ -232,8 +212,11 @@ export async function POST(request: Request) {
         subcategory_id: rawData.subcategoryId,
         location: rawData.location,
         phone: rawData.phone,
-        images: images, // Store as JSON array
-        status: 'active', // Immediate approval
+        contact_email: contactEmail,
+        images: uploadedImages,
+        status: 'pending_verification', // New mandatory state
+        confirmation_token: confirmationToken,
+        email_confirmed: false,
         is_premium: false,
         is_featured: false
       })
@@ -242,76 +225,33 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('Insert error:', insertError);
-      return NextResponse.json({ 
-        error: 'Failed to create listing', 
-        details: insertError.message 
-      }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create listing', details: insertError.message }, { status: 500 });
     }
 
-    console.log('✅ Listing created successfully:', listing);
-
-    // 💰 CREDIT DEDUCTION: Deduct credits if category requires them
+    // 💰 CREDIT DEDUCTION
     if (categoryInfo && listing?.id) {
-      console.log(`💳 Deducting ${categoryInfo.creditsRequired} credits from user ${finalUserId}`);
-      
       const creditsToDeduct = categoryInfo.creditsRequired;
-      
-      // Deduct credits from user profile
-      const { error: deductionError } = await supabase
-        .from('user_profiles')
-        .update({
-          credits_balance: (userCredits - creditsToDeduct)
-        })
-        .eq('user_id', finalUserId);
-
-      if (deductionError) {
-        console.error('❌ Credit deduction failed:', deductionError);
-        // Don't fail the whole operation, just log the error
-      } else {
-        console.log(`✅ Successfully deducted ${creditsToDeduct} credits`);
-        
-        // Record the transaction
-        const { error: transactionError } = await supabase
-          .from('credits_transactions')
-          .insert({
-            user_id: finalUserId,
-            credits_amount: -creditsToDeduct,
-            transaction_type: 'spend',
-            status: 'completed',
-            description: `Postare anunț în categoria "${categoryInfo.name}"`
-          });
-
-        if (transactionError) {
-          console.error('❌ Transaction record failed:', transactionError);
-        } else {
-          console.log('✅ Transaction recorded successfully');
-        }
-      }
+      await supabase.from('user_profiles').update({ credits_balance: (userCredits - creditsToDeduct) }).eq('user_id', finalUserId);
+      await supabase.from('credits_transactions').insert({
+        user_id: finalUserId,
+        credits_amount: -creditsToDeduct,
+        transaction_type: 'spend',
+        status: 'completed',
+        description: `Postare anunț în categoria "${categoryInfo.name}"`
+      });
     }
 
     // Trigger AI validation asynchronously
     if (listing?.id) {
-      console.log(`🚀 Triggering AI validation for listing ${listing.id}`);
+      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const host = request.headers.get('host');
+      const baseUrl = `${protocol}://${host}`;
       
-      // Don't wait for AI validation to return response
-      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://piata-ai.vercel.app'}/api/ai-validation`, {
+      fetch(`${baseUrl}/api/ai-validation`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          listingId: listing.id,
-          autoApprove: true
-        })
-      }).catch(error => {
-        console.error('❌ AI validation trigger failed:', error);
-      });
-    }
-
-    // Prepare success message
-    let successMessage = 'Anunț creat și trimis spre validare AI';
-    if (categoryInfo) {
-      successMessage = `Anunț creat în "${categoryInfo.name}" (-${categoryInfo.creditsRequired} credite) și trimis spre validare AI`;
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId: listing.id })
+      }).catch(err => console.error('AI trigger error:', err));
     }
 
     return NextResponse.json({
@@ -319,10 +259,8 @@ export async function POST(request: Request) {
       listing: {
         id: listing.id,
         title: listing.title,
-        status: listing.status,
-        message: successMessage,
-        creditsDeducted: categoryInfo?.creditsRequired || 0,
-        remainingCredits: categoryInfo ? (userCredits - categoryInfo.creditsRequired) : undefined
+        status: 'pending_verification',
+        message: 'Anunț creat. Verifică email-ul pentru confirmare după validarea AI.'
       }
     });
 

@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 
-const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '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';
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '';
+// Never hardcode API keys in source control. If missing, show a clear error in UI.
+if (!OPENROUTER_API_KEY) {
+  console.warn('[orchestrator] Missing NEXT_PUBLIC_OPENROUTER_API_KEY (dev only).');
+}
 
 const SENTINEL_PORT = 8006;
 const ARCHITECT_PORT = 8007;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
+import { runPrompt } from '@/lib/ai';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -24,6 +25,8 @@ interface ListingWithUser {
   phone?: string;
   images?: any;
   status: string;
+  contact_email?: string;
+  confirmation_token: string;
   created_at: string;
   users: {
     email: string;
@@ -55,16 +58,16 @@ export async function POST(request: Request) {
       .from('anunturi')
       .select(`
         *,
-        users!inner(
+        users (
           email,
           name,
           phone,
           created_at
         ),
-        user_profiles!inner(
+        user_profiles (
           credits_balance
         ),
-        categories!inner(
+        categories (
           name,
           slug
         )
@@ -92,16 +95,14 @@ export async function POST(request: Request) {
       ai_reasoning: validation.reasoning
     };
 
-    // Auto-approve if enabled and score is good
-    if (autoApprove && validation.score >= 70) {
-      updateData.status = 'active';
-      console.log(`✅ Auto-approved listing ${listingId} with score ${validation.score}`);
-    } else if (validation.score < 50) {
+    // AI logic: If score is too low, reject. Otherwise, keep pending_verification.
+    if (validation.score < 50) {
       updateData.status = 'rejected';
       console.log(`❌ Auto-rejected listing ${listingId} with score ${validation.score}`);
     } else {
-      updateData.status = 'pending_review';
-      console.log(`⏳ Listing ${listingId} pending review with score ${validation.score}`);
+      // Stay in pending_verification until user clicks the email link
+      updateData.status = 'pending_verification';
+      console.log(`⏳ Listing ${listingId} waiting for email confirmation. Score: ${validation.score}`);
     }
 
     await supabase
@@ -109,8 +110,10 @@ export async function POST(request: Request) {
       .update(updateData)
       .eq('id', listingId);
 
-    // Send automated email notification
-    await sendValidationEmail(listing as ListingWithUser, validation);
+    // Send automated email notification WITH confirmation link
+    if (validation.score >= 50) {
+      await sendValidationEmail(listing as ListingWithUser, validation, listing.confirmation_token);
+    }
 
     // Apply auto-fixes if available
     if (validation.autoFixes && validation.autoFixes.length > 0) {
@@ -122,10 +125,8 @@ export async function POST(request: Request) {
       validation,
       listing: {
         id: listing.id,
-        title: listing.title,
-        score: validation.score,
-        approved: validation.approved,
-        status: updateData.status
+        status: updateData.status,
+        message: 'AI Validation complete. Confirmation email sent.'
       }
     });
 
@@ -236,6 +237,41 @@ async function validateListingWithAI(listing: ListingWithUser): Promise<AIValida
   const finalScore = Math.max(0, score);
   const approved = finalScore >= 70;
 
+  // Real AI Moderation via OpenRouter
+  try {
+    console.log(`🤖 Requesting real AI moderation for: ${listing.title}`);
+    const aiResponse = await runPrompt('MODERATION', {
+      title: listing.title,
+      description: listing.description,
+      price: listing.price,
+      category: listing.categories?.name || 'General',
+      location: listing.location || 'Unknown'
+    });
+
+    if (typeof aiResponse === 'string') {
+      try {
+        const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
+        const aiData = JSON.parse(cleanJson);
+        
+        console.log('✅ Real AI validation success:', aiData);
+        
+        // Merge AI results with heuristics
+        return {
+          score: Math.round((finalScore + (aiData.score || 0)) / 2),
+          approved: aiData.approved !== undefined ? aiData.approved : (aiData.score >= 70),
+          issues: [...new Set([...issues, ...(aiData.issues || [])])],
+          suggestions: [...new Set([...suggestions, ...(aiData.suggestions || [])])],
+          reasoning: aiData.reasoning || reasoning.join('; ')
+        };
+      } catch (parseError) {
+        console.warn('⚠️ Could not parse AI response as JSON, using heuristics fallback.');
+      }
+    }
+  } catch (aiError) {
+    console.error('❌ Real AI moderation failed:', aiError);
+  }
+
+  // Fallback to rules-based heuristics
   return {
     score: finalScore,
     issues,
@@ -389,8 +425,8 @@ function validatePrice(price: number, categoryId: number, categoryName?: string)
 
   // Category-specific price ranges
   const priceRanges: { [key: number]: { min: number; max: number; name: string } } = {
-    1: { min: 10000, max: 500000, name: 'Imobiliare' },
-    2: { min: 500, max: 100000, name: 'Auto Moto' },
+    1: { min: 10000, max: 2000000, name: 'Imobiliare' },
+    2: { min: 500, max: 1000000, name: 'Auto Moto' },
     3: { min: 10, max: 20000, name: 'Electronice' },
     4: { min: 10, max: 5000, name: 'Modă' },
     5: { min: 50, max: 10000, name: 'Servicii' },
@@ -431,27 +467,43 @@ async function calculateUserTrustScore(userId: string, userCreatedAt?: string): 
   return Math.min(100, score);
 }
 
-async function sendValidationEmail(listing: ListingWithUser, validation: AIValidationResult) {
+async function sendValidationEmail(listing: ListingWithUser, validation: AIValidationResult, token: string) {
+  if (!resend) {
+    console.warn('⚠️ Resend not configured, skipping email.');
+    return;
+  }
+
   try {
-    const { data: emailData, error } = await resend.emails.send({
-      from: 'Piata AI RO <noreply@piata-ai.ro>',
-      to: [listing.users.email],
-      subject: `Analiza AI pentru anunțul tău: "${listing.title}"`,
-      html: generateEmailTemplate(listing, validation)
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = process.env.NEXT_PUBLIC_APP_URL || 'piata-ai.ro';
+    const confirmLink = `${protocol}://${host}/api/confirm-listing?token=${token}&id=${listing.id}`;
+
+    const targetEmail = listing.contact_email || (listing.users as any)?.email;
+    
+    if (!targetEmail) {
+      console.error('❌ No email found for listing confirmation');
+      return;
+    }
+
+    const { error } = await resend.emails.send({
+      from: 'Piata AI RO <onboarding@resend.dev>', // Use verified sender until domain fix
+      to: [targetEmail],
+      subject: `[CONFIRMARE] Anunțul tău: "${listing.title}"`,
+      html: generateEmailTemplate(listing, validation, confirmLink)
     });
 
     if (error) {
       console.error('Email send error:', error);
     } else {
-      console.log(`✅ Email sent to ${listing.users.email}`);
+      console.log(`✅ Verification email sent to ${listing.users.email}`);
     }
   } catch (error) {
     console.error('Email error:', error);
   }
 }
 
-function generateEmailTemplate(listing: ListingWithUser, validation: AIValidationResult): string {
-  const status = validation.approved ? 'APROBAT' : validation.score >= 50 ? 'REVIZUIRE' : 'RESPINS';
+function generateEmailTemplate(listing: ListingWithUser, validation: AIValidationResult, confirmLink: string): string {
+  const status = validation.approved ? 'ANALIZĂ POZITIVĂ' : validation.score >= 50 ? 'REVIZUIRE NECESARĂ' : 'RESPINS';
   const statusColor = validation.approved ? '#22c55e' : validation.score >= 50 ? '#f59e0b' : '#ef4444';
   
   return `
@@ -459,55 +511,51 @@ function generateEmailTemplate(listing: ListingWithUser, validation: AIValidatio
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Analiza AI Piata AI RO</title>
+      <title>Confirmare Anunț Piata AI RO</title>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #00f0ff, #ff00f0); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-        .score { font-size: 48px; font-weight: bold; text-align: center; margin: 20px 0; }
-        .status { text-align: center; font-size: 24px; font-weight: bold; color: ${statusColor}; margin: 10px 0; }
-        .issues { background: #fee2e2; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .suggestions { background: #dbeafe; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .reasoning { background: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 14px; }
-        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; background: #f8fafc; }
+        .container { max-width: 600px; margin: 20px auto; padding: 0; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: white; }
+        .header { background: linear-gradient(135deg, #00f0ff, #ff00f0); color: white; padding: 40px 20px; text-align: center; }
+        .content { padding: 40px; }
+        .score-pill { display: inline-block; padding: 8px 16px; border-radius: 50px; background: #f1f5f9; font-weight: bold; margin-bottom: 20px; }
+        .btn { display: block; background: #00f0ff; color: black !important; text-decoration: none; padding: 20px; text-align: center; border-radius: 15px; font-weight: 800; font-size: 18px; margin: 30px 0; text-transform: uppercase; letter-spacing: 1px; }
+        .btn:hover { background: #ff00f0; color: white !important; }
+        .issues { border-left: 4px solid #ef4444; padding: 10px 20px; background: #fef2f2; margin: 20px 0; }
+        .footer { text-align: center; padding: 20px; color: #64748b; font-size: 12px; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>🤖 Analiza AI Piata AI RO</h1>
-          <p>Anunțul tău a fost analizat de inteligența artificială</p>
+          <h1 style="margin:0; font-size: 28px;">Piața AI RO</h1>
+          <p style="opacity: 0.9;">Moderare Inteligentă în Realitate</p>
         </div>
         <div class="content">
-          <h2>${listing.title}</h2>
+          <div class="score-pill">Scor Calitate AI: ${validation.score}/100</div>
+          <h2 style="margin-top:0;">Salut, ${listing.users.name || 'Utilizator'}!</h2>
+          <p>Anunțul tău <strong>"${listing.title}"</strong> a fost procesat de AI.</p>
           
-          <div class="score">Scor: ${validation.score}/100</div>
-          <div class="status">${status}</div>
-          
+          <div style="color: ${statusColor}; font-weight: bold; font-size: 20px; margin: 20px 0;">
+            Status: ${status}
+          </div>
+
           ${validation.issues.length > 0 ? `
             <div class="issues">
-              <h3>❌ Probleme identificate:</h3>
-              <ul>${validation.issues.map(issue => `<li>${issue}</li>`).join('')}</ul>
+              <strong style="color: #ef4444">⚠️ Recomandări de corecție:</strong>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                ${validation.issues.map(issue => `<li>${issue}</li>`).join('')}
+              </ul>
             </div>
-          ` : ''}
+          ` : '<p>✅ Anunțul tău respectă toate normele de calitate!</p>'}
+
+          <p>Pentru a publica anunțul pe platformă, te rugăm să apeși butonul de mai jos:</p>
           
-          ${validation.suggestions.length > 0 ? `
-            <div class="suggestions">
-              <h3>💡 Sugestii de îmbunătățire:</h3>
-              <ul>${validation.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}</ul>
-            </div>
-          ` : ''}
-          
-          <div class="reasoning">
-            <h3>🧐 Raționament AI:</h3>
-            <p>${validation.reasoning}</p>
-          </div>
-          
-          <div class="footer">
-            <p>Timp de procesare: <30 secunde</p>
-            <p>Pentru suport, contactează-ne pe platformă</p>
-          </div>
+          <a href="${confirmLink}" class="btn">Confirmă și Publică Anunțul</a>
+
+          <p style="font-size: 14px; color: #64748b;">Dacă nu tu ai creat acest anunț, te rugăm să ignori acest email.</p>
+        </div>
+        <div class="footer">
+          © 2025 Piata AI RO - Primul Marketplace condus de AI din România.
         </div>
       </div>
     </body>

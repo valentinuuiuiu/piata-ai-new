@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { FacebookService } from '@/lib/facebook';
 
 /**
  * Social Media Content Generator
@@ -56,6 +57,15 @@ export async function GET(req: NextRequest) {
         listing_id: listing.id,
         scheduled_for: new Date().toISOString()
       };
+
+      // Try to post to Facebook immediately if it's the most viewed
+      if (listing === listings[0]) {
+        console.log('[SOCIAL] Posting top listing to Facebook page...');
+        await FacebookService.postToPage(
+          facebookPost.content,
+          `${process.env.NEXT_PUBLIC_APP_URL}/anunt/${listing.id}`
+        );
+      }
 
       // Instagram Caption
       const instagramPost = {

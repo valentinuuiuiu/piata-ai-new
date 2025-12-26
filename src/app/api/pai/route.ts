@@ -262,7 +262,58 @@ async function readStream(reader: ReadableStreamDefaultReader<Uint8Array>, onChu
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, model, attachments, stream = false } = body;
+    const { message, model, attachments, stream = false, action } = body;
+
+    // Handle special actions (ad posting with email confirmation)
+    if (action === 'post_ad_with_confirmation' || action === 'create_listing') {
+      console.log('[PAI] Processing ad posting request with email confirmation');
+      
+      const { title, description, price, categoryId, location, contactEmail, userId } = body;
+      
+      if (!title || !userId) {
+        return NextResponse.json({
+          error: 'Missing required fields: title and userId',
+          reply: '❌ Lipsește titlul sau ID-ul utilizatorului.'
+        }, { status: 400 });
+      }
+      
+      // Create listing and send confirmation email via PAI's internal system
+      const { createListingWithEmailConfirmation } = await import('@/lib/piata-agent');
+      
+      try {
+        const result = await createListingWithEmailConfirmation({
+          title,
+          description: description || '',
+          price: price ? parseFloat(price) : undefined,
+          categoryId: parseInt(categoryId, 10) || 1,
+          location: location || '',
+          contactEmail: contactEmail || '',
+          userId
+        });
+        
+        if (result.success) {
+          return NextResponse.json({
+            reply: `✅ Anunț creat cu succes!\n\n📧 Am trimis un email de confirmare la: ${result.email}\n\n📌 ID Anunț: ${result.listingId}\n📝 Titlu: ${result.title}\n\n⚡ Te rugăm să confirmi email-ul pentru a publica anunțul.`,
+            success: true,
+            listingId: result.listingId,
+            emailSent: true,
+            model: 'PAI-Internal'
+          });
+        } else {
+          return NextResponse.json({
+            reply: `❌ Eroare la crearea anunțului: ${result.error}`,
+            success: false,
+            error: result.error
+          }, { status: 500 });
+        }
+      } catch (error) {
+        console.error('[PAI] Ad posting error:', error);
+        return NextResponse.json({
+          reply: '❌ Eroare internă la postarea anunțului.',
+          success: false
+        }, { status: 500 });
+      }
+    }
 
     // Load and update user profile for learning
     const userProfile = updateUserProfile(message);

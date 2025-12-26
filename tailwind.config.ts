@@ -46,11 +46,12 @@ const config: Config = {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
       },
       boxShadow: {
-        neon: "0 0 20px rgba(0, 240, 255, 0.6)",
+        premium: "0 0 20px rgba(99, 102, 241, 0.2)",
+        glow: "0 0 30px rgba(139, 92, 246, 0.4)",
       },
     },
   },

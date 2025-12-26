@@ -50,32 +50,34 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="glass fixed top-0 w-full z-50 shadow-2xl shadow-[#00f0ff]/20 backdrop-blur-xl border-b border-[#00f0ff]/30">
-        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4 flex justify-between items-center">
+      <nav className="glass fixed top-0 w-full z-50 shadow-2xl backdrop-blur-2xl border-b border-white/5">
+        <div className="container mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="text-lg md:text-2xl lg:text-3xl font-black bg-gradient-to-r from-[#ff00f0] via-[#00f0ff] to-[#ff00f0] bg-clip-text text-transparent hover:scale-105 transition-all">
-              Piata AI<span className="hidden sm:inline text-xs md:text-base ml-1">.ro</span>
+            <Link href="/" className="text-xl md:text-2xl font-black bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-all">
+              Piata AI<span className="hidden sm:inline text-sm ml-1 opacity-60">.ro</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-3">
-            <Link href="/categorii" className="btn-neon text-white hover:shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all text-sm px-4 py-2">Categorii</Link>
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/categorii" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Categorii</Link>
             {user ? (
               <>
-                <Link href="/postare" className="btn-neon bg-[#00f0ff] text-black hover:bg-[#ff00f0] hover:text-white shadow-[0_0_25px_rgba(255,0,240,0.6)] transition-all text-sm px-4 py-2">Postează</Link>
-                <Link href="/credits" className="btn-neon bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:from-yellow-500 hover:to-orange-600 shadow-[0_0_25px_rgba(255,193,7,0.6)] transition-all px-4 py-2 rounded-xl text-sm">💰 {credits}</Link>
-                <span className="text-white font-bold text-sm hidden lg:block">Bine, {user.email?.split('@')[0]}</span>
+                <Link href="/postare" className="btn-neon text-sm px-5 py-2">Postează</Link>
+                <Link href="/credits" className="glass bg-white/5 px-4 py-2 flex items-center gap-2 hover:bg-white/10 transition-colors">
+                  <span className="text-yellow-400">💰</span>
+                  <span className="font-bold">{credits}</span>
+                </Link>
                 <button
                   onClick={handleSignOut}
-                  className="btn-neon bg-[#ff00f0] text-white hover:bg-[#00f0ff] hover:text-black shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all px-4 py-2 rounded-xl text-sm"
+                  className="text-white/50 hover:text-white transition-colors text-sm"
                 >
                   Ieșire
                 </button>
               </>
             ) : (
-              <Link href="/autentificare" className="btn-neon bg-[#ff00f0] hover:bg-[#00f0ff] hover:text-black text-white shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all px-6 py-3 rounded-xl text-sm">
+              <Link href="/autentificare" className="btn-neon text-sm px-6 py-2.5">
                 Autentificare
               </Link>
             )}
@@ -84,19 +86,19 @@ export default function Navbar() {
           {/* Mobile Hamburger Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#ff00f0]/20 to-[#00f0ff]/20 border border-[#00f0ff]/30 hover:border-[#00f0ff] transition-all"
+            className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-2xl glass bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
           >
             <motion.span
-              animate={mobileMenuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              className="w-5 h-0.5 bg-gradient-to-r from-[#ff00f0] to-[#00f0ff]"
+              animate={mobileMenuOpen ? { rotate: 45, y: 7.5 } : { rotate: 0, y: 0 }}
+              className="w-5 h-0.5 bg-white"
             />
             <motion.span
               animate={mobileMenuOpen ? { opacity: 0 } : { opacity: 1 }}
-              className="w-5 h-0.5 bg-gradient-to-r from-[#ff00f0] to-[#00f0ff]"
+              className="w-5 h-0.5 bg-white"
             />
             <motion.span
-              animate={mobileMenuOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              className="w-5 h-0.5 bg-gradient-to-r from-[#ff00f0] to-[#00f0ff]"
+              animate={mobileMenuOpen ? { rotate: -45, y: -7.5 } : { rotate: 0, y: 0 }}
+              className="w-5 h-0.5 bg-white"
             />
           </button>
         </div>
@@ -106,16 +108,16 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-[72px] left-0 right-0 z-40 md:hidden glass border-b border-[#00f0ff]/30 shadow-2xl shadow-[#00f0ff]/20"
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-[88px] left-4 right-4 z-40 md:hidden glass p-4 flex flex-col gap-4 shadow-2xl"
           >
-            <div className="container mx-auto px-3 py-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <Link
                 href="/categorii"
                 onClick={() => setMobileMenuOpen(false)}
-                className="btn-neon text-white hover:shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all text-sm px-4 py-3 text-center rounded-xl"
+                className="w-full text-left px-4 py-3 rounded-2xl hover:bg-white/5 transition-colors"
               >
                 📂 Categorii
               </Link>
@@ -124,26 +126,28 @@ export default function Navbar() {
                   <Link
                     href="/postare"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="btn-neon bg-[#00f0ff] text-black hover:bg-[#ff00f0] hover:text-white shadow-[0_0_25px_rgba(255,0,240,0.6)] transition-all text-sm px-4 py-3 text-center rounded-xl"
+                    className="btn-neon w-full text-center"
                   >
                     ➕ Postează Anunț
                   </Link>
                   <Link
                     href="/credits"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="btn-neon bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:from-yellow-500 hover:to-orange-600 shadow-[0_0_25px_rgba(255,193,7,0.6)] transition-all px-4 py-3 text-center rounded-xl text-sm"
+                    className="glass bg-white/5 px-4 py-3 flex items-center justify-between rounded-2xl"
                   >
-                    💰 Credite: {credits}
+                    <span>💰 Credite</span>
+                    <span className="font-bold text-yellow-400">{credits}</span>
                   </Link>
-                  <div className="text-center text-white text-sm py-2">
-                    👤 {user.email?.split('@')[0]}
+                  <div className="px-4 py-2 border-t border-white/5 mt-2">
+                    <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Contul meu</p>
+                    <p className="text-sm font-medium">{user.email}</p>
                   </div>
                   <button
                     onClick={() => {
                       handleSignOut();
                       setMobileMenuOpen(false);
                     }}
-                    className="btn-neon bg-[#ff00f0] text-white hover:bg-[#00f0ff] hover:text-black shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all px-4 py-3 rounded-xl text-sm"
+                    className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-400/5 transition-colors"
                   >
                     ❌ Ieșire
                   </button>
@@ -152,7 +156,7 @@ export default function Navbar() {
                 <Link
                   href="/autentificare"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="btn-neon bg-[#ff00f0] hover:bg-[#00f0ff] hover:text-black text-white shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all px-4 py-3 text-center rounded-xl text-sm"
+                  className="btn-neon w-full text-center"
                 >
                   🔐 Autentificare
                 </Link>

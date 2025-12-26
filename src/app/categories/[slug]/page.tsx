@@ -120,11 +120,12 @@ export default function CategorySubcategories() {
 
   useEffect(() => {
     // Try to fetch from API first, fallback to hardcoded data
-    fetch('/api/categories')
+    fetch('/api/categories?format=rich')
       .then(res => res.json())
       .then(data => {
-        if (data.subcategories && Array.isArray(data.subcategories)) {
-          const categorySubs = data.subcategories.filter(
+        const subcats = Array.isArray(data) ? [] : (data.subcategories || []);
+        if (subcats.length > 0) {
+          const categorySubs = subcats.filter(
             (sub: any) => sub.category_id === category?.id
           );
           if (categorySubs.length > 0) {

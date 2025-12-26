@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: Request,
@@ -9,31 +9,40 @@ export async function GET(
   const slug = resolvedParams.slug;
 
   try {
-    const posts = await query(
-      `SELECT * FROM blog_posts WHERE slug = ? AND status = 'published' LIMIT 1`,
-      [slug]
-    );
+    const supabase = createServiceClient();
 
-    if (!posts || (posts as any[]).length === 0) {
+    const { data: post, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('slug', slug)
+      .eq('published', true)
+      .single();
+
+    if (error || !post) {
+      console.error('Blog post not found or error:', error);
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    const post = (posts as any[])[0];
-
-    // Increment view count
-    await query('UPDATE blog_posts SET views = views + 1 WHERE id = ?', [post.id]);
-
-    // Parse JSON fields
-    const postWithParsedJSON = {
+    // Map fields for frontend
+    const postForFrontend = {
       ...post,
-      tags: typeof post.tags === 'string' ? JSON.parse(post.tags) : post.tags,
-      source_urls: typeof post.source_urls === 'string' ? JSON.parse(post.source_urls) : post.source_urls
+      category: post.tags?.[0] || 'General',
+      image_url: post.metadata?.image_url || '/blog-placeholder.jpg'
     };
 
-    return NextResponse.json(postWithParsedJSON);
+    // Increment view count (fire and forget)
+    supabase
+      .from('blog_posts')
+      .update({ views: (post.views || 0) + 1 })
+      .eq('id', post.id)
+      .then(res => {
+        if (res.error) console.error('Error incrementing views:', res.error);
+      });
+
+    return NextResponse.json(postForFrontend);
 
   } catch (error) {
     console.error('Blog post API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch blog post' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

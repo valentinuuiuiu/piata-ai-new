@@ -5,6 +5,8 @@
  * This is the democratization of AI - powerful intelligence accessible to everyone.
  */
 
+import { withLLMSpan, setAttribute, recordEvent } from './tracing';
+
 export interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -53,55 +55,75 @@ export class OpenRouterAgent {
     max_tokens?: number;
     includeHistory?: OpenRouterMessage[];
   }): Promise<OpenRouterResponse> {
-    try {
-      const messages: OpenRouterMessage[] = [
-        { role: 'system', content: this.systemPrompt },
-        ...(options?.includeHistory || []),
-        { role: 'user', content: prompt }
-      ];
+    return withLLMSpan('openrouter', this.model, async (span) => {
+      try {
+        setAttribute('llm.prompt_length', prompt.length);
+        setAttribute('llm.temperature', options?.temperature || 0.7);
+        setAttribute('llm.max_tokens', options?.max_tokens || 2000);
+        setAttribute('llm.history_length', options?.includeHistory?.length || 0);
 
-      const requestBody: OpenRouterRequest = {
-        model: this.model,
-        messages,
-        temperature: options?.temperature || 0.7,
-        max_tokens: options?.max_tokens || 2000
-      };
+        const messages: OpenRouterMessage[] = [
+          { role: 'system', content: this.systemPrompt },
+          ...(options?.includeHistory || []),
+          { role: 'user', content: prompt }
+        ];
 
-      const response = await fetch(this.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'HTTP-Referer': 'https://piata-ai.ro',
-          'X-Title': 'Piata AI - The Future of Autonomous Commerce'
-        },
-        body: JSON.stringify(requestBody)
-      });
+        const requestBody: OpenRouterRequest = {
+          model: this.model,
+          messages,
+          temperature: options?.temperature || 0.7,
+          max_tokens: options?.max_tokens || 2000
+        };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`OpenRouter API error: ${errorData.error?.message || response.statusText}`);
+        recordEvent('llm.request.started', { model: this.model });
+
+        const response = await fetch(this.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+            'HTTP-Referer': 'https://piata-ai.ro',
+            'X-Title': 'Piata AI - The Future of Autonomous Commerce'
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setAttribute('llm.error', errorData.error?.message || response.statusText);
+          throw new Error(`OpenRouter API error: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content || '';
+        const tokensUsed = data.usage?.total_tokens || 0;
+
+        setAttribute('llm.response_length', content.length);
+        setAttribute('llm.tokens_used', tokensUsed);
+        
+        recordEvent('llm.request.completed', { 
+          model: this.model, 
+          tokensUsed,
+          responseLength: content.length 
+        });
+
+        return {
+          success: true,
+          content,
+          model: this.model,
+          tokensUsed
+        };
+      } catch (error: any) {
+        setAttribute('llm.error', error.message);
+        console.error(`[OpenRouterAgent] Error with ${this.model}:`, error);
+        return {
+          success: false,
+          content: '',
+          model: this.model,
+          error: error.message
+        };
       }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || '';
-      const tokensUsed = data.usage?.total_tokens || 0;
-
-      return {
-        success: true,
-        content,
-        model: this.model,
-        tokensUsed
-      };
-    } catch (error: any) {
-      console.error(`[OpenRouterAgent] Error with ${this.model}:`, error);
-      return {
-        success: false,
-        content: '',
-        model: this.model,
-        error: error.message
-      };
-    }
+    });
   }
 
   /**

@@ -22,6 +22,16 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
+  const formatDate = (dateStr: any) => {
+    if (!dateStr) return new Date().toLocaleDateString('ro-RO');
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? new Date().toLocaleDateString('ro-RO') : d.toLocaleDateString('ro-RO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   useEffect(() => {
     fetch('/api/blog')
       .then(res => res.json())
@@ -109,11 +119,7 @@ export default function BlogPage() {
                   {post.excerpt}
                 </p>
                 <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{new Date(post.published_at).toLocaleDateString('ro-RO', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}</span>
+                  <span>📅 {formatDate(post.published_at)}</span>
                   <span className="text-[#00f0ff] hover:underline">Citește →</span>
                 </div>
               </div>

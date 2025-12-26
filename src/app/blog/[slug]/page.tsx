@@ -25,6 +25,16 @@ export default function BlogPostPage() {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const formatDate = (dateStr: any) => {
+    if (!dateStr) return new Date().toLocaleDateString('ro-RO');
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? new Date().toLocaleDateString('ro-RO') : d.toLocaleDateString('ro-RO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   useEffect(() => {
     fetch(`/api/blog/${slug}`)
       .then(res => res.json())
@@ -81,11 +91,7 @@ export default function BlogPostPage() {
         <div className="flex items-center gap-4 mb-8 text-gray-400 text-sm">
           <span>✍️ {post.author}</span>
           <span>•</span>
-          <span>📅 {new Date(post.published_at).toLocaleDateString('ro-RO', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}</span>
+          <span>📅 {formatDate(post.published_at)}</span>
         </div>
 
         <div className="prose prose-invert prose-lg max-w-none mb-12">

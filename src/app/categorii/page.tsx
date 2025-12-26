@@ -24,11 +24,16 @@ export default function Categorii() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/categories')
+    fetch('/api/categories?format=rich')
       .then(res => res.json())
       .then(data => {
-        setCategories(Array.isArray(data.categories) ? data.categories : [data.categories].filter(Boolean));
-        setSubcategories(Array.isArray(data.subcategories) ? data.subcategories : [data.subcategories].filter(Boolean));
+        if (Array.isArray(data)) {
+          setCategories(data);
+          setSubcategories([]);
+        } else {
+          setCategories(data.categories || []);
+          setSubcategories(data.subcategories || []);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));

@@ -3,7 +3,10 @@ import { GoogleGenAI } from "@google/genai";
 import { scrapeContent } from "@/lib/scrapers/general-scraper";
 
 // --- CONFIGURATION ---
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "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";
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
+if (!OPENROUTER_API_KEY) {
+  throw new Error('OPENROUTER_API_KEY is required');
+}
 const OPENROUTER_MODEL = "x-ai/grok-4.1-fast:free"; 
 
 // Initialize Gemini Fallback

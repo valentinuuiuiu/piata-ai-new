@@ -99,7 +99,7 @@ const counts = listings.reduce((acc, listing) => {
 TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
 
 # N8N API (already present)
-N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+N8N_API_KEY=your-n8n-api-key
 ```
 
 ### 3. N8N Workflows Status

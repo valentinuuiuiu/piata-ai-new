@@ -134,6 +134,34 @@ Generate:
 
 Make it shareable, engaging, and brand-consistent.
 `,
+
+  MODERATION: `
+You are an expert content moderator for Piata AI, a Romanian marketplace. 
+Analyze the following listing and decide if it complies with platform rules.
+
+Listing:
+Title: {title}
+Description: {description}
+Price: {price}
+Category: {category}
+Location: {location}
+
+Rules:
+1. No illegal items (weapons, drugs, etc.)
+2. No offensive language or hate speech.
+3. No obvious scams or impossible offers.
+4. No personal contact info in Title.
+5. Must be in Romanian or clear English.
+
+Provide the result as a JSON object:
+{
+  "score": (0-100, where 100 is perfect quality),
+  "approved": (true/false),
+  "issues": ["list of specific issues"],
+  "suggestions": ["how to improve the listing"],
+  "reasoning": "brief explanation of your decision (in Romanian)"
+}
+`,
 };
 
 // Automation execution engine
@@ -160,7 +188,7 @@ export class AutomationEngine {
             ...task,
             lastRun: task.last_run ? new Date(task.last_run) : undefined,
             nextRun: task.next_run ? new Date(task.next_run) : undefined,
-            results: task.results ? JSON.parse(task.results) : undefined,
+            results: typeof task.results === 'string' ? JSON.parse(task.results) : (task.results || undefined),
           });
         });
       }
@@ -194,7 +222,7 @@ export class AutomationEngine {
   async executeTask(task: AutomationTask) {
     try {
       task.status = "running";
-      piataAgent.tellStory('The Ritual Begins', `Initiating ritual: ${task.name}`, 'Sinuhe');
+      // piataAgent.tellStory('The Ritual Begins', `Initiating ritual: ${task.name}`, 'Sinuhe');
 
       // Execute the automation based on type
       const result = await this.runAutomation(task);
@@ -210,9 +238,9 @@ export class AutomationEngine {
       // Save to database
       await this.saveTaskResult(task);
 
-      piataAgent.tellStory('The Ritual Completes', `The ritual ${task.name} is complete. The pattern is strengthened.`, 'Sinuhe');
+      // piataAgent.tellStory('The Ritual Completes', `The ritual ${task.name} is complete. The pattern is strengthened.`, 'Sinuhe');
     } catch (error) {
-      piataAgent.tellStory('The Ritual Falters', `The ritual ${task.name} has failed: ${error}`, 'Vetala');
+      // piataAgent.tellStory('The Ritual Falters', `The ritual ${task.name} has failed: ${error}`, 'Vetala');
       task.status = "failed";
       task.results = {
         error: error instanceof Error ? error.message : String(error),
@@ -255,7 +283,7 @@ export class AutomationEngine {
     const listings = await query(`
       SELECT id, title, description, category_id, price
       FROM anunturi
-      WHERE created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+      WHERE created_at < NOW() - INTERVAL '7 days'
       AND (title LIKE '%vând%' OR title LIKE '%cumpăr%')
       LIMIT 10
     `);
@@ -263,58 +291,66 @@ export class AutomationEngine {
     const results = [];
 
     for (const listing of (listings as any) || []) {
-      // Ask the model to return a strict JSON result for easier parsing.
-      const overridePrompt = `${AUTOMATION_PROMPTS.LISTING_OPTIMIZATION}\n\nIMPORTANT: Return ONLY a valid JSON object with these keys: title, description, hashtags (array), cta. Do NOT include extra commentary.`;
+      try {
+        // Ask the model to return a strict JSON result for easier parsing.
+        const overridePrompt = `${AUTOMATION_PROMPTS.LISTING_OPTIMIZATION}\n\nIMPORTANT: Return ONLY a valid JSON object with these keys: title, description, hashtags (array), cta. Do NOT include extra commentary.`;
 
-      const optimized = await this.callAI("custom_listing_optimization", {
-        prompt: overridePrompt,
-        title: listing.title,
-        description: listing.description,
-        category: listing.category_id,
-        price: listing.price,
-      });
+        const optimized = await this.callAI("listing_optimization", {
+          prompt: overridePrompt,
+          title: listing.title,
+          description: listing.description,
+          category: listing.category_id,
+          price: listing.price,
+        }, 3); // 3 retries
 
-      // Ensure we have a parsed object (some providers return strings)
-      let resultObj: any = optimized;
-      if (typeof optimized === "string") {
-        try {
-          resultObj = JSON.parse(optimized);
-        } catch (e) {
-          // If parsing fails, fall back to simple heuristics
-          resultObj = {
-            title: `Optimizat: ${listing.title}`,
-            description: optimized,
-            hashtags: ["#piataai"],
-            cta: "Contactează vânzătorul",
-          };
+        // Ensure we have a parsed object
+        let resultObj: any = optimized;
+        if (typeof optimized === "string") {
+          try {
+            // Remove potential markdown code blocks if the AI included them
+            const cleanStr = optimized.replace(/```json|```/g, '').trim();
+            resultObj = JSON.parse(cleanStr);
+          } catch (e) {
+            resultObj = {
+              title: listing.title,
+              description: optimized,
+              hashtags: ["#piataai"],
+              cta: "Vezi detalii",
+            };
+          }
         }
+
+        // Update listing only if we got something meaningful
+        if (resultObj.title || resultObj.description) {
+          await query(
+            "UPDATE anunturi SET title = ?, description = ? WHERE id = ?",
+            [
+              (resultObj.title || listing.title).substring(0, 100),
+              resultObj.description || listing.description,
+              listing.id,
+            ]
+          );
+        }
+
+        results.push({
+          listingId: listing.id,
+          status: "success",
+          optimizedTitle: resultObj.title || listing.title,
+        });
+      } catch (err) {
+        console.error(`Error optimizing listing ${listing.id}:`, err);
+        results.push({ listingId: listing.id, status: "failed", error: String(err) });
       }
-
-      // Update listing
-      await query(
-        "UPDATE anunturi SET title = ?, description = ? WHERE id = ?",
-        [
-          resultObj.title || listing.title,
-          resultObj.description || listing.description,
-          listing.id,
-        ]
-      );
-
-      results.push({
-        listingId: listing.id,
-        originalTitle: listing.title,
-        optimizedTitle: optimized.title,
-      });
     }
 
-    return { optimizedCount: results.length, results };
+    return { optimizedCount: results.filter(r => r.status === "success").length, results };
   }
 
   /**
    * Tangible Marketplace Command: Optimize a specific listing
    */
   async optimizeListingById(listingId: number) {
-    piataAgent.tellStory('The Craftsman', `Polishing listing #${listingId} to perfection...`, 'Manus');
+    // console.log(`Polishing listing #${listingId}...`);
     
     const listings = await query(`
       SELECT id, title, description, category_id, price
@@ -328,43 +364,41 @@ export class AutomationEngine {
 
     const listing = (listings as any)[0];
     
-    // Ask the model to return a strict JSON result
     const overridePrompt = `${AUTOMATION_PROMPTS.LISTING_OPTIMIZATION}\n\nIMPORTANT: Return ONLY a valid JSON object with these keys: title, description, hashtags (array), cta. Do NOT include extra commentary.`;
 
-    const optimized = await this.callAI("custom_listing_optimization", {
+    const optimized = await this.callAI("listing_optimization", {
       prompt: overridePrompt,
       title: listing.title,
       description: listing.description,
       category: listing.category_id,
       price: listing.price,
-    });
+    }, 2);
 
-    // Ensure we have a parsed object
     let resultObj: any = optimized;
     if (typeof optimized === "string") {
       try {
-        resultObj = JSON.parse(optimized);
+        const cleanStr = optimized.replace(/```json|```/g, '').trim();
+        resultObj = JSON.parse(cleanStr);
       } catch (e) {
         resultObj = {
-          title: `Optimizat: ${listing.title}`,
+          title: listing.title,
           description: optimized,
           hashtags: ["#piataai"],
-          cta: "Contactează vânzătorul",
+          cta: "Vezi detalii",
         };
       }
     }
 
-    // Update listing
     await query(
       "UPDATE anunturi SET title = ?, description = ? WHERE id = ?",
       [
-        resultObj.title || listing.title,
+        (resultObj.title || listing.title).substring(0, 100),
         resultObj.description || listing.description,
         listing.id,
       ]
     );
     
-    piataAgent.tellStory('The Reveal', `Listing #${listingId} has been transformed.`, 'Manus');
+    // console.log(`Listing #${listingId} has been transformed.`);
 
     return {
       original: { title: listing.title },
@@ -374,23 +408,30 @@ export class AutomationEngine {
 
   private async generateBlogContent(context: AutomationContext) {
     const topics = [
-      "Tendințe în comerțul online din România",
-      "Cum să vinzi mai repede pe marketplace-uri",
-      "AI în e-commerce: viitorul cumpărăturilor",
-      "Sfaturi pentru cumpărători online siguri",
-      "Optimizarea listing-urilor pentru mai multe vânzări",
+      "Tendințe în comerțul online din România 2024",
+      "Cum să vinzi mai repede pe marketplace-uri cu AI",
+      "AI în e-commerce: viitorul cumpărăturilor în România",
+      "Sfaturi pentru cumpărători online siguri pe Piata AI",
+      "Optimizarea listing-urilor pentru vânzări masive",
     ];
 
     const selectedTopic = topics[Math.floor(Math.random() * topics.length)];
 
-    const content = await this.callAI("blog_generation", {
+    const content = await this.callAI("BLOG_CONTENT_GENERATION", {
       topic: selectedTopic,
     });
 
-    // Save blog post to database
+    // Save blog post to database - using excerpt instead of meta_description as per schema
     await query(
-      "INSERT INTO blog_posts (title, content, meta_description, slug, published_at) VALUES (?, ?, ?, ?, NOW())",
-      [content.title, content.content, content.metaDescription, content.slug]
+      "INSERT INTO blog_posts (title, content, excerpt, slug, published, published_at, author) VALUES (?, ?, ?, ?, ?, NOW(), ?)",
+      [
+        content.title, 
+        content.content, 
+        content.metaDescription || content.excerpt || "", 
+        content.slug || selectedTopic.toLowerCase().replace(/\s+/g, '-'),
+        true,
+        'AI Agent - Sinuhe'
+      ]
     );
 
     return { topic: selectedTopic, title: content.title };
@@ -399,19 +440,19 @@ export class AutomationEngine {
   private async runEmailCampaign(context: AutomationContext) {
     // Get inactive users from last 30 days
     const users = await query(`
-      SELECT id, email, name, last_login
+      SELECT id, email, name, created_at
       FROM users
-      WHERE last_login < DATE_SUB(NOW(), INTERVAL 30 DAY)
+      WHERE created_at < NOW() - INTERVAL '30 days'
       LIMIT 50
     `);
 
     let sentCount = 0;
 
     for (const user of (users as any) || []) {
-      const emailContent = await this.callAI("email_campaign", {
+      const emailContent = await this.callAI("EMAIL_CAMPAIGN_GENERATION", {
         campaignType: "reengagement",
         audience: "inactive_users",
-        userData: { name: user.name, lastLogin: user.last_login },
+        userData: { name: user.name, createdAt: user.created_at },
       });
 
       await sendEmail({
@@ -461,7 +502,7 @@ export class AutomationEngine {
     const listings = await query(`
       SELECT id, title, description, price, images
       FROM anunturi
-      WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)
+      WHERE created_at > NOW() - INTERVAL '1 day'
       LIMIT 20
     `);
 
@@ -504,7 +545,7 @@ export class AutomationEngine {
 
     const topic = topics[Math.floor(Math.random() * topics.length)];
 
-    const content = await this.callAI("social_media", {
+    const content = await this.callAI("SOCIAL_MEDIA_POST", {
       platform,
       contentType,
       topic,
@@ -512,7 +553,7 @@ export class AutomationEngine {
 
     // Save to social media queue
     await query(
-      "INSERT INTO social_media_queue (platform, content, hashtags, scheduled_for) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
+      "INSERT INTO social_media_queue (platform, content, hashtags, scheduled_for) VALUES (?, ?, ?, NOW() + INTERVAL '1 hour')",
       [
         platform,
         content.text,
@@ -524,26 +565,28 @@ export class AutomationEngine {
     return { platform, contentType, topic, content: content.text };
   }
 
-  private async callAI(promptType: string, data: any): Promise<any> {
-    // Use the shared AI provider wrapper (local Balog/TOON or OpenRouter)
-
+  private async callAI(promptType: string, data: any, retries: number = 0): Promise<any> {
     try {
       const raw = await runPrompt(promptType, data);
 
-      // If provider returned a JSON string, try to parse it
       if (typeof raw === "string") {
         try {
-          const parsed = JSON.parse(raw);
+          const cleanStr = raw.replace(/```json|```/g, '').trim();
+          const parsed = JSON.parse(cleanStr);
           return parsed;
         } catch (_) {
-          // Not JSON — return raw text for caller to interpret
           return raw;
         }
       }
 
       return raw;
     } catch (err) {
-      console.error("AI provider error:", err);
+      if (retries > 0) {
+        console.warn(`AI call failed, retrying... (${retries} left)`);
+        return this.callAI(promptType, data, retries - 1);
+      }
+      
+      console.error("AI provider error after retries:", err);
 
       // Fallback to previous mocks to keep automation resilient
       const mockResponses = {

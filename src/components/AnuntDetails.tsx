@@ -35,8 +35,12 @@ interface Props {
   listing: Listing;
 }
 
+import { useSearchParams } from 'next/navigation';
+
 export default function AnuntDetails({ listing }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isConfirmed = searchParams.get('confirmed') === 'true';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
@@ -50,6 +54,13 @@ export default function AnuntDetails({ listing }: Props) {
     };
     checkAuth();
   }, []);
+
+  // Celebration effect for confirmation
+  useEffect(() => {
+    if (isConfirmed) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isConfirmed]);
 
   const imageList = useMemo(() => {
     if (!listing?.images) return [] as string[];
@@ -114,6 +125,21 @@ export default function AnuntDetails({ listing }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white">
       <div className="max-w-7xl mx-auto px-4 py-16 space-y-12">
+        {isConfirmed && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="p-8 rounded-[32px] bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 border-2 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.3)] text-center relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-green-500/5 animate-pulse" />
+            <span className="text-5xl block mb-4">🎊</span>
+            <h2 className="text-3xl font-black text-white mb-2">Anunț publicat cu succes!</h2>
+            <p className="text-green-400 font-bold uppercase tracking-widest text-sm">
+              Anunțul tău este acum vizibil pe Piata AI RO
+            </p>
+          </motion.div>
+        )}
+
         <div className="space-y-3">
           <p className="uppercase tracking-[0.5em] text-white/60 text-xs">Anunț premium</p>
           <h1 className="text-5xl lg:text-6xl font-black tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
@@ -280,6 +306,30 @@ export default function AnuntDetails({ listing }: Props) {
               <p className="text-3xl font-black text-[#00f0ff]">{listing.location || 'România'}</p>
               <p className="text-sm text-slate-400 mt-1">Categorie: {listing.category?.name || 'General'}</p>
             </div>
+
+            {listing.category?.name?.toLowerCase().includes('auto') && (
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="rounded-3xl border border-[#00f0ff]/20 bg-gradient-to-br from-[#00f0ff]/10 to-transparent p-6 shadow-xl shadow-[#00f0ff]/10"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">🚗</span>
+                  <h3 className="text-xl font-bold text-white">Verificare Istoric</h3>
+                </div>
+                <p className="text-sm text-slate-400 mb-6">
+                  Vrei să afli km reali și istoricul de daune al acestei mașini? Verifică acum pe <strong>carVertical</strong>.
+                </p>
+                <a 
+                  href="https://www.carvertical.com/ro/landing/v3?utm_source=affiliate&utm_medium=piata-ai&utm_campaign=vin_check" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full text-center py-4 rounded-2xl bg-[#00f0ff] text-black font-black hover:bg-white transition-all duration-300 shadow-[0_10px_30px_rgba(0,240,255,0.3)]"
+                >
+                  VERIFICĂ KM REALI →
+                </a>
+              </motion.div>
+            )}
 
             <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#0F172A]/70 to-[#1E293B]/70 p-6 shadow-xl shadow-black/40">
               <AnuntMapView lat={listing.lat} lng={listing.lng} title={listing.title} />

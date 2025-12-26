@@ -8,7 +8,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const N8N_URL = 'http://localhost:5678';
-const N8N_API_KEY = process.env.N8N_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMzMjU2NC0zNzFhLTQwZTUtYmJjNC1lZjcxNmY0ODg4ZTEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY2NTczOTY5LCJleHAiOjE3NjkxNDQ0MDB9.HKX6gtyx1lNAzrur5WeVYUiD9ht25uW3lkunorVBpJg';
+const N8N_API_KEY = process.env.N8N_API_KEY;
+if (!N8N_API_KEY) throw new Error('N8N_API_KEY is required');
 const WORKFLOWS_DIR = '/tmp/piata_n8n_workflows';
 
 interface WorkflowImportResult {

@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer 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`,
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, // do not hardcode
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://piata-ro.vercel.app',
         'X-Title': 'Piata RO Cursor Proxy',

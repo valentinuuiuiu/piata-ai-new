@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    instrumentationHook: true,
   },
   images: {
     unoptimized: process.env.NODE_ENV === 'development',

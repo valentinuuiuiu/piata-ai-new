@@ -519,20 +519,34 @@ function PostareAnuntContent() {
       )}
       </form>
 
-      <div className="glass p-8 rounded-2xl text-center border-t-2 border-[#00f0ff]/30">
-        <p className="text-lg text-gray-400 mb-4">✅ Anunțul va fi moderat automat de AI în &lt; 30 secunde</p>
-        <div className="flex justify-center space-x-8 text-sm text-gray-500">
-          <span>🛡️ Securizat</span>
-          <span>⚡ Instant</span>
-          <span>💯 Gratuit</span>
+      <div className="glass p-10 rounded-3xl text-center border border-white/10 shadow-xl bg-white/5">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </span>
+          <p className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+            ✅ Anunțul va fi moderat automat de AI în &lt; 30 secunde
+          </p>
         </div>
-        <div className="flex justify-center space-x-8 text-sm text-gray-500">
-          <span>🛡️ Securizat</span>
-          <span>⚡ Instant</span>
-          <span>💯 Gratuit*</span>
+        
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="flex flex-col items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+            <span className="text-2xl mb-1">🛡️</span>
+            <span className="text-sm font-semibold text-white/70">Securizat</span>
+          </div>
+          <div className="flex flex-col items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+            <span className="text-2xl mb-1">⚡</span>
+            <span className="text-sm font-semibold text-white/70">Instant</span>
+          </div>
+          <div className="flex flex-col items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+            <span className="text-2xl mb-1">💯</span>
+            <span className="text-sm font-semibold text-white/70">Gratuit*</span>
+          </div>
         </div>
-        <p className="text-xs text-gray-600 mt-2">
-          *Categoriile "Matrimoniale" și "Imobiliare" necesită credite
+
+        <p className="text-sm text-white/40 italic">
+          *Categoriile <span className="text-[#ff00f0]">"Matrimoniale"</span> și <span className="text-[#00f0ff]">"Imobiliare"</span> necesită credite pentru postare.
         </p>
       </div>
     </div>
