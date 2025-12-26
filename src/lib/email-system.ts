@@ -1,5 +1,4 @@
-// Email Marketing Automation System
-// Based on OpenManus Market Intelligence for Romanian marketplace
+import { analyticsSystem } from './analytics-system';
 
 export interface EmailTemplate {
   id: string;
@@ -848,6 +847,14 @@ Revino acum: https://platforma-ta.ro/welcome-back?code=ÎNAPOI50
     if (analytics) {
       analytics.opened++;
     }
+    
+    // Track in comprehensive analytics system
+    analyticsSystem.trackEvent({
+      eventType: 'open',
+      channel: 'email',
+      campaignId: campaignId,
+      metadata: { emailId }
+    });
   }
 
   public trackEmailClick(campaignId: string, emailId: string): void {
@@ -856,5 +863,13 @@ Revino acum: https://platforma-ta.ro/welcome-back?code=ÎNAPOI50
     if (analytics) {
       analytics.clicked++;
     }
+
+    // Track in comprehensive analytics system
+    analyticsSystem.trackEvent({
+      eventType: 'click',
+      channel: 'email',
+      campaignId: campaignId,
+      metadata: { emailId }
+    });
   }
 }

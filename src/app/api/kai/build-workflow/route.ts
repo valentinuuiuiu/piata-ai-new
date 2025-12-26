@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { withAPISpan, withWorkflowSpan, setAttribute, recordEvent } from '@/lib/tracing';
+import { 
+  registerWorkflow, 
+  getAllWorkflows, 
+  Workflow 
+} from '@/lib/internal-workflow-registry';
+import { withAPISpan, setAttribute, recordEvent } from '@/lib/tracing';
 
 /**
- * KAI Workflow Builder - Create new .claude workflows on demand
- * Fabric-style patterns for any job needed
+ * KAI Workflow Builder - Create internal workflows on demand
+ * 
+ * Everything is stored internally in our backend - no external files!
+ * We own this completely - no paid tiers, no external dependencies!
  */
 
 interface WorkflowRequest {
@@ -14,68 +19,69 @@ interface WorkflowRequest {
   job_description: string;
   agents?: Record<string, string>;
   patterns?: string[];
+  category?: string;
+  tags?: string[];
 }
 
 export async function POST(req: NextRequest) {
   return withAPISpan('/api/kai/build-workflow', async (span) => {
     try {
-      const { name, description, job_description, agents, patterns } = await req.json() as WorkflowRequest;
+      const { name, description, job_description, agents, patterns, category, tags } = await req.json() as WorkflowRequest;
 
-      // Record request attributes
       setAttribute('workflow.name', name);
       setAttribute('workflow.description', description);
-      setAttribute('workflow.job_type', job_description.substring(0, 100));
+      setAttribute('workflow.category', category || 'custom');
 
-      recordEvent('workflow.build.started', { name });
+      recordEvent('workflow.build.started', { name, category });
 
       // Auto-detect required agents based on job type
       const detectedAgents = detectRequiredAgents(job_description);
       const finalAgents = agents || detectedAgents;
 
-      setAttribute('workflow.agents.count', Object.keys(finalAgents).length);
-      setAttribute('workflow.agents.list', Object.keys(finalAgents));
-
       // Build workflow steps using fabric-style patterns
       const steps = await buildWorkflowSteps(job_description, finalAgents, patterns);
 
-      setAttribute('workflow.steps.count', steps.length);
-
-      // Create workflow JSON
-      const workflow = {
+      // Create workflow object
+      const workflow: Workflow = {
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         name,
         description,
+        category: category || 'custom',
+        tags: tags || [],
         agents: finalAgents,
         steps,
+        record_on_chain: detectBlockchainNeed(job_description),
+        enabled: true,
         created_by: 'KAI-Builder',
         created_at: new Date().toISOString(),
-        record_on_chain: detectBlockchainNeed(job_description)
+        updated_at: new Date().toISOString()
       };
 
+      setAttribute('workflow.steps.count', steps.length);
+      setAttribute('workflow.agents.count', Object.keys(finalAgents).length);
       setAttribute('workflow.record_on_chain', workflow.record_on_chain);
 
-      // Save to .claude/workflows/
-      const workflowsDir = path.join(process.cwd(), '.claude', 'workflows');
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const filePath = path.join(workflowsDir, `${slug}.json`);
-
-      fs.writeFileSync(filePath, JSON.stringify(workflow, null, 2));
+      // Register workflow internally (no file system!)
+      const registeredWorkflow = await registerWorkflow(workflow);
 
       recordEvent('workflow.build.completed', { 
         name, 
-        stepsCount: steps.length,
-        filePath 
+        workflowId: registeredWorkflow.id,
+        stepsCount: steps.length 
       });
 
       return NextResponse.json({
         success: true,
-        workflow,
-        path: filePath,
-        message: `✅ Workflow "${name}" created! Execute with: /relay-chain or trigger via KAI chat.`
+        workflow: registeredWorkflow,
+        message: `✅ Workflow "${name}" created internally! Execute with: /api/workflows/execute or trigger via KAI chat.`
       });
 
     } catch (error) {
       setAttribute('error.message', (error as Error).message);
-      throw error;
+      return NextResponse.json({
+        error: (error as Error).message,
+        message: '❌ Workflow creation failed'
+      }, { status: 500 });
     }
   });
 }
@@ -207,30 +213,29 @@ function detectBlockchainNeed(jobDescription: string): boolean {
 export async function GET() {
   return withAPISpan('/api/kai/build-workflow', async (span) => {
     try {
-      const workflowsDir = path.join(process.cwd(), '.claude', 'workflows');
-      const files = fs.readdirSync(workflowsDir).filter(f => f.endsWith('.json'));
+      const workflows = getAllWorkflows();
 
-      setAttribute('workflows.count', files.length);
-
-      const workflows = files.map(file => {
-        const content = fs.readFileSync(path.join(workflowsDir, file), 'utf-8');
-        return JSON.parse(content);
-      });
+      setAttribute('workflows.count', workflows.length);
 
       recordEvent('workflows.listed', { count: workflows.length });
 
       return NextResponse.json({
         count: workflows.length,
         workflows: workflows.map(w => ({
+          id: w.id,
           name: w.name,
           description: w.description,
+          category: w.category,
+          tags: w.tags,
           agents: Object.keys(w.agents || {}),
-          steps: w.steps?.length || 0
+          steps: w.steps?.length || 0,
+          enabled: w.enabled,
+          created_at: w.created_at
         }))
       });
     } catch (error) {
       setAttribute('error.message', (error as Error).message);
-      throw error;
+      return NextResponse.json({ error: (error as Error).message }, { status: 500 });
     }
   });
 }

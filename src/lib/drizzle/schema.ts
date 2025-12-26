@@ -124,3 +124,44 @@ export const agentMatches = pgTable('agent_matches', {
 export type ShoppingAgent = InferSelectModel<typeof shoppingAgents>;
 export type NewShoppingAgent = InferInsertModel<typeof shoppingAgents>;
 export type AgentMatch = InferSelectModel<typeof agentMatches>;
+
+// Referral System
+export const referralCodes = pgTable('referral_codes', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const referrals = pgTable('referrals', {
+  id: serial('id').primaryKey(),
+  referrerId: text('referrer_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  referredId: text('referred_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  status: varchar('status', { length: 20 }).default('pending'), // pending, completed, fraud_detected
+  tier: integer('tier').default(1),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const referralRewards = pgTable('referral_rewards', {
+  id: serial('id').primaryKey(),
+  referralId: integer('referral_id').references(() => referrals.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  rewardType: varchar('reward_type', { length: 50 }).notNull(), // credit, discount, premium_trial, cash
+  amount: decimal('amount', { precision: 10, scale: 2 }),
+  status: varchar('status', { length: 20 }).default('pending'), // pending, distributed, cancelled
+  distributedAt: timestamp('distributed_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const referralFraudLogs = pgTable('referral_fraud_logs', {
+  id: serial('id').primaryKey(),
+  referralId: integer('referral_id').references(() => referrals.id, { onDelete: 'cascade' }),
+  reason: text('reason').notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type ReferralCode = InferSelectModel<typeof referralCodes>;
+export type Referral = InferSelectModel<typeof referrals>;
+export type ReferralReward = InferSelectModel<typeof referralRewards>;
+export type ReferralFraudLog = InferSelectModel<typeof referralFraudLogs>;

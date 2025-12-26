@@ -1,55 +1,87 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 import {
-  executeWorkflow,
-  listWorkflows,
-  getWorkflowStatus,
-  WORKFLOWS
-} from '@/lib/workflow-engine'
+  getWorkflow,
+  getAllWorkflows,
+  getWorkflowsByCategory,
+  getEnabledWorkflows,
+  executeWorkflow
+} from '@/lib/internal-workflow-registry';
+import { withAPISpan, setAttribute, recordEvent } from '@/lib/tracing';
 
 /**
  * GET /api/workflows
  *
- * List all available workflows
+ * List all available workflows (internal registry)
  */
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const workflowId = searchParams.get('id')
-    const action = searchParams.get('action')
+  return withAPISpan('/api/workflows', async (span) => {
+    try {
+      const { searchParams } = new URL(req.url);
+      const id = searchParams.get('id');
+      const category = searchParams.get('category');
+      const enabled = searchParams.get('enabled');
 
-    // Get specific workflow status
-    if (workflowId && action === 'status') {
-      const status = await getWorkflowStatus(workflowId)
-      return NextResponse.json(status)
-    }
-
-    // Get specific workflow details
-    if (workflowId) {
-      const workflow = WORKFLOWS[workflowId]
-      if (!workflow) {
-        return NextResponse.json(
-          { error: `Workflow not found: ${workflowId}` },
-          { status: 404 }
-        )
+      // Get specific workflow
+      if (id) {
+        const workflow = getWorkflow(id);
+        if (!workflow) {
+          setAttribute('error.type', 'WorkflowNotFound');
+          return NextResponse.json(
+            { error: `Workflow not found: ${id}` },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json(workflow);
       }
-      return NextResponse.json(workflow)
-    }
 
-    // List all workflows
-    const workflows = await listWorkflows()
-    return NextResponse.json({
-      success: true,
-      count: workflows.length,
-      workflows,
-      message: 'Ori suntem golani ori nu mai suntem - All workflows ready for autonomous execution'
-    })
-  } catch (error: any) {
-    console.error('Workflows GET error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    )
-  }
+      let workflows;
+
+      if (category) {
+        workflows = getWorkflowsByCategory(category);
+        setAttribute('workflow.category', category);
+      } else if (enabled === 'true') {
+        workflows = getEnabledWorkflows();
+        setAttribute('workflow.filter', 'enabled_only');
+      } else {
+        workflows = getAllWorkflows();
+      }
+
+      setAttribute('workflows.count', workflows.length);
+
+      recordEvent('workflows.listed', { 
+        count: workflows.length,
+        category,
+        enabled
+      });
+
+      return NextResponse.json({
+        success: true,
+        count: workflows.length,
+        workflows: workflows.map(w => ({
+          id: w.id,
+          name: w.name,
+          description: w.description,
+          category: w.category,
+          tags: w.tags,
+          agents: w.agents,
+          steps: w.steps.length,
+          enabled: w.enabled,
+          record_on_chain: w.record_on_chain,
+          created_by: w.created_by,
+          created_at: w.created_at,
+          updated_at: w.updated_at
+        })),
+        message: '✅ All workflows ready for autonomous execution - Internal Registry!'
+      });
+    } catch (error) {
+      setAttribute('error.message', (error as Error).message);
+      console.error('Workflows GET error:', error);
+      return NextResponse.json(
+        { error: 'Internal server error', details: (error as Error).message },
+        { status: 500 }
+      );
+    }
+  });
 }
 
 /**
@@ -80,18 +112,20 @@ export async function POST(req: NextRequest) {
     // Execute workflow asynchronously
     const execution = await executeWorkflow(workflowId, context)
 
+    const workflow = getWorkflow(workflowId);
+
     return NextResponse.json({
       success: execution.status === 'completed',
-      workflowId: execution.workflowId,
+      workflowId: execution.workflow_id || workflowId,
       status: execution.status,
-      completedSteps: execution.completedSteps.length,
-      failedSteps: execution.failedSteps.length,
-      executionTime: Date.now() - execution.startTime,
+      completedSteps: execution.steps_completed || 0,
+      totalSteps: workflow?.steps.length || 0,
+      executionTime: Date.now() - new Date(execution.started_at).getTime(),
       results: execution.results,
       message:
         execution.status === 'completed'
-          ? `Workflow completed successfully: ${WORKFLOWS[workflowId]?.name}`
-          : `Workflow failed: ${execution.failedSteps.length} steps failed`
+          ? `Workflow completed successfully: ${workflow?.name || workflowId}`
+          : `Workflow failed: Execution status is ${execution.status}`
     })
   } catch (error: any) {
     console.error('Workflow execution error:', error)

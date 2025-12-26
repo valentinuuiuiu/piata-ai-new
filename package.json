@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:with-tracing": "ts-node -r tsconfig-paths/register scripts/start-with-tracing.ts",
+    "dev:internal": "ts-node -r tsconfig-paths/register scripts/start-internal-systems.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

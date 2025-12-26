@@ -1,18 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useWeb3 } from '@/hooks/use-web3';
 
-export default function Autentificare() {
+function AutentificareContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const { connectMetaMask, connectSolana, address, error: web3Error } = useWeb3();
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) setReferralCode(ref);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +38,7 @@ export default function Autentificare() {
         router.refresh();
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -45,6 +52,26 @@ export default function Autentificare() {
       if (error) {
         alert(error.message);
       } else {
+        // Track referral if code provided
+        if (referralCode && data.user) {
+          try {
+            await fetch('/api/referrals/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                referrerCode: referralCode,
+                referredUserId: data.user.id,
+                metadata: { 
+                  userAgent: navigator.userAgent,
+                  platform: navigator.platform
+                }
+              })
+            });
+          } catch (err) {
+            console.error('Failed to track referral:', err);
+          }
+        }
+
         alert('Cont creat cu succes! Verifică emailul pentru confirmare.');
         setIsLogin(true);
         setPassword('');
@@ -82,10 +109,7 @@ export default function Autentificare() {
     }
 
     if (walletAddress) {
-      // Here you would typically sign a message to verify ownership
-      // For now, we just show success
       alert(`Conectat cu portofelul: ${walletAddress}`);
-      // You could also create a guest session or map to a user
     }
   };
 
@@ -162,6 +186,21 @@ export default function Autentificare() {
               autoComplete="current-password"
             />
           </div>
+          {!isLogin && (
+            <div>
+              <label className="block text-lg font-bold mb-3 text-[#ff00f0]">Cod Recomandare (Opțional)</label>
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="w-full p-4 rounded-2xl bg-white/10 border border-[#ff00f0]/50 focus:border-[#ff00f0] focus:ring-4 focus:ring-[#ff00f0]/30 text-white placeholder-gray-400 text-lg"
+                placeholder="EX: ABC12345"
+              />
+              <p className="text-[10px] text-gray-500 mt-2 uppercase font-bold tracking-widest">
+                Primești 50 RON credit cadou la înregistrare
+              </p>
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
@@ -177,5 +216,13 @@ export default function Autentificare() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Autentificare() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#00f0ff] font-black">ÎNCĂRCARE...</div>}>
+      <AutentificareContent />
+    </Suspense>
   );
 }
