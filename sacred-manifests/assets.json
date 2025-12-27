@@ -1,46 +1,47 @@
 {
-  "timestamp": "2025-12-27T19:10:47.110Z",
+  "timestamp": "2025-12-27T19:38:03.139Z",
   "analysis": {
-    "summary": "Piata-AI.ro reprezintă primul ecosistem integrat din România dedicat democratizării accesului la soluții de Inteligență Artificială, facilitând o conexiune transparentă și etică între dezvoltatorii de tehnologie și companiile care vizează transformarea digitală.",
+    "summary": "Piața AI reprezintă primul hub centralizat din România dedicat democratizării accesului la inteligență artificială, oferind un spațiu etic și transparent pentru schimbul de resurse digitale, prompt-uri și expertiză tehnică.",
     "targetAudience": [
-      "Întreprinderi Mici și Mijlocii (IMM-uri) aflate în proces de digitalizare",
-      "Dezvoltatori și furnizori de soluții bazate pe AI",
-      "Manageri de inovare și directori IT (CTO)",
-      "Antreprenori tech și consultanți în eficiență operațională"
+      "Antreprenori și startup-uri tech",
+      "Creatori de conținut și prompt engineers",
+      "Companii în proces de transformare digitală",
+      "Freelanceri specializați în soluții AI",
+      "Dezvoltatori software din ecosistemul local"
     ],
     "keySellingPoints": [
-      "Transparență radicală și criterii etice în listarea soluțiilor AI",
-      "Accesibilitate și suport local pentru integrarea tehnologiilor emergente",
-      "Eficiență accelerată prin automatizarea proceselor de business",
-      "Securitatea datelor și conformitate cu standardele europene de etică digitală",
-      "Hub de resurse specializate pentru creșterea competitivității pe piața locală"
+      "Democratizarea accesului la tehnologii emergente",
+      "Monetizarea etică a proprietății intelectuale digitale",
+      "Ecosistem de încredere pentru tranzacții cu active AI",
+      "Reducerea decalajului tehnologic pentru IMM-urile românești",
+      "Suport pentru inovația locală și creativitatea asistată de AI"
     ],
-    "tone": "Profesional, vizionar, de înaltă autoritate și orientat spre performanță tehnologică",
+    "tone": "Profesional, vizionar și dinamic, axat pe eficiență de înaltă viteză și progres tehnologic responsabil.",
     "url": "https://piata-ai.ro"
   },
   "contents": [
     {
-      "id": "0.007534758681390752",
+      "id": "0.6025042436309415",
       "platform": "TikTok",
-      "title": "AI pe înțelesul afacerii tale",
-      "content": "Crezi că AI-ul e doar pentru corporații gigant? Te înșeli! ❌\n\nHai să vezi cum transformăm un IMM românesc în doar câteva secunde.\n\n🔴 ÎNAINTE: Ore întregi pierdute cu introducerea manuală a datelor, e-mailuri repetitive și haos în programări. Costuri mari, timp zero. 🤯\n\n🟢 DUPĂ: Intri pe Piata-AI.ro, alegi un instrument de automatizare accesibil și... BUM! 🚀\n\nFacturile se generează singure, clienții primesc răspunsuri instant prin chatbot, iar tu te concentrezi pe creșterea afacerii, nu pe hârțogărie. \n\nNu e scump și nu ai nevoie de programatori. E simplu, eficient și gata de implementat.\n\n👉 Vizitează Piata-AI.ro și alege soluția care îți salvează timpul și banii! Link în bio. \n\n#PiataAI #AfaceriRomania #Automatizare #SME #Productivitate #InteligențaArtificială",
-      "visualPrompt": "A split-screen vertical video composition for TikTok. On the left side (Before), a stressed Romanian business owner in a cluttered office with stacks of paper and a messy desk, looking exhausted. On the right side (After), the same owner in a clean, modern office, smiling, holding a cup of coffee while a laptop screen displays a sleek AI dashboard with green growth charts. High resolution, vibrant colors, cinematic lighting.",
+      "title": "AI pe limba ta: De la Prompt la Profit",
+      "content": "🚀 AI pe limba ta: De la Prompt la Profit! 🇷🇴\n\n(Cadru 1: Close-up cu un antreprenor stresat, înconjurat de hârtii/laptop. Text pe ecran: „Prea mult timp pierdut cu postările?”)\n\nNarrator: „Te-ai săturat să pierzi ore întregi scriind texte care nu vând? Hai să-ți arăt cum faci profit în sub 60 de secunde.”\n\n(Cadru 2: Screen recording rapid pe telefon/laptop accesând Piata-AI.ro. Cursorul merge direct la un prompt de marketing.)\n\nNarrator: „Intri pe Piata-AI.ro – prima platformă cu resurse AI create special pentru piața din România. Alegi un prompt gata testat, îi dai copy-paste și... BAM!”\n\n(Cadru 3: Ecranul se transformă dintr-un document gol într-o strategie completă de social media.)\n\nNarrator: „Fără engleză complicată, fără termeni tehnici. Doar AI pe limba ta, care muncește în locul tău.”\n\n(Cadru 4: Antreprenorul zâmbește, bea o cafea relaxat. Text pe ecran: „De la Prompt la Profit. Acum!”)\n\nNarrator: „Ești gata să treci la nivelul următor? Intră acum pe Piata-AI.ro și ia-ți scurtătura către succes. Link în bio!”\n\n#PiataAI #AntreprenorRomania #AIinRomana #Productivitate #AfaceriOnline #PromptEngineering",
+      "visualPrompt": "A high-quality, cinematic vertical shot of a modern Romanian entrepreneur sitting in a bright, stylish home office in Bucharest. On the laptop screen, the Piata-AI.ro website is visible with a clean interface. The person looks confident and relieved, holding a cup of coffee. Soft bokeh background, 4k resolution, professional lighting, tech-savvy atmosphere.",
       "status": "generated"
     },
     {
-      "id": "0.2063732501027845",
+      "id": "0.5354058234882875",
       "platform": "Facebook",
-      "title": "Democratizarea AI: De la Viziune la Implementare",
-      "content": "🤖 „Inteligența Artificială e doar pentru corporații?” – Cel mai mare mit care frânează IMM-urile din România.\n\nMulți antreprenori locali cred că AI-ul înseamnă bugete de milioane și echipe de programatori. Realitatea? AI-ul este astăzi noul „angajat model” care nu obosește niciodată, disponibil chiar și pentru afacerea ta.\n\n❌ PROBLEMA: Te simți blocat în task-uri repetitive? Petreci ore în șir scriind e-mailuri, analizând date manual sau gestionând suportul pentru clienți, în timp ce viziunea ta de scalare stagnează pe birou.\n\n✅ SOLUȚIA: Piata-AI.ro. Am creat un ecosistem unde democratizăm accesul la tehnologie. Pe platforma noastră, găsești instrumente gata de implementat care:\n👉 Automatizează comunicarea cu clienții.\n👉 Generează conținut de marketing în câteva secunde.\n👉 Analizează eficient fluxurile de lucru pentru a reduce costurile.\n\nNu mai lăsa birocrația digitală să îți consume timpul. Treci de la viziune la implementare și concentrează-te pe ceea ce contează cu adevărat: creșterea afacerii tale.\n\n🚀 Descoperă viitorul accesibil pe Piata-AI.ro – Inteligența Artificială, tradusă pe limba antreprenorului român.\n\n#PiataAI #AntreprenoriatRomania #Automatizare #AIpentruIMM #Inovatie #ScalareAfacere",
-      "visualPrompt": "A professional and modern split-screen image. On the left side (Problem), a stressed Romanian entrepreneur in a cluttered office, overwhelmed by stacks of paper and digital notifications, in cool/dim lighting. On the right side (Solution), the same entrepreneur looking confident and relaxed in a clean, bright office, with glowing futuristic AI icons (gears, lightbulbs, growth charts) floating subtly around a laptop. High-quality corporate photography style, 4k, vibrant colors on the solution side.",
+      "title": "Democratizarea Inovației: AI la un Click Distanță",
+      "content": "🚀 AI-ul nu mai este un lux rezervat giganților din Silicon Valley. Este aici, în România, și este gata să îți transforme afacerea!\n\nTe-ai întrebat vreodată cum reușesc micii antreprenori locali să țină pasul cu marile corporații? Răspunsul nu stă în bugete de milioane, ci în accesul la unelte inteligente. \n\n💡 Democratizarea Inovației: Pe Piata-AI.ro, am dărâmat barierele. Am adus inteligența artificială la un click distanță de orice afacere românească, indiferent de mărime.\n\n📈 Iată ce spun antreprenorii care au făcut deja pasul:\n„Credeam că AI-ul e doar pentru experți în cod. Pe Piata-AI.ro am găsit soluții gata de implementat care mi-au redus timpul de lucru la jumătate și mi-au crescut vânzările fără să angajez o armată de oameni.” – Andrei, proprietar magazin online.\n\nNu lăsa viitorul să te ia prin surprindere. Fie că ai nevoie de automatizare, marketing inteligent sau analiză de date, resursele sunt acum accesibile și ușor de folosit.\n\n👉 Vizitează Piata-AI.ro și alege soluția care îți va duce afacerea la nivelul următor. Inovația este acum a ta!\n\n#PiataAI #InovatieRomanesca #AIpentruToti #AfaceriLocale #Digitalizare #DemocratizareaAI",
+      "visualPrompt": "A high-quality, professional photograph of a confident Romanian entrepreneur in a modern, sunlit small office or a creative hub. He is looking at a laptop screen which displays a clean, user-friendly AI marketplace interface (Piata-AI.ro). Subtle, glowing digital neural network lines and icons representing 'efficiency' and 'growth' emerge from the laptop, blending into the real-world environment to symbolize the integration of AI. The atmosphere is optimistic, accessible, and tech-forward. 4k resolution, cinematic lighting.",
       "status": "generated"
     },
     {
-      "id": "0.7791268761755933",
+      "id": "0.5921191595134182",
       "platform": "Google/FB Ads",
-      "title": "AI pe înțelesul IMM-urilor: De la complexitate la eficiență",
-      "content": "Titlu: Inteligența Artificială pe înțelesul afacerii tale! 🚀\n\nTe simți copleșit de complexitatea tehnologiei? La Piata-AI.ro, demistificăm AI-ul și îl transformăm într-un motor de creștere pentru IMM-ul tău. \n\nUită de barierele tehnice și financiare. Oferim soluții de digitalizare accesibile, create special pentru antreprenorii români care vor rezultate concrete, nu doar termeni tehnici complicați.\n\nCe câștigi cu Piata-AI.ro?\n✅ Reducerea costurilor operaționale: Mai mult profit, mai puțină risipă.\n✅ Automatizare inteligentă: Scapă de sarcinile repetitive și eliberează timpul echipei tale.\n✅ Competitivitate locală: Tehnologie de ultimă oră, implementată simplu și rapid.\n\nNu lăsa viitorul să te ia prin surprindere. Transformă-ți afacerea dintr-o luptă zilnică într-un sistem eficient și modern. AI-ul nu mai este un lux rezervat corporațiilor, este noul tău partener de încredere.\n\n👉 Descoperă soluțiile noastre pe: Piata-AI.ro",
-      "visualPrompt": "A high-quality, photorealistic image of a confident Romanian business owner in a bright, modern office, looking at a laptop screen that displays a simplified, glowing AI dashboard with upward-trending green graphs. In the background, there is a subtle blend of a traditional office environment and futuristic digital nodes connecting smoothly. The lighting is warm and optimistic, conveying trust and technological accessibility. 4k resolution, cinematic style.",
+      "title": "Eficiență prin Democratizare: AI pentru Antreprenori",
+      "content": "🚀 AI-ul nu mai este un lux, ci motorul tău de creștere! Ești gata să îți propulsezi startup-ul fără costuri prohibitive de cercetare?\n\nLa Piata-AI.ro, democratizăm inovația. Am eliminat barierele tehnice pentru ca TU să te concentrezi pe profit, nu pe procese complicate. \n\n✅ Resurse AI pre-testate și validate: Nu mai irosi luni de zile încercând să înțelegi tehnologia. \n✅ Prompt-uri optimizate: Obține rezultate profesionale instantaneu.\n✅ Implementare rapidă: Fără echipe scumpe de R&D sau consultanți externi.\n\nNu mai pierde timpul „descoperind roata”. Accesează astăzi soluții gata de utilizat și transformă orele de muncă manuală în profit real. \n\n👉 Vizitează Piata-AI.ro și ia startul în era eficienței! Viitorul afacerii tale începe cu un singur click.",
+      "visualPrompt": "A high-quality, cinematic split-screen image. On the left: a grayscale, cluttered office representing 'Old Way' with stacks of papers and clocks. On the right: a vibrant, modern workspace in Bucharest with a young entrepreneur smiling, looking at a laptop screen that glows with a gold AI icon and a rising green profit chart. 8k resolution, professional business aesthetic.",
       "status": "generated"
     }
   ]
