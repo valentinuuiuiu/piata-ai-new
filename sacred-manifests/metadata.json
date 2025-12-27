@@ -1,19 +1,18 @@
 {
-  "summary": "Piata-AI.ro este primul marketplace specializat din România care funcționează ca un ecosistem strategic pentru tranzacționarea serviciilor de Inteligență Artificială. Platforma facilitează conexiunea directă între experții în tehnologii emergente și companiile care doresc să integreze soluții de automatizare, procesare de date și generare de conținut pentru a obține un avantaj competitiv pe piața locală.",
+  "summary": "Piața-AI.ro funcționează ca primul hub digital și marketplace centralizat din România, dedicat exclusiv soluțiilor de Inteligență Artificială. Platforma facilitează accesul rapid la instrumente AI, prompt-uri optimizate și servicii de consultanță, conectând dezvoltatorii de tehnologie cu mediul de afaceri local pentru a accelera transformarea digitală.",
   "targetAudience": [
-    "Întreprinderi Mici și Mijlocii (IMM) în proces de transformare digitală",
-    "Agenții de marketing și creație digitală",
-    "Freelanceri și specialiști în prompt engineering",
-    "Dezvoltatori software și integratori de sisteme AI",
-    "Antreprenori care caută optimizarea costurilor operaționale"
+    "Antreprenori și proprietari de IMM-uri care doresc optimizarea proceselor",
+    "Specialiști în marketing și creatori de conținut digital",
+    "Dezvoltatori și furnizori de soluții software bazate pe AI",
+    "Freelanceri care urmăresc creșterea productivității prin automatizare"
   ],
   "keySellingPoints": [
-    "Acces centralizat la o gamă diversă de micro-servicii bazate pe AI",
-    "Expertiză localizată și suport în limba română pentru implementări tehnice",
-    "Eficientizarea fluxurilor de lucru prin automatizări inteligente și LLM-uri",
-    "Sistem securizat de tranzacționare între furnizori și beneficiari",
-    "Democratizarea accesului la tehnologii avansate pentru afacerile de orice dimensiune"
+    "Ecosistem unificat pentru descoperirea și achiziția de unelte AI",
+    "Marketplace specializat pentru prompt-uri verificate și eficiente",
+    "Suport pentru integrarea tehnologiilor AI în fluxurile de lucru din România",
+    "Reducerea barierelor tehnice pentru adoptarea inovației la nivel de business",
+    "Oportunități de monetizare pentru creatorii de resurse și soluții AI"
   ],
-  "tone": "Profesional, Vizionar, Pragmatic",
+  "tone": "Profesional, inovator și orientat spre eficiență comercială",
   "url": "https://piata-ai.ro"
 }
