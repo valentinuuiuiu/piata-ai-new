@@ -1,0 +1,50 @@
+name: Protocol Vayraghia CI/CD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-verify:
+    name: Compilare și Verificare Integritate
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Extragere Cod (Checkout)
+      uses: actions/checkout@v4
+
+    - name: Configurare Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Instalare Dependențe
+      run: npm ci
+
+    - name: Verificare Linting (Purificare Cod)
+      run: npm run lint --if-present
+
+    - name: Construire Proiect (Build)
+      run: npm run build --if-present
+      env:
+        CI: true
+
+    - name: Testare Automată
+      run: npm test --if-present
+
+  deployment-check:
+    name: Simulare Deploy Vayraghia
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Confirmare Stabilitate
+        run: echo "Codul este stabil. Pregătit pentru lumea materială."
