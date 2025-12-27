@@ -1,20 +1,12 @@
-# Dockerfile for the main application (including Taita agent)
-FROM node:20-alpine
-
-# Set the working directory
+FROM node:20-alpine AS forge
 WORKDIR /app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
-
-# Copy the rest of the application
 COPY . .
+RUN npm run build
 
-# Expose the port for the Next.js application
-EXPOSE 3000
-
-# Start the Taita agent
-CMD ["npm", "run", "agent"]
+FROM nginx:stable-alpine
+COPY --from=forge /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
