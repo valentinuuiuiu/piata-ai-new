@@ -1,0 +1,39 @@
+{
+  "nume_campanie": "Lansare Piata-AI.ro",
+  "perioada": "Q4 2024",
+  "limba": "ro-RO",
+  "postari": [
+    {
+      "ziua": 1,
+      "platforma": "LinkedIn",
+      "format": "Text + Imagine",
+      "titlu": "Viitorul nu așteaptă traducerea.",
+      "continut": "Inteligența Artificială este globală, dar business-ul tău este local. Lansăm curând locul unde AI-ul vorbește pe limba ta. #PiataAI #Romania #TechLaunch",
+      "status": "Draft"
+    },
+    {
+      "ziua": 2,
+      "platforma": "Instagram",
+      "format": "Reel",
+      "titlu": "Top 3 Unelte AI pe care nu le știai",
+      "script": "Știai că există AI care îți scrie emailurile în română perfect? Găsești unealta pe Piata-AI.ro. Link in bio!",
+      "status": "Planificat"
+    },
+    {
+      "ziua": 3,
+      "platforma": "Facebook",
+      "format": "Link Post",
+      "titlu": "OFICIAL: S-a lansat Piata-AI.ro",
+      "continut": "Primul marketplace dedicat soluțiilor AI pentru piața din România este LIVE. Descoperă, compară și implementează cele mai bune soluții pentru afacerea ta. Intră acum!",
+      "status": "High Priority"
+    },
+    {
+      "ziua": 5,
+      "platforma": "TikTok",
+      "format": "Video Tutorial",
+      "titlu": "Cum să faci un logo gratuit cu AI",
+      "script": "Intră pe Piata-AI.ro, selectează categoria Design, alege unealta X. Uite rezultatul! Simplu, nu?",
+      "status": "Draft"
+    }
+  ]
+}
