@@ -873,3 +873,5 @@ Revino acum: https://platforma-ta.ro/welcome-back?code=ÎNAPOI50
     });
   }
 }
+
+export const emailSystem = new EmailMarketingSystem();

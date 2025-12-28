@@ -24,7 +24,7 @@ export interface InternalAgentConfig {
   model?: string;
   systemPrompt?: string;
   enabled: boolean;
-  capabilities: AgentCapability[];
+  capabilities: any[]; // Relaxed type to allow capability objects
   description: string;
 }
 

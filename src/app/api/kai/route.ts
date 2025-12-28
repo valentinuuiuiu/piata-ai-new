@@ -248,6 +248,7 @@ This is REAL data from ChainLink network (via CRE CLI)!`,
     }, { status: 500 });
   }
 });
+}
 
 // Helper function to format workflow execution results
 function formatWorkflowResult(relayResult: any, workflowName: string): string {

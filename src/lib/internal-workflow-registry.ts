@@ -13,48 +13,73 @@ import { MULTI_CHANNEL_WORKFLOWS } from './multi-channel-workflows';
 import { MultiChannelExecutor } from './multi-channel-executor';
 
 // Define workflow types locally to avoid import issues
-export interface WorkflowStep {
-  id: string;
-  name: string;
-  type: 'command' | 'manual' | 'api_call' | 'fabric_pattern' | 'subworkflow' | 'agent_task';
-  description: string;
-  agent: string;
-  command?: string;
-  pattern?: string;
-  workflow?: string;
-  requires_llm?: boolean;
-  timeout?: number;
-  retries?: number;
-  depends_on?: string[];
-}
-
 export interface Workflow {
   id: string;
   name: string;
   description: string;
-  agents: Record<string, string>;
   steps: WorkflowStep[];
-  record_on_chain?: boolean;
-  enabled: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  tags?: string[];
+  triggers?: string[];
+  version?: string;
+  enabled?: boolean;
   category?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  tags?: string[];
+  agents?: Record<string, string>;
+  record_on_chain?: boolean;
+}
+
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  description: string;
+  type: 'action' | 'condition' | 'trigger' | 'delay' | 'manual' | 'command' | 'agent_task' | 'api_call' | 'fabric_pattern' | 'subworkflow';
+  action?: string;
+  params?: Record<string, any>;
+  command?: string;
+  pattern?: string;
+  workflow?: string;
+  retries?: number;
+  depends_on?: string[];
+  next?: string;
+  conditions?: WorkflowCondition[];
+  requires_llm?: boolean;
+  agent?: string;
+  timeout?: number;
+}
+
+export interface WorkflowCondition {
+  field: string;
+  operator: 'equals' | 'contains' | 'gt' | 'lt' | 'defined';
+  value: any;
 }
 
 export interface WorkflowExecution {
   id: string;
-  workflow_id: string;
+  workflow_id: string; // Used in internal registry
+  workflowId?: string; // Used in some other places? Let's keep both or standardise.
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-  started_at: string;
+  started_at: string; // Made required to match usage
+  startTime?: string;
   completed_at?: string;
-  steps_completed: number;
-  steps_total: number;
+  endTime?: string;
+  currentStep?: string;
   results: Record<string, any>;
-  errors: Record<string, string>;
   error?: string;
+  errors: Record<string, string>; // Made required to match usage
+  logs?: WorkflowLog[];
   blockchain_recorded?: boolean;
+  steps_completed: number; // Made required
+  steps_total: number; // Made required
+}
+
+export interface WorkflowLog {
+  timestamp: string;
+  level: 'info' | 'warn' | 'error';
+  message: string;
+  stepId?: string;
+  data?: any;
 }
 
 // =============================================================================
@@ -599,6 +624,3 @@ export function getWorkflowExecutions(workflowId: string): WorkflowExecution[] {
 export function getRecentExecutions(limit: number = 10): WorkflowExecution[] {
   return workflowRegistry.getRecentExecutions(limit);
 }
-
-// Re-export types for convenience
-export { Workflow, WorkflowStep, WorkflowExecution };

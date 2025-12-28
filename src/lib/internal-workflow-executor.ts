@@ -8,9 +8,11 @@
  */
 
 import { 
-  workflowRegistry 
+  workflowRegistry,
+  Workflow,
+  WorkflowStep,
+  WorkflowExecution
 } from './internal-workflow-registry';
-import { Workflow, WorkflowStep, WorkflowExecution } from './workflow-types';
 import { withSpan, withWorkflowSpan, setAttribute, recordEvent } from './tracing';
 import { JulesManager } from './jules-manager';
 import { OpenRouterAgent } from './openrouter-agent';
@@ -103,7 +105,8 @@ export class InternalWorkflowExecutor {
     workflowId: string,
     input: Record<string, any> = {}
   ): Promise<WorkflowExecution> {
-    return withWorkflowSpan(workflowId, async (span) => {
+    // Wrap the workflow execution in a span, but ensure the return type matches Promise<WorkflowExecution>
+    const result = await withWorkflowSpan(workflowId, async (span) => {
       console.log(`\n🎬 Executing workflow: ${workflowId}`);
 
       // Get workflow
@@ -203,6 +206,8 @@ export class InternalWorkflowExecutor {
         throw error;
       }
     });
+
+    return result;
   }
 
   /**
