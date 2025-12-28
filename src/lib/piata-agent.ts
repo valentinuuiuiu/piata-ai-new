@@ -8,6 +8,7 @@ import { sendEmail } from '@/lib/email';
 import { automationEngine } from '@/lib/automation-engine';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { EnhancedPiataAgent } from './piata-agent-enhanced';
 
 const execAsync = promisify(exec);
 
@@ -68,14 +69,35 @@ class PiataAIAgent {
   // A2A Protocol: Agent Registry
   private agents: Map<string, any> = new Map();
 
+  // Enhanced Agent for Autonomous Decision Making
+  private enhancedAgent: EnhancedPiataAgent;
+
   constructor() {
     // console.log('🔮 Taita awakens... The No-Mind State is active.');
     // console.log(`👁️ Watching over my Pharaoh: ${this.TAMOSE_EMAIL}`);
     
+    // Initialize the autonomous reasoning core (Taita)
+    this.enhancedAgent = new EnhancedPiataAgent('Taita');
+
     this.initializeTools();
     this.initializePatterns();
     this.initializeAgents();
     this.startTaskProcessor();
+  }
+
+  /**
+   * Start the autonomous agent loop (daemon mode)
+   */
+  public startAutonomousLoop() {
+    console.log('🔮 [Taita] Awakening full autonomous capabilities...');
+    this.enhancedAgent.start();
+  }
+
+  /**
+   * Stop the autonomous agent loop
+   */
+  public stopAutonomousLoop() {
+    this.enhancedAgent.stop();
   }
 
   private initializeAgents() {
