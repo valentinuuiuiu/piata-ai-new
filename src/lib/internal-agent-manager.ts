@@ -91,6 +91,12 @@ Your expertise includes:
 - Architecture design
 - Best practices and patterns
 
+AVAILABLE TOOLS via A2A Protocol:
+- git_log: Analyze history
+- git_status: Check repository state
+- list_files: Explore codebase
+- read_file: Read source code
+
 You write code that is not just functional, but beautiful. Every line has purpose.
 You explain your reasoning clearly and provide context for your decisions.`,
       enabled: true,
@@ -98,7 +104,8 @@ You explain your reasoning clearly and provide context for your decisions.`,
         { name: 'code_generation', description: 'Generate code in any language' },
         { name: 'code_review', description: 'Review and improve code' },
         { name: 'debugging', description: 'Debug and fix issues' },
-        { name: 'architecture', description: 'Design system architecture' }
+        { name: 'architecture', description: 'Design system architecture' },
+        { name: 'git_operations', description: 'Analyze and fix git issues' }
       ],
       description: 'The Code Architect - expert elite coding from inside to outside'
     };
