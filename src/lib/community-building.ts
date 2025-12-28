@@ -4,11 +4,10 @@
  */
 
 import { createServiceClient } from './supabase/server';
-const supabase = createServiceClient();
 import { emailSystem } from './email-system';
-  import RomanianSocialMediaAutomation from './social-media-automation';
+import { socialMediaAutomation } from './social-media-automation';
 
-  const socialMediaAutomation = new RomanianSocialMediaAutomation();
+const supabase = createServiceClient();
 
 class CommunityBuildingSystem {
   private readonly communityThemes = [

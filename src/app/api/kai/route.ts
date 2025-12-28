@@ -248,7 +248,7 @@ This is REAL data from ChainLink network (via CRE CLI)!`,
     }, { status: 500 });
   }
 });
-}
+} // Added missing closing brace for POST function
 
 // Helper function to format workflow execution results
 function formatWorkflowResult(relayResult: any, workflowName: string): string {

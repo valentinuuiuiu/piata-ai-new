@@ -36,6 +36,9 @@ export async function GET(request: Request) {
 
   } catch (error: any) {
     console.error('Blog API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({
+      error: 'Failed to fetch blog posts',
+      details: error.message
+    }, { status: 500 });
   }
 }

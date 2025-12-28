@@ -33,6 +33,11 @@ export interface PerformanceMetrics {
 
 export class A2ASignalManager {
   private static instance: A2ASignalManager;
+  private mockMode: boolean = false;
+  private mockSignals: any[] = [];
+  private mockRegistry: Map<string, any> = new Map();
+  private mockMetrics: any[] = [];
+  private mockHistory: any[] = [];
 
   private constructor() {}
 
@@ -43,10 +48,35 @@ export class A2ASignalManager {
     return A2ASignalManager.instance;
   }
 
+  setMockMode(enabled: boolean) {
+    this.mockMode = enabled;
+    if (enabled) {
+        console.warn('⚠️ [A2A] Running in MOCK MODE. Data will not be persisted to DB.');
+    }
+  }
+
   /**
    * Log an A2A signal to the database
    */
   async logSignal(signalData: A2ASignalData): Promise<number> {
+    if (this.mockMode) {
+        const id = this.mockSignals.length + 1;
+        this.mockSignals.push({
+            id,
+            ...signalData,
+            toAgent: signalData.toAgent || null,
+            content: signalData.content || {},
+            priority: signalData.priority || 'normal',
+            status: 'pending',
+            createdAt: new Date(),
+            processedAt: null,
+            errorMessage: null,
+            retryCount: 0
+        });
+        console.log(`📡 [A2A MOCK] Signal logged: ${signalData.signalType} from ${signalData.fromAgent} to ${signalData.toAgent || 'BROADCAST'}`);
+        return id;
+    }
+
     try {
       const result = await db.insert(a2aSignals).values({
         signalType: signalData.signalType,
@@ -69,6 +99,17 @@ export class A2ASignalManager {
    * Update signal status
    */
   async updateSignalStatus(signalId: number, status: string, errorMessage?: string): Promise<void> {
+    if (this.mockMode) {
+        const signal = this.mockSignals.find(s => s.id === signalId);
+        if (signal) {
+            signal.status = status;
+            signal.errorMessage = errorMessage || null;
+            signal.processedAt = new Date();
+            console.log(`📡 [A2A MOCK] Signal ${signalId} status updated to: ${status}`);
+        }
+        return;
+    }
+
     try {
       await db.update(a2aSignals)
         .set({
@@ -89,6 +130,22 @@ export class A2ASignalManager {
    * Retrieve signals with filtering
    */
   async getSignals(filter: SignalFilter = {}, limit: number = 100): Promise<any[]> {
+    if (this.mockMode) {
+        let filtered = [...this.mockSignals];
+
+        if (filter.signalTypes?.length) {
+            filtered = filtered.filter(s => filter.signalTypes!.includes(s.signalType));
+        }
+        if (filter.agents?.length) {
+            filtered = filtered.filter(s => filter.agents!.includes(s.fromAgent) || filter.agents!.includes(s.toAgent));
+        }
+        if (filter.status?.length) {
+            filtered = filtered.filter(s => filter.status!.includes(s.status));
+        }
+
+        return filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+    }
+
     try {
       const conditions = [];
 
@@ -140,6 +197,15 @@ export class A2ASignalManager {
     agentPerformance?: any;
     context?: any;
   }): Promise<void> {
+    if (this.mockMode) {
+        this.mockHistory.push({
+            ...data,
+            createdAt: new Date()
+        });
+        console.log(`🧠 [A2A MOCK] Learning history logged: ${data.fromAgent} → ${data.toAgent} (${data.outcome})`);
+        return;
+    }
+
     try {
       await db.insert(agentLearningHistory).values({
         fromAgent: data.fromAgent,
@@ -164,6 +230,15 @@ export class A2ASignalManager {
    * Record performance metrics
    */
   async recordPerformanceMetrics(metrics: PerformanceMetrics): Promise<void> {
+    if (this.mockMode) {
+        this.mockMetrics.push({
+            ...metrics,
+            timestamp: new Date()
+        });
+        console.log(`📊 [A2A MOCK] Performance metrics recorded: ${metrics.agentName}.${metrics.metricType} = ${metrics.value}`);
+        return;
+    }
+
     try {
       await db.insert(agentPerformanceMetrics).values({
         agentName: metrics.agentName,
@@ -209,6 +284,18 @@ export class A2ASignalManager {
     capabilities?: string[];
     metadata?: any;
   }): Promise<void> {
+    if (this.mockMode) {
+        this.mockRegistry.set(agentName, {
+            agentName,
+            ...data,
+            lastHeartbeat: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+        console.log(`🔧 [A2A MOCK] Agent registry updated: ${agentName} (${data.status})`);
+        return;
+    }
+
     try {
       await db.insert(agentRegistry)
         .values({
@@ -242,6 +329,10 @@ export class A2ASignalManager {
    * Get all registered agents
    */
   async getRegisteredAgents(): Promise<any[]> {
+    if (this.mockMode) {
+        return Array.from(this.mockRegistry.values());
+    }
+
     try {
       const agents = await db.select()
         .from(agentRegistry)

@@ -26,19 +26,22 @@ interface Category {
 }
 
 // Hardcoded category data matching categories/page.tsx
+// Updated to match init-db/route.ts schema
 const categoryData: Record<string, Category> = {
   'imobiliare': { id: 1, name: 'Imobiliare', slug: 'imobiliare', icon: '🏠' },
   'auto-moto': { id: 2, name: 'Auto Moto', slug: 'auto-moto', icon: '🚗' },
   'electronice': { id: 3, name: 'Electronice', slug: 'electronice', icon: '📱' },
-  'moda': { id: 4, name: 'Modă', slug: 'moda', icon: '👗' },
+  'moda': { id: 4, name: 'Modă și Accesorii', slug: 'moda', icon: '👗' },
   'servicii': { id: 5, name: 'Servicii', slug: 'servicii', icon: '🔧' },
-  'casa-gradina': { id: 6, name: 'Casă & Grădină', slug: 'casa-gradina', icon: '🏡' },
+  'casa-gradina': { id: 6, name: 'Casă și Grădină', slug: 'casa-gradina', icon: '🏡' },
   'sport-hobby': { id: 7, name: 'Sport & Hobby', slug: 'sport-hobby', icon: '⚽' },
   'animale': { id: 8, name: 'Animale', slug: 'animale', icon: '🐾' },
   'locuri-munca': { id: 9, name: 'Locuri de Muncă', slug: 'locuri-munca', icon: '💼' },
-  'mama-copilul': { id: 10, name: 'Mama & Copilul', slug: 'mama-copilul', icon: '👶' },
-  'carti-muzica': { id: 11, name: 'Cărți & Muzică', slug: 'carti-muzica', icon: '📚' },
-  'diverse': { id: 12, name: 'Diverse', slug: 'diverse', icon: '📦' }
+  'mama-copilul': { id: 10, name: 'Mama și Copilul', slug: 'mama-copilul', icon: '👶' },
+  'matrimoniale': { id: 11, name: 'Matrimoniale', slug: 'matrimoniale', icon: '💑' },
+  'cazare-turism': { id: 12, name: 'Cazare și Turism', slug: 'cazare-turism', icon: '✈️' },
+  'diverse': { id: 13, name: 'Diverse', slug: 'diverse', icon: '📦' },
+  'carti-muzica': { id: 14, name: 'Cărți & Muzică', slug: 'carti-muzica', icon: '📚' }, // Moved to 14 to avoid conflict
 };
 
 // Hardcoded subcategories
@@ -99,14 +102,24 @@ const subcategoriesData: Record<string, Subcategory[]> = {
     { id: 35, name: 'Jucării', slug: 'jucarii', description: 'Jucării și jocuri', category_id: 10, listing_count: 340 },
     { id: 36, name: 'Cărucioare & Scaune Auto', slug: 'carucioare-scaune', description: 'Transport pentru copii', category_id: 10, listing_count: 200 }
   ],
-  'carti-muzica': [
-    { id: 37, name: 'Cărți', slug: 'carti', description: 'Cărți și reviste', category_id: 11, listing_count: 320 },
-    { id: 38, name: 'Instrumente Muzicale', slug: 'instrumente-muzicale', description: 'Instrumente și accesorii', category_id: 11, listing_count: 240 }
+  'matrimoniale': [
+    { id: 40, name: 'Femei caută bărbați', slug: 'femei-cauta-barbati', description: 'Anunțuri matrimoniale femei', category_id: 11, listing_count: 0 },
+    { id: 41, name: 'Bărbați caută femei', slug: 'barbati-cauta-femei', description: 'Anunțuri matrimoniale bărbați', category_id: 11, listing_count: 0 },
+    { id: 42, name: 'Prietenie', slug: 'prietenie', description: 'Relații de prietenie', category_id: 11, listing_count: 0 }
+  ],
+  'cazare-turism': [
+    { id: 43, name: 'Hoteluri & Pensiuni', slug: 'hoteluri-pensiuni', description: 'Cazare în regim hotelier', category_id: 12, listing_count: 150 },
+    { id: 44, name: 'Regim Hotelier', slug: 'regim-hotelier', description: 'Apartamente în regim hotelier', category_id: 12, listing_count: 200 },
+    { id: 45, name: 'Case de Vacanță', slug: 'case-vacanta', description: 'Case și cabane de închiriat', category_id: 12, listing_count: 100 }
   ],
   'diverse': [
-    { id: 39, name: 'Colecții', slug: 'colectii', description: 'Obiecte de colecție', category_id: 12, listing_count: 450 },
-    { id: 40, name: 'Artă & Antichități', slug: 'arta-antichitati', description: 'Obiecte de artă', category_id: 12, listing_count: 380 },
-    { id: 41, name: 'Altele', slug: 'altele', description: 'Diverse produse', category_id: 12, listing_count: 370 }
+    { id: 46, name: 'Colecții', slug: 'colectii', description: 'Obiecte de colecție', category_id: 13, listing_count: 450 },
+    { id: 47, name: 'Artă & Antichități', slug: 'arta-antichitati', description: 'Obiecte de artă', category_id: 13, listing_count: 380 },
+    { id: 48, name: 'Altele', slug: 'altele', description: 'Diverse produse', category_id: 13, listing_count: 370 }
+  ],
+  'carti-muzica': [
+    { id: 37, name: 'Cărți', slug: 'carti', description: 'Cărți și reviste', category_id: 14, listing_count: 320 },
+    { id: 38, name: 'Instrumente Muzicale', slug: 'instrumente-muzicale', description: 'Instrumente și accesorii', category_id: 14, listing_count: 240 }
   ]
 };
 
@@ -119,6 +132,11 @@ export default function CategorySubcategories() {
   const category = categoryData[slug];
 
   useEffect(() => {
+    if (!category) {
+      setLoading(false);
+      return;
+    }
+
     // Try to fetch from API first, fallback to hardcoded data
     fetch('/api/categories?format=rich')
       .then(res => res.json())
@@ -126,7 +144,7 @@ export default function CategorySubcategories() {
         const subcats = Array.isArray(data) ? [] : (data.subcategories || []);
         if (subcats.length > 0) {
           const categorySubs = subcats.filter(
-            (sub: any) => sub.category_id === category?.id
+            (sub: any) => sub.category_id === category.id
           );
           if (categorySubs.length > 0) {
             setSubcategories(categorySubs);

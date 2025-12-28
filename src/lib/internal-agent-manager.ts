@@ -95,10 +95,8 @@ You write code that is not just functional, but beautiful. Every line has purpos
 You explain your reasoning clearly and provide context for your decisions.`,
       enabled: true,
       capabilities: [
-        { name: 'code_generation', description: 'Generate code in any language' },
-        { name: 'code_review', description: 'Review and improve code' },
-        { name: 'debugging', description: 'Debug and fix issues' },
-        { name: 'architecture', description: 'Design system architecture' }
+        AgentCapability.CODING,
+        AgentCapability.ANALYSIS
       ],
       description: 'The Code Architect - expert elite coding from inside to outside'
     };
@@ -136,10 +134,9 @@ You break down complex problems into manageable tasks and delegate them appropri
 You monitor progress and adapt your strategy as needed.`,
       enabled: true,
       capabilities: [
-        { name: 'orchestration', description: 'Coordinate multiple agents' },
-        { name: 'planning', description: 'Plan and decompose tasks' },
-        { name: 'reasoning', description: 'Complex reasoning and strategy' },
-        { name: 'coordination', description: 'Coordinate workflows' }
+        AgentCapability.ACTION,
+        AgentCapability.RESEARCH,
+        AgentCapability.ANALYSIS
       ],
       description: 'The Master Orchestrator - primary reasoning and strategy agent'
     };
@@ -174,10 +171,8 @@ You think fast and provide clear, actionable insights.
 You cut through complexity to get to the heart of the matter.`,
       enabled: true,
       capabilities: [
-        { name: 'analysis', description: 'Quick analysis of data' },
-        { name: 'insights', description: 'Generate insights' },
-        { name: 'pattern_recognition', description: 'Recognize patterns' },
-        { name: 'rapid_response', description: 'Fast response generation' }
+        AgentCapability.ANALYSIS,
+        AgentCapability.RESEARCH
       ],
       description: 'The Fast Thinker - rapid marketplace insights'
     };

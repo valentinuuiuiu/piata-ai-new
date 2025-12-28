@@ -28,6 +28,7 @@ export interface Workflow {
   tags?: string[];
   agents?: Record<string, string>;
   record_on_chain?: boolean;
+  trigger?: string; // Compatibility
 }
 
 export interface WorkflowStep {
@@ -47,6 +48,7 @@ export interface WorkflowStep {
   requires_llm?: boolean;
   agent?: string;
   timeout?: number;
+  required_capabilities?: string[]; // Compatibility
 }
 
 export interface WorkflowCondition {
@@ -60,18 +62,26 @@ export interface WorkflowExecution {
   workflow_id: string; // Used in internal registry
   workflowId?: string; // Used in some other places? Let's keep both or standardise.
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-  started_at: string; // Made required to match usage
+  started_at?: string; // Made optional to match usage in some places
   startTime?: string;
   completed_at?: string;
-  endTime?: string;
+  endTime?: string; // Compatibility
   currentStep?: string;
   results: Record<string, any>;
   error?: string;
   errors: Record<string, string>; // Made required to match usage
   logs?: WorkflowLog[];
   blockchain_recorded?: boolean;
-  steps_completed: number; // Made required
-  steps_total: number; // Made required
+  steps_completed?: number; // Made optional
+  steps_total?: number; // Made optional
+  steps?: { // Compatibility
+    stepId: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    startTime?: Date;
+    endTime?: Date;
+    result?: any;
+    error?: string;
+  }[];
 }
 
 export interface WorkflowLog {
@@ -475,7 +485,7 @@ class InternalWorkflowRegistry {
    */
   getRecentExecutions(limit: number = 10): WorkflowExecution[] {
     return Array.from(this.executions.values())
-      .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+      .sort((a, b) => new Date(b.started_at!).getTime() - new Date(a.started_at!).getTime())
       .slice(0, limit);
   }
 }
@@ -585,7 +595,7 @@ export async function executeWorkflow(workflowId: string, input?: any): Promise<
       
       // Update execution progress
       execution = await workflowRegistry.updateExecution(execution.id, {
-        steps_completed: execution.steps_completed + 1
+        steps_completed: (execution.steps_completed || 0) + 1
       })!;
     }
 
@@ -624,3 +634,7 @@ export function getWorkflowExecutions(workflowId: string): WorkflowExecution[] {
 export function getRecentExecutions(limit: number = 10): WorkflowExecution[] {
   return workflowRegistry.getRecentExecutions(limit);
 }
+
+// Re-export types for convenience
+// export type { Workflow, WorkflowStep, WorkflowExecution };
+// (Commented out because interfaces are already exported above)
