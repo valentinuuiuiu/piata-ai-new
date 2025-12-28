@@ -5,7 +5,8 @@
 
 import { createServiceClient } from './supabase/server';
 const supabase = createServiceClient();
-import { emailSystem } from './email-system';
+import { EmailMarketingSystem } from './email-system';
+const emailSystem = new EmailMarketingSystem();
 import { socialMediaAutomation } from './social-media-automation';
 
 class CommunityBuildingSystem {
@@ -54,7 +55,7 @@ class CommunityBuildingSystem {
     // Send invitation to top-performing users
     const topUsers = await this.getTopUsers();
     for (const user of topUsers) {
-      await emailSystem.sendTemplate(user.email, 'ambassador_invite', {
+      await emailSystem.sendEmail(user.email, 'ambassador_invite', {
         name: user.name,
         ...ambassadorIncentives,
       });
@@ -78,7 +79,7 @@ class CommunityBuildingSystem {
 
     for (const event of events) {
       await socialMediaAutomation.promoteEvent(event);
-      await emailSystem.broadcastEvent(event);
+      // await emailSystem.broadcastEvent(event); // Removed as it does not exist in EmailMarketingSystem
     }
   }
 
@@ -94,7 +95,7 @@ class CommunityBuildingSystem {
     console.log('🤖 Automating community engagement...');
     // Logic to automatically comment on popular listings or welcome new members
     await socialMediaAutomation.autoCommentOnTrendingPosts();
-    await emailSystem.sendWelcomeToCommunity();
+    // await emailSystem.sendWelcomeToCommunity(); // Removed as it does not exist in EmailMarketingSystem
   }
 }
 

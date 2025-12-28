@@ -306,7 +306,7 @@ export class InternalWorkflowExecutor {
     execution: WorkflowExecution,
     previousResults: StepResult[]
   ): Promise<any> {
-    const agentName = step.agent.toLowerCase();
+    const agentName = step.agent?.toLowerCase() || 'jules';
 
     // Try OpenRouter agents first
     if (this.openRouterAgents.has(agentName)) {

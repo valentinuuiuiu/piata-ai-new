@@ -71,7 +71,8 @@ export const MULTI_CHANNEL_WORKFLOWS: Workflow[] = [
         depends_on: ['launch-migration-referral'],
         timeout: 60000
       }
-    ]
+    ],
+    triggers: []
   },
 
   {
@@ -127,7 +128,8 @@ export const MULTI_CHANNEL_WORKFLOWS: Workflow[] = [
         depends_on: ['personalized-referral-emails'],
         timeout: 30000
       }
-    ]
+    ],
+    triggers: []
   },
 
   {
@@ -184,7 +186,8 @@ export const MULTI_CHANNEL_WORKFLOWS: Workflow[] = [
         depends_on: ['mobile-messaging-sequence'],
         timeout: 30000
       }
-    ]
+    ],
+    triggers: []
   },
 
   {
@@ -241,7 +244,8 @@ export const MULTI_CHANNEL_WORKFLOWS: Workflow[] = [
         depends_on: ['schedule-event-campaigns'],
         timeout: 45000
       }
-    ]
+    ],
+    triggers: []
   },
 
   {
@@ -307,6 +311,7 @@ export const MULTI_CHANNEL_WORKFLOWS: Workflow[] = [
         depends_on: ['reallocate-resources'],
         timeout: 45000
       }
-    ]
+    ],
+    triggers: []
   }
 ];

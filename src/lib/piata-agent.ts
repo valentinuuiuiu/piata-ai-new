@@ -821,7 +821,7 @@ class PiataAIAgent {
       const result = await query(
         `INSERT INTO anunturi (title, description, price, category_id, location, contact_email, user_id, status, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_verification', NOW())`,
-        [listingData.title, listingData.description, listingData.price || null, listingData.categoryId, listingData.location, listingData.contactEmail, listingData.userId]
+        [listingData.title, listingData.description, listingData.price || null, listingData.category_id, listingData.location, listingData.contact_email, listingData.user_id]
       );
       
       const listingId = (result as any).insertId;
@@ -862,31 +862,6 @@ class PiataAIAgent {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  }
-}
-
-/**
- * Standalone function for PAI API to create listing with email confirmation
- * This replaces Vercel cron-based Resend emails with internal PAI handling
- */
-export async function createListingWithEmailConfirmation(data: {
-  title: string;
-  description: string;
-  price?: number;
-  categoryId: number;
-  location: string;
-  contactEmail: string;
-  userId: string;
-}): Promise<{
-  success: boolean;
-  listingId?: number;
-  email?: string;
-  title?: string;
-  error?: string;
-}> {
-  const agent = new PiataAIAgent();
-  return agent.createListingWithEmailConfirmation(data);
-}
   }
 
   private async createBackup(target: string): Promise<string> {
@@ -931,3 +906,26 @@ export async function createListingWithEmailConfirmation(data: {
 
 // Export singleton instance
 export const piataAgent = new PiataAIAgent();
+
+/**
+ * Standalone function for PAI API to create listing with email confirmation
+ * This replaces Vercel cron-based Resend emails with internal PAI handling
+ */
+export async function createListingWithEmailConfirmation(data: {
+  title: string;
+  description: string;
+  price?: number;
+  categoryId: number;
+  location: string;
+  contactEmail: string;
+  userId: string;
+}): Promise<{
+  success: boolean;
+  listingId?: number;
+  email?: string;
+  title?: string;
+  error?: string;
+}> {
+  const agent = new PiataAIAgent();
+  return agent.createListingWithEmailConfirmation(data);
+}

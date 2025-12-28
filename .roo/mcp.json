@@ -14,23 +14,8 @@
       "args": ["-y", "@anaisbetts/mcp-installer", "@anaisbetts/mcp-youtube"]
     },
     "supabase": {
-      "command": "npx",
-      "args": ["-y", "@supabase/mcp-server-supabase@0.5.5", "--access-token", "sbp_5460a0c658e796c00ff638d17980dd9270424c9a"],
-      "alwaysAllow": [
-        "execute_sql", "get_logs", "list_projects", "get_project", "list_tables", "apply_migration",
-        "search_docs", "list_files", "list_migrations", "generate_typescript_types", "list_organizations",
-        "get_organization", "confirm_cost", "get_cost", "create_project", "pause_project", "restore_project",
-        "list_extensions", "get_advisors", "get_project_url", "get_anon_key", "list_edge_functions",
-        "get_edge_function", "list_branches", "merge_branch", "delete_branch", "rebase_branch", "reset_branch"
-      ]
+      "url": "https://mcp.supabase.com/mcp?project_ref=ndzoavaveppnclkujjhh"
     },
-    // "stripe": {
-    //   "command": "npx",
-    //   "args": ["-y", "@stripe/mcp", "--tools=all"],
-    //   "env": {
-    //     "STRIPE_SECRET_KEY": "your_stripe_key_here"  // Set in local environment only
-    //   }
-    // },
     "taita": {
       "command": "npx",
       "args": ["ts-node", "-r", "tsconfig-paths/register", "src/lib/mcp-server-taita.ts"]
