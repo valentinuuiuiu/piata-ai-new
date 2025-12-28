@@ -149,7 +149,7 @@ class RedisCache {
     fetcher: () => Promise<T>,
     ttlSeconds: number = 300
   ): Promise<T> {
-    let cached = await this.get<T>(key);
+    const cached = await this.get<T>(key);
     if (cached !== null) {
       return cached;
     }

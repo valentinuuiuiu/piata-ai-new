@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Single agent mode
-    let agent = preferredAgent ? orchestrator.getAgent(preferredAgent) : undefined;
+    const agent = preferredAgent ? orchestrator.getAgent(preferredAgent) : undefined;
     
     // If no preferred agent, let orchestrator decide (via routeRequest logic or direct delegation)
     // For now, if no agent, we'll use routeRequest which determines capability

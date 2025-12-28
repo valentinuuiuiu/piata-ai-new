@@ -37,13 +37,15 @@ function generateCacheKey(request: NextRequest): string {
   const userAgent = request.headers.get('user-agent') || '';
   
   // Hash the relevant parts
-  const crypto = require('crypto');
-  const hash = crypto
-    .createHash('md5')
-    .update(`${url}${searchParams}${userAgent}`)
-    .digest('hex');
+  const text = `${url}${searchParams}${userAgent}`;
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
     
-  return `${url}:${hash}`;
+  return `${url}:${Math.abs(hash).toString(16)}`;
 }
 
 // Cache store (in-memory for now, can be extended to Redis)

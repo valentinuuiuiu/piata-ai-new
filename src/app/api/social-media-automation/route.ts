@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
           message: 'Automation workflow stopped' 
         });
 
-      case 'manual_post':
+      case 'manual_post': {
         if (!platform || !campaignType) {
           return NextResponse.json(
             { error: 'Platform and campaignType are required' }, 
@@ -68,14 +68,16 @@ export async function POST(request: NextRequest) {
           success: true, 
           data: result 
         });
+      }
 
-      case 'schedule_campaign':
+      case 'schedule_campaign': {
         const { startDate, duration } = await request.json();
         const scheduledPosts = await ctx.scheduler.scheduleCampaign(campaignType, new Date(startDate), duration);
         return NextResponse.json({ 
           success: true, 
           data: scheduledPosts 
         });
+      }
 
       default:
         return NextResponse.json(
@@ -103,7 +105,7 @@ export async function GET(request: NextRequest) {
     const ctx = getAutomation();
 
     switch (action) {
-      case 'status':
+      case 'status': {
         const status = ctx.workflow.getStatus();
         return NextResponse.json({
           success: true,
@@ -112,21 +114,25 @@ export async function GET(request: NextRequest) {
             system_status: status
           }
         });
+      }
 
-      case 'analytics':
+      case 'analytics': {
         const analytics = await ctx.workflow.getAnalytics();
         return NextResponse.json({ success: true, data: analytics });
+      }
 
-      case 'engagement':
+      case 'engagement': {
         const platform = searchParams.get('platform');
         const engagementAnalytics = await ctx.engagementMonitor.getEngagementAnalytics(platform || undefined);
         return NextResponse.json({ success: true, data: engagementAnalytics });
+      }
 
-      case 'competitors':
+      case 'competitors': {
         const competitorData = await ctx.competitorMonitor.getCompetitiveIntelligence();
         return NextResponse.json({ success: true, data: competitorData });
+      }
 
-      case 'hashtags':
+      case 'hashtags': {
         const hashtagPlatform = searchParams.get('platform') || 'facebook';
         const campaign = searchParams.get('campaign') || 'general';
         const hashtagStrategy = await ctx.hashtagOptimizer.getOptimizedHashtagStrategy(
@@ -134,12 +140,14 @@ export async function GET(request: NextRequest) {
           campaign as any
         );
         return NextResponse.json({ success: true, data: hashtagStrategy });
+      }
 
-      case 'calendar':
+      case 'calendar': {
         const calendarAnalytics = await ctx.scheduler.getCalendarAnalytics();
         return NextResponse.json({ success: true, data: calendarAnalytics });
+      }
 
-      default:
+      default: {
         const overview = {
           system_status: ctx.workflow.getStatus(),
           total_campaigns: 3,
@@ -152,6 +160,7 @@ export async function GET(request: NextRequest) {
           }
         };
         return NextResponse.json({ success: true, data: overview });
+      }
     }
   } catch (error) {
     console.error('Social Media Automation GET Error:', error);

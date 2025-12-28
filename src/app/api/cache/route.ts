@@ -55,12 +55,13 @@ export async function POST(request: Request) {
           pattern
         });
 
-      case 'stats':
+      case 'stats': {
         const stats = await redisCache.getStats();
         return NextResponse.json({
           success: true,
           stats
         });
+      }
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // @ts-ignore
     const { data: agent, error } = await supabase
       .from('shopping_agents')
       .insert({
@@ -115,7 +114,6 @@ export async function PATCH(request: NextRequest) {
     if (filters !== undefined) updateData.filters = filters;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    // @ts-ignore
     const { data: agent, error } = await supabase
       .from('shopping_agents')
       .update(updateData as any)

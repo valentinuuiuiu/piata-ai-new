@@ -184,7 +184,7 @@ export async function executeWorkflowStep(
           result: `Command simulated: ${step.command}`
         };
 
-      case 'fabric_pattern':
+      case 'fabric_pattern': {
         if (!step.pattern || !FABRIC_PATTERNS[step.pattern as keyof typeof FABRIC_PATTERNS]) {
           return {
             success: false,
@@ -210,6 +210,7 @@ export async function executeWorkflowStep(
             requires_llm: true
           }
         };
+      }
 
       case 'manual':
         return {

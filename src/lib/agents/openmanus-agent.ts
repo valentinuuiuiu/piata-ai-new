@@ -1,9 +1,9 @@
-import { spawn } from 'child_process';
+import { spawn, execFile as execFileCallback } from 'child_process';
 import { BaseAgent } from './base-agent';
 import { AgentCapability, AgentTask, AgentResult, AgentType } from './types';
 import { promisify } from 'util';
 
-const execFile = promisify(require('child_process').execFile);
+const execFile = promisify(execFileCallback);
 
 export class OpenManusAgent extends BaseAgent {
   private bridgeScriptPath: string;

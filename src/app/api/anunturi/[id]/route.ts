@@ -46,7 +46,9 @@ export async function GET(
           .single();
         if (cat) adWithImages.category = cat;
       }
-    } catch {}
+    } catch {
+      // Ignore category hydration errors
+    }
 
     try {
       if (adWithImages.user_id) {
@@ -57,7 +59,9 @@ export async function GET(
           .single();
         if (seller) adWithImages.seller = seller;
       }
-    } catch {}
+    } catch {
+      // Ignore seller hydration errors
+    }
 
     // Parse images for frontend - handle various formats
     // (normalize to string[])

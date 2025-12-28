@@ -516,7 +516,7 @@ async function main() {
         await deployer.runSystemTests();
         break;
 
-      case 'deploy':
+      case 'deploy': {
         const result = await deployer.deploy();
         if (result.success) {
           console.log(deployer.generateDeploymentReport());
@@ -525,6 +525,7 @@ async function main() {
           process.exit(1);
         }
         break;
+      }
 
       case 'stop':
         await deployer.stop();

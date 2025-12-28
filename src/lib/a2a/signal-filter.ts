@@ -160,7 +160,7 @@ export class A2ASignalFilter {
     priorityScore: number;
   }> {
     try {
-      let classification: SignalClassification = {
+      const classification: SignalClassification = {
         priority: signal.priority || 'normal',
         urgency: 'standard',
         category: 'system',
@@ -265,19 +265,21 @@ export class A2ASignalFilter {
     switch (condition.operator) {
       case 'equals':
         return fieldValue === condition.value;
-      case 'contains':
+      case 'contains': {
         const fieldStr = String(fieldValue || '');
         const searchStr = String(condition.value || '');
         return condition.caseSensitive !== false 
           ? fieldStr.includes(searchStr)
           : fieldStr.toLowerCase().includes(searchStr.toLowerCase());
-      case 'regex':
+      }
+      case 'regex': {
         try {
           const regex = new RegExp(condition.value, condition.caseSensitive ? '' : 'i');
           return regex.test(String(fieldValue || ''));
         } catch {
           return false;
         }
+      }
       case 'greater_than':
         return Number(fieldValue) > Number(condition.value);
       case 'less_than':
@@ -322,13 +324,14 @@ export class A2ASignalFilter {
 
     for (const action of rule.actions) {
       switch (action.type) {
-        case 'set_priority':
+        case 'set_priority': {
           if (action.parameters.priority && classification.priority !== action.parameters.priority) {
             classification.priority = action.parameters.priority;
             modified = true;
             priorityBoost += this.getPriorityBoost(action.parameters.priority);
           }
           break;
+        }
         case 'set_category':
           classification.category = action.parameters.category || classification.category;
           modified = true;

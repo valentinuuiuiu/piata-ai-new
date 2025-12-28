@@ -324,7 +324,7 @@ export async function executeWorkflow(
           const orchestrator = new AIOrchestrator();
           
           let result;
-          let targetAgent = step.agent || 'orchestrator_decision';
+          const targetAgent = step.agent || 'orchestrator_decision';
           
           // If step has a specific agent, use it
           if (step.agent) {

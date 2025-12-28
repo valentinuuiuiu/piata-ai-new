@@ -80,7 +80,7 @@ export async function runShoppingAgent(agent: ShoppingAgent): Promise<ShoppingAg
   const startTime = Date.now();
   const subagentResults: SubagentResult[] = [];
   const allListings: Listing[] = [];
-  let totalListingsScanned = 0;
+  const totalListingsScanned = 0;
 
   // Puppeteer functionality is commented out as the dependency is removed.
   // The following code would be used if puppeteer were still active:

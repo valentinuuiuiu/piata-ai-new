@@ -29,33 +29,37 @@ export async function GET(request: NextRequest) {
           data: await getCampaignAnalytics()
         });
 
-      case 'templates':
+      case 'templates': {
         const templates = emailSystem.getTemplates();
         return NextResponse.json({
           success: true,
           data: templates
         });
+      }
 
-      case 'campaigns':
+      case 'campaigns': {
         const campaigns = emailSystem.getCampaigns();
         return NextResponse.json({
           success: true,
           data: campaigns
         });
+      }
 
-      case 'queue-stats':
+      case 'queue-stats': {
         const queueStats = automationEngine.getQueueStats();
         return NextResponse.json({
           success: true,
           data: queueStats
         });
+      }
 
-      case 'segmentation-insights':
+      case 'segmentation-insights': {
         const insights = segmentationEngine.getSegmentationInsights();
         return NextResponse.json({
           success: true,
           data: insights
         });
+      }
 
       default:
         return NextResponse.json({

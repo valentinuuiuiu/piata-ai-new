@@ -86,8 +86,8 @@ const App: React.FC = () => {
 
         recorder.start();
         
-        let totalDuration = storyboard.scenes.reduce((acc, s) => acc + s.duration, 0) + 1; 
-        let startTime = Date.now();
+        const totalDuration = storyboard.scenes.reduce((acc, s) => acc + s.duration, 0) + 1;
+        const startTime = Date.now();
         
         const drawFrame = () => {
             const now = Date.now();
@@ -142,7 +142,11 @@ const App: React.FC = () => {
 
             const progress = activeSceneElapsed / activeScene.duration;
             const anim = activeScene.animation || 'static';
-            let scale = 1, opacity = 1, xOffset = 0, yOffset = 0, rotation = 0;
+            let scale = 1;
+            let opacity = 1;
+            const xOffset = 0;
+            let yOffset = 0;
+            let rotation = 0;
 
             if (anim === 'zoom') scale = 1 + (progress * 0.1);
             else if (anim === 'fade') opacity = Math.min(1, activeSceneElapsed * 2);
@@ -171,7 +175,8 @@ const App: React.FC = () => {
             ctx.font = `800 ${width * 0.08}px 'Inter', sans-serif`;
             
             const words = activeScene.text.split(' ');
-            let line = '', lines = [];
+            let line = '';
+            const lines = [];
             for(let n = 0; n < words.length; n++) {
                 const testLine = line + words[n] + ' ';
                 if (ctx.measureText(testLine).width > width * 0.85 && n > 0) {

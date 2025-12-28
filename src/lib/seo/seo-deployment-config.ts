@@ -206,7 +206,7 @@ server {
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     
     # Cache headers for SEO content
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|webp)$ {
+    location ~* .(js|css|png|jpg|jpeg|gif|ico|svg|webp)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }

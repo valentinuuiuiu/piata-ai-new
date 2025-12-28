@@ -128,8 +128,8 @@ export class WebBrowsingSubagent {
    */
   private async scrapeListings(page: any, filters: SearchFilters): Promise<ScrapedListing[]> { // Changed page type to any to avoid puppeteer type errors
     const maxPages = filters.maxPages || this.config.pagination?.maxPages || 3;
-    let allListings: ScrapedListing[] = [];
-    let currentPage = 1;
+    const allListings: ScrapedListing[] = [];
+    const currentPage = 1;
 
     while (currentPage <= maxPages) {
       console.log(`[Subagent] ${this.config.name}: Scraping page ${currentPage}/${maxPages}`);

@@ -6,6 +6,7 @@
 
 import { supabase } from '../src/lib/supabase/script-client';
 import Stripe from 'stripe';
+import * as fs from 'fs';
 
 // Test data
 const TEST_USER_ID = 'ea7c45d5-0afa-4725-8ad0-352d15b97e92'; // Ionut Baltag
@@ -257,7 +258,6 @@ class JulesFinancialTester {
       }
     };
 
-    const fs = require('fs');
     fs.writeFileSync(
       'jules-session-logs/financial-testing-session/COMPLETE_INTEGRATION_TEST.json',
       JSON.stringify(summary, null, 2)

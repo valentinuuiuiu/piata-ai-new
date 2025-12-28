@@ -118,7 +118,9 @@ async function importWorkflow(workflowPath: string): Promise<WorkflowImportResul
       try {
         const errorJson = JSON.parse(errorText);
         errorMsg = errorJson.message || errorMsg;
-      } catch {}
+      } catch (e) {
+        // Ignored
+      }
       
       console.log(`   ❌ Import failed: ${errorMsg}`);
       return { name: workflowName, success: false, error: errorMsg };

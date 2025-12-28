@@ -135,12 +135,12 @@ class JobScheduler {
     try {
       // Dynamic handler execution
       // In production, map handler strings to actual functions
-      const handlers: Record<string, Function> = {
-        'sendDailyNewsletter': this.sendDailyNewsletter,
-        'syncGoogleSheets': this.syncGoogleSheets,
-        'validateNewListings': this.validateNewListings,
-        'optimizePricing': this.optimizePricing,
-        'generateAnalytics': this.generateAnalytics
+      const handlers: Record<string, (data: any) => Promise<void>> = {
+        'sendDailyNewsletter': this.sendDailyNewsletter.bind(this),
+        'syncGoogleSheets': this.syncGoogleSheets.bind(this),
+        'validateNewListings': this.validateNewListings.bind(this),
+        'optimizePricing': this.optimizePricing.bind(this),
+        'generateAnalytics': this.generateAnalytics.bind(this)
       };
       
       const handler = handlers[job.handler];

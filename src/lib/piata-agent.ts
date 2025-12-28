@@ -209,12 +209,13 @@ class PiataAIAgent {
       },
       execute: async ({ action, userId, userData }) => {
         switch (action) {
-          case 'create':
+          case 'create': {
             const result = await query(
               'INSERT INTO users (name, email, password, created_at) VALUES (?, ?, ?, NOW())',
               [userData.name, userData.email, userData.password]
             );
             return { success: true, userId: (result as any).insertId };
+          }
 
           case 'update':
             await query(
@@ -245,10 +246,11 @@ class PiataAIAgent {
       },
       execute: async ({ action, contentType, contentId, reason }) => {
         switch (contentType) {
-          case 'listing':
+          case 'listing': {
             const table = 'anunturi';
             const statusField = 'status';
             break;
+          }
           case 'blog':
             // Handle blog posts
             break;
@@ -368,20 +370,23 @@ class PiataAIAgent {
       },
       execute: async ({ action, target }) => {
         switch (action) {
-          case 'cleanup':
+          case 'cleanup': {
             // Clean up old data
             const deletedCount = await this.cleanupOldData(target);
             return { success: true, deletedCount };
+          }
 
-          case 'optimize':
+          case 'optimize': {
             // Optimize database/files
             await this.optimizeSystem(target);
             return { success: true };
+          }
 
-          case 'backup':
+          case 'backup': {
             // Create backup
             const backupPath = await this.createBackup(target);
             return { success: true, backupPath };
+          }
 
           default:
             throw new Error(`Unknown maintenance action: ${action}`);
@@ -781,10 +786,11 @@ class PiataAIAgent {
     let deletedCount = 0;
 
     switch (target) {
-      case 'logs':
+      case 'logs': {
         const result = await query('DELETE FROM activity_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)');
         deletedCount = (result as any).affectedRows || 0;
         break;
+      }
       case 'temp_files':
         // Clean up temp files
         deletedCount = 0;

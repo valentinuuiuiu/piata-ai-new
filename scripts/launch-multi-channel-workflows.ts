@@ -18,7 +18,7 @@ async function launchWorkflows() {
     // 1. Initialize Registry
     await initializeWorkflowRegistry();
     
-    // @ts-ignore - Type mismatch due to circular dependency in registry
+    // @ts-expect-error - Type mismatch due to circular dependency in registry
     const workflows = getAllWorkflows().filter(w => 
       ['romanian-marketplace-domination', 
        'viral-growth-accelerator', 
@@ -34,7 +34,7 @@ async function launchWorkflows() {
       console.log(`\n▶️ Starting Workflow: ${workflow.name} (${workflow.id})`);
       
       try {
-        // @ts-ignore - Type mismatch due to circular dependency in registry
+        // @ts-expect-error - Type mismatch due to circular dependency in registry
         const execution = await executeWorkflow(workflow.id, {
           launchedAt: new Date().toISOString(),
           environment: 'production',

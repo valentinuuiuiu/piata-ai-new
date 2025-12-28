@@ -39,13 +39,15 @@ export class MultiChannelExecutor {
 
   private static async executeDominationStep(step: any, context: any): Promise<any> {
     switch (step.id) {
-      case 'competitor-analysis':
+      case 'competitor-analysis': {
         const analysis = await this.socialAutomation.monitorCompetitors();
         return { status: 'completed', analysis };
-      case 'distribute-multi-channel':
+      }
+      case 'distribute-multi-channel': {
         const posts = await this.socialAutomation.scheduleMultiPlatformContent('olx_competitive');
         this.emailAutomation.triggerAutomation('SCHEDULED' as any, context.userId || 'system');
         return { status: 'completed', postsScheduled: posts.length };
+      }
       default:
         return { status: 'completed' };
     }
@@ -53,9 +55,10 @@ export class MultiChannelExecutor {
 
   private static async executeViralStep(step: any, context: any): Promise<any> {
     switch (step.id) {
-      case 'social-proof-campaign':
+      case 'social-proof-campaign': {
         const posts = await this.socialAutomation.scheduleMultiPlatformContent('trust_security');
         return { status: 'completed', postsScheduled: posts.length };
+      }
       default:
         return { status: 'completed' };
     }
@@ -63,9 +66,10 @@ export class MultiChannelExecutor {
 
   private static async executeMobileStep(step: any, context: any): Promise<any> {
     switch (step.id) {
-      case 'deploy-mobile-ads':
+      case 'deploy-mobile-ads': {
         const posts = await this.socialAutomation.scheduleMultiPlatformContent('mobile_first');
         return { status: 'completed', adsDeployed: posts.length };
+      }
       default:
         return { status: 'completed' };
     }
@@ -73,10 +77,11 @@ export class MultiChannelExecutor {
 
   private static async executeCulturalStep(step: any, context: any): Promise<any> {
     switch (step.id) {
-      case 'schedule-event-campaigns':
+      case 'schedule-event-campaigns': {
         // In a real scenario, we'd use the identified events to customize content
         const posts = await this.socialAutomation.scheduleMultiPlatformContent('trust_security');
         return { status: 'completed', campaignsScheduled: posts.length };
+      }
       default:
         return { status: 'completed' };
     }
@@ -84,16 +89,18 @@ export class MultiChannelExecutor {
 
   private static async executePerformanceStep(step: any, context: any): Promise<any> {
     switch (step.id) {
-      case 'aggregate-performance-data':
+      case 'aggregate-performance-data': {
         const report = await SEOAutomationOrchestrator.generateAutomationReport();
         return { status: 'completed', report };
-      case 'reallocate-resources':
+      }
+      case 'reallocate-resources': {
         analyticsSystem.trackEvent({
           eventType: 'conversion',
           channel: 'seo',
           metadata: { action: 'resource_reallocation', reason: 'performance_optimization' }
         });
         return { status: 'completed', message: 'Resources reallocated based on performance' };
+      }
       default:
         return { status: 'completed' };
     }

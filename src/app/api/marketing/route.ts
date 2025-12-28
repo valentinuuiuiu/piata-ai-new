@@ -27,43 +27,49 @@ export async function POST(request: Request) {
     const { notebook, workflows } = await getNotebook();
 
     switch (action) {
-      case 'analyze':
+      case 'analyze': {
         // Analyze sources for marketing insights
         const insights = await notebook.analyzeForMarketing(data.sources || []);
         return NextResponse.json({ success: true, insights });
+      }
 
-      case 'email-campaign':
+      case 'email-campaign': {
         // Generate email campaign
         const campaign = await notebook.generateEmailCampaign(
           data.products || [],
           data.audience || 'General audience'
         );
         return NextResponse.json({ success: true, campaign });
+      }
 
-      case 'social-posts':
+      case 'social-posts': {
         // Generate social media posts
         const posts = await notebook.generateSocialPosts(
           data.listing,
           data.platforms || ['facebook', 'linkedin']
         );
         return NextResponse.json({ success: true, posts });
+      }
 
-      case 'trend-report':
+      case 'trend-report': {
         // Generate trend report
         const report = await notebook.generateTrendReport(data.category || 'Electronics');
         return NextResponse.json({ success: true, report });
+      }
 
-      case 'feedback-analysis':
+      case 'feedback-analysis': {
         // Analyze user feedback
         const feedback = await notebook.analyzeUserFeedback(data.reviews || []);
         return NextResponse.json({ success: true, analysis: feedback });
+      }
 
-      case 'sheet-analysis':
+      case 'sheet-analysis': {
         // Analyze Google Sheets data
         const sheetInsights = await notebook.analyzeSheetData(data.sheetData || []);
         return NextResponse.json({ success: true, insights: sheetInsights });
+      }
 
-      case 'workflow':
+      case 'workflow': {
         // Run preset workflow
         const workflow = workflows[data.workflowName as keyof typeof workflows];
         if (!workflow) {
@@ -74,6 +80,7 @@ export async function POST(request: Request) {
         }
         const result = await workflow(data.params);
         return NextResponse.json({ success: true, result });
+      }
 
       default:
         return NextResponse.json({

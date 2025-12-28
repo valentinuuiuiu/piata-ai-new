@@ -2,7 +2,7 @@
 import { supabase } from '../src/lib/supabase/script-client';
 
 async function getFinancialMetrics() {
-  let metrics = {
+  const metrics = {
     activeUsers: 0,
     totalCredits: 0,
     recentTransactions: 0,

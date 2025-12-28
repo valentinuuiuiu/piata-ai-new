@@ -509,16 +509,16 @@ export class CompetitorMonitor {
   private static getSEOOppportunities(competitor: 'olx' | 'emag'): string[] {
     return competitor === 'olx'
       ? [
-          'Target \"alternativa la olx\" keyword with superior features',
+          'Target "alternativa la olx" keyword with superior features',
           'Capture OLX users seeking better payment integration',
           'Target mobile-first optimization keywords',
-          'Leverage \"fara comision\" positioning'
+          'Leverage "fara comision" positioning'
         ]
       : [
-          'Target \"alternativa la emag\" with competitive pricing',
+          'Target "alternativa la emag" with competitive pricing',
           'Focus on international shipping capabilities',
           'Target simplified seller onboarding keywords',
-          'Leverage \"mai ieftin\" positioning'
+          'Leverage "mai ieftin" positioning'
         ];
   }
 
@@ -541,14 +541,14 @@ export class CompetitorMonitor {
   private static generateRecommendations(competitor: 'olx' | 'emag'): string[] {
     return competitor === 'olx'
       ? [
-          'Create landing pages targeting \"vs olx\" keywords',
+          'Create landing pages targeting "vs olx" keywords',
           'Develop content highlighting payment integration advantages',
           'Build backlinks from tech and business publications',
           'Focus on mobile-first content and features',
           'Target seller-focused keywords with superior tools'
         ]
       : [
-          'Create comparison content targeting \"vs emag\" queries',
+          'Create comparison content targeting "vs emag" queries',
           'Develop content around competitive pricing and shipping',
           'Build partnerships with electronics review sites',
           'Focus on simplified user experience positioning',
@@ -619,7 +619,7 @@ export class CompetitorMonitor {
     return [
       {
         type: 'keyword',
-        title: 'Target \"alternativa marketplace\" keywords',
+        title: 'Target "alternativa marketplace" keywords',
         description: 'Capture traffic from users searching for OLX/eMAG alternatives',
         priority: 'high',
         effort: 'medium'

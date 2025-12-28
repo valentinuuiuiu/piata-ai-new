@@ -363,6 +363,7 @@ Return ONLY valid JSON array.`;
   async run() {
     console.log('🤖 Autonomous Marketing Engine Starting...\n');
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         // Make decisions

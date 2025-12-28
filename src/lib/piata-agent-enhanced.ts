@@ -184,7 +184,7 @@ export class EnhancedPiataAgent {
 
   private async executeAction(action: AgentAction, originalSignal: any) {
     switch (action.type) {
-      case 'reply':
+      case 'reply': {
         await a2aSignalManager.logSignal({
           signalType: 'REPLY',
           fromAgent: this.agentName,
@@ -193,16 +193,18 @@ export class EnhancedPiataAgent {
           priority: 'normal'
         });
         break;
+      }
 
-      case 'broadcast':
+      case 'broadcast': {
         await a2aSignalManager.broadcastEnhanced(
           'AGENT_BROADCAST',
           { message: action.content },
           this.agentName
         );
         break;
+      }
 
-      case 'execute_tool':
+      case 'execute_tool': {
         // In a real scenario, we would map toolName to actual functions
         console.log(`🛠️ [${this.agentName}] Executing tool: ${action.toolName}`, action.toolParams);
 
@@ -218,6 +220,7 @@ export class EnhancedPiataAgent {
           priority: 'high'
         });
         break;
+      }
 
       case 'ignore':
       default:

@@ -181,36 +181,42 @@ class JulesMCPManager {
       const { id, method, params } = request;
 
       switch (method) {
-        case 'get_credit_packages':
+        case 'get_credit_packages': {
           const packages = await this.supabaseManager.getCreditPackages();
           return { id, result: { packages } };
+        }
 
-        case 'get_user_credits':
+        case 'get_user_credits': {
           const credits = await this.supabaseManager.getUserCredits(params.userId);
           return { id, result: credits };
+        }
 
-        case 'update_user_credits':
+        case 'update_user_credits': {
           const updated = await this.supabaseManager.updateUserCredits(
             params.userId, 
             params.creditsToAdd,
             params.transactionType
           );
           return { id, result: updated };
+        }
 
-        case 'record_transaction':
+        case 'record_transaction': {
           const transaction = await this.supabaseManager.recordTransaction(params);
           return { id, result: transaction };
+        }
 
-        case 'get_transaction_history':
+        case 'get_transaction_history': {
           const history = await this.supabaseManager.getTransactionHistory(
             params.userId,
             params.limit || 10
           );
           return { id, result: { transactions: history } };
+        }
 
-        case 'process_stripe_webhook':
+        case 'process_stripe_webhook': {
           const webhookResult = await this.supabaseManager.processStripeWebhook(params.event);
           return { id, result: webhookResult };
+        }
 
         case 'health_check':
           return { id, result: { status: 'healthy', timestamp: new Date().toISOString() } };
@@ -262,13 +268,12 @@ process.on('SIGTERM', () => {
 });
 
 // Handle command line arguments for testing
-if (process.argv.includes('--test')) {
-  // Run basic tests
-  async function runTests() {
-    console.log('🧪 Running Jules Supabase MCP tests...');
-    
-    try {
-      // Test credit packages
+// Run basic tests
+async function runTests() {
+  console.log('🧪 Running Jules Supabase MCP tests...');
+
+  try {
+    // Test credit packages
       const packages = await manager.handleRequest({
         id: 'test1',
         method: 'get_credit_packages',
@@ -284,14 +289,15 @@ if (process.argv.includes('--test')) {
       });
       console.log('✅ Health check test:', health.result);
 
-      console.log('🎉 All tests passed!');
-    } catch (error) {
-      console.error('❌ Test failed:', error);
-    }
-    
-    process.exit(0);
+    console.log('🎉 All tests passed!');
+  } catch (error) {
+    console.error('❌ Test failed:', error);
   }
 
+  process.exit(0);
+}
+
+if (process.argv.includes('--test')) {
   runTests();
 } else {
   // Start server

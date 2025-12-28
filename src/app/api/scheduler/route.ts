@@ -43,12 +43,13 @@ export async function POST(request: Request) {
         scheduler.stop();
         return NextResponse.json({ success: true, message: 'Scheduler stopped' });
       
-      case 'add':
+      case 'add': {
         if (!jobData) {
           return NextResponse.json({ success: false, error: 'Job data required' }, { status: 400 });
         }
         const id = await scheduler.scheduleJob(jobData);
         return NextResponse.json({ success: true, jobId: id });
+      }
       
       case 'delete':
         if (!jobId) {

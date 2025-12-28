@@ -38,7 +38,7 @@ const cleanAndParseSVG = (text: string): string => {
     const start = text.indexOf('<svg');
     const end = text.lastIndexOf('</svg>');
     if (start === -1 || end === -1) throw new Error("Synthesis incomplete. No SVG manifested.");
-    let svg = text.substring(start, end + 6);
+    const svg = text.substring(start, end + 6);
     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
 }
 

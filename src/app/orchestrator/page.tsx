@@ -110,9 +110,10 @@ User Input: ${question}`;
           return suggestPrice(args);
         case 'moderate_content':
           return moderateContent(args);
-        case 'smart_match':
+        case 'smart_match': {
           const [buyer, seller] = args.split(',').map(s => s.trim());
           return smartMatch(buyer, seller);
+        }
         case 'delegate_subagent':
           return delegateSubagent(args);
         case 'generate_mcp_tool':
@@ -121,21 +122,26 @@ User Input: ${question}`;
           return analyzeMarketTrends();
         case 'optimize_listing':
           return optimizeListing(args);
-        case 'send_email':
+        case 'send_email': {
           const [to, subject, ...bodyParts] = args.split(',').map(s => s.trim());
           return sendEmail(to, subject, bodyParts.join(','));
-        case 'post_social':
+        }
+        case 'post_social': {
           const [platform, ...contentParts] = args.split(',').map(s => s.trim());
           return postSocial(platform, contentParts.join(','));
-        case 'integrate_payment':
+        }
+        case 'integrate_payment': {
           const [amount, method] = args.split(',').map(s => s.trim());
           return integratePayment(parseFloat(amount), method);
-        case 'sync_database':
+        }
+        case 'sync_database': {
           const [action, ...dataParts] = args.split(',').map(s => s.trim());
           return syncDatabase(action, dataParts.join(','));
-        case 'webhook_trigger':
+        }
+        case 'webhook_trigger': {
           const [url, ...payloadParts] = args.split(',').map(s => s.trim());
           return webhookTrigger(url, payloadParts.join(','));
+        }
         default:
           return `Unknown tool: ${tool}`;
       }

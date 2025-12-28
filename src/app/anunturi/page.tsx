@@ -62,7 +62,7 @@ function AnunturiContent() {
               <p className="text-[#00f0ff] font-black text-2xl mb-3">
                 {ad.price && parseFloat(ad.price) > 0 ? `${parseFloat(ad.price).toLocaleString()} RON` : 'Gratuit'}
               </p>
-	              <p className="text-gray-300 line-clamp-2 mb-3 text-sm leading-relaxed">{ad.description || 'Fără descriere'}</p>
+              <p className="text-gray-300 line-clamp-2 mb-3 text-sm leading-relaxed">{ad.description || 'Fără descriere'}</p>
               <div className="flex justify-between text-sm text-gray-400">
                 <span>{ad.category_name}{ad.subcategory_name ? ` > ${ad.subcategory_name}` : ''}</span>
                 {ad.has_boost && (
