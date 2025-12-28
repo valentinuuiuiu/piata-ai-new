@@ -9,6 +9,7 @@
  */
 
 import { GROK_AGENT } from './openrouter-agent';
+import { createServiceClient } from './supabase/server';
 
 export interface NotebookSource {
   type: 'text' | 'url' | 'sheet' | 'doc';
@@ -207,9 +208,17 @@ export function getNotebookLLM(): NotebookLLMIntegration {
 export const MARKETING_WORKFLOWS = {
   WEEKLY_NEWSLETTER: async () => {
     const notebook = getNotebookLLM();
-    // TODO: Fetch top listings from Supabase
-    const products: any[] = []; // placeholder
-    return notebook.generateEmailCampaign(products, 'Romanian tech enthusiasts');
+    const supabase = createServiceClient();
+
+    const { data: products } = await supabase
+      .from('anunturi')
+      .select('id, title, description, price, category_id, images')
+      .eq('status', 'active')
+      .order('is_premium', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    return notebook.generateEmailCampaign(products || [], 'Romanian tech enthusiasts');
   },
 
   TREND_ANALYSIS: async (category: string) => {
@@ -219,8 +228,18 @@ export const MARKETING_WORKFLOWS = {
 
   SOCIAL_AUTOMATION: async (listingId: string) => {
     const notebook = getNotebookLLM();
-    // TODO: Fetch listing from Supabase
-    const listing = {}; // placeholder
+    const supabase = createServiceClient();
+
+    const { data: listing } = await supabase
+      .from('anunturi')
+      .select('*')
+      .eq('id', parseInt(listingId))
+      .single();
+
+    if (!listing) {
+      throw new Error(`Listing ${listingId} not found`);
+    }
+
     return notebook.generateSocialPosts(listing);
   },
 
