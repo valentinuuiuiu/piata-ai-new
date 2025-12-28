@@ -1,11 +1,10 @@
 /**
  * A2A Signal Manager
  * Enhanced agent-to-agent communication with persistent storage
+ * Refactored to use Supabase Client (REST) for environment compatibility
  */
 
-import { db } from '../drizzle/db';
-import { a2aSignals, agentLearningHistory, agentPerformanceMetrics, agentRegistry } from '../drizzle/a2a-schema';
-import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export interface A2ASignalData {
   signalType: string;
@@ -33,8 +32,19 @@ export interface PerformanceMetrics {
 
 export class A2ASignalManager {
   private static instance: A2ASignalManager;
+  private supabase: SupabaseClient | null = null;
 
-  private constructor() {}
+  private constructor() {
+    // Initialize Supabase client if credentials are available
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (supabaseUrl && supabaseKey) {
+      this.supabase = createClient(supabaseUrl, supabaseKey);
+    } else {
+      console.warn('⚠️ [A2A] Supabase credentials missing. Persistent storage will be disabled.');
+    }
+  }
 
   static getInstance(): A2ASignalManager {
     if (!A2ASignalManager.instance) {
@@ -47,21 +57,30 @@ export class A2ASignalManager {
    * Log an A2A signal to the database
    */
   async logSignal(signalData: A2ASignalData): Promise<number> {
+    if (!this.supabase) return -1;
+
     try {
-      const result = await db.insert(a2aSignals).values({
-        signalType: signalData.signalType,
-        fromAgent: signalData.fromAgent,
-        toAgent: signalData.toAgent || null,
-        content: signalData.content || {},
-        priority: signalData.priority || 'normal',
-        status: 'pending'
-      }).returning({ id: a2aSignals.id });
+      const { data, error } = await this.supabase
+        .from('a2a_signals')
+        .insert({
+          signal_type: signalData.signalType,
+          from_agent: signalData.fromAgent,
+          to_agent: signalData.toAgent || null,
+          content: signalData.content || {},
+          priority: signalData.priority || 'normal',
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
 
       console.log(`📡 [A2A] Signal logged: ${signalData.signalType} from ${signalData.fromAgent} to ${signalData.toAgent || 'BROADCAST'}`);
-      return result[0].id;
+      return data.id;
     } catch (error) {
       console.error('❌ [A2A] Failed to log signal:', error);
-      throw error;
+      // Don't crash the orchestrator if logging fails
+      return -1;
     }
   }
 
@@ -69,19 +88,23 @@ export class A2ASignalManager {
    * Update signal status
    */
   async updateSignalStatus(signalId: number, status: string, errorMessage?: string): Promise<void> {
+    if (!this.supabase || signalId === -1) return;
+
     try {
-      await db.update(a2aSignals)
-        .set({
+      const { error } = await this.supabase
+        .from('a2a_signals')
+        .update({
           status,
-          errorMessage: errorMessage || null,
-          processedAt: new Date()
+          error_message: errorMessage || null,
+          processed_at: new Date().toISOString()
         })
-        .where(eq(a2aSignals.id, signalId));
+        .eq('id', signalId);
+
+      if (error) throw error;
 
       console.log(`📡 [A2A] Signal ${signalId} status updated to: ${status}`);
     } catch (error) {
       console.error('❌ [A2A] Failed to update signal status:', error);
-      throw error;
     }
   }
 
@@ -89,40 +112,43 @@ export class A2ASignalManager {
    * Retrieve signals with filtering
    */
   async getSignals(filter: SignalFilter = {}, limit: number = 100): Promise<any[]> {
+    if (!this.supabase) return [];
+
     try {
-      const conditions = [];
+      let query = this.supabase
+        .from('a2a_signals')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
       if (filter.signalTypes?.length) {
-        conditions.push(sql`${a2aSignals.signalType} = ANY(${filter.signalTypes})`);
+        query = query.in('signal_type', filter.signalTypes);
       }
 
       if (filter.agents?.length) {
-        conditions.push(sql`(${a2aSignals.fromAgent} = ANY(${filter.agents}) OR ${a2aSignals.toAgent} = ANY(${filter.agents}))`);
+        query = query.or(`from_agent.in.(${filter.agents.join(',')}),to_agent.in.(${filter.agents.join(',')})`);
       }
 
       if (filter.priority?.length) {
-        conditions.push(sql`${a2aSignals.priority} = ANY(${filter.priority})`);
+        query = query.in('priority', filter.priority);
       }
 
       if (filter.status?.length) {
-        conditions.push(sql`${a2aSignals.status} = ANY(${filter.status})`);
+        query = query.in('status', filter.status);
       }
 
       if (filter.timeRange) {
-        conditions.push(gte(a2aSignals.createdAt, filter.timeRange.from));
-        conditions.push(lte(a2aSignals.createdAt, filter.timeRange.to));
+        query = query.gte('created_at', filter.timeRange.from.toISOString())
+                     .lte('created_at', filter.timeRange.to.toISOString());
       }
 
-      const signals = await db.select()
-        .from(a2aSignals)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
-        .orderBy(desc(a2aSignals.createdAt))
-        .limit(limit);
+      const { data, error } = await query;
+      if (error) throw error;
 
-      return signals;
+      return data || [];
     } catch (error) {
       console.error('❌ [A2A] Failed to retrieve signals:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -140,23 +166,28 @@ export class A2ASignalManager {
     agentPerformance?: any;
     context?: any;
   }): Promise<void> {
+    if (!this.supabase) return;
+
     try {
-      await db.insert(agentLearningHistory).values({
-        fromAgent: data.fromAgent,
-        toAgent: data.toAgent,
-        interactionType: data.interactionType,
-        taskId: data.taskId || null,
-        taskDescription: data.taskDescription || null,
-        outcome: data.outcome,
-        duration: data.duration || null,
-        agentPerformance: data.agentPerformance || {},
-        context: data.context || {}
-      });
+      const { error } = await this.supabase
+        .from('agent_learning_history')
+        .insert({
+          from_agent: data.fromAgent,
+          to_agent: data.toAgent,
+          interaction_type: data.interactionType,
+          task_id: data.taskId || null,
+          task_description: data.taskDescription || null,
+          outcome: data.outcome,
+          duration: data.duration || null,
+          agent_performance: data.agentPerformance || {},
+          context: data.context || {}
+        });
+
+      if (error) throw error;
 
       console.log(`🧠 [A2A] Learning history logged: ${data.fromAgent} → ${data.toAgent} (${data.outcome})`);
     } catch (error) {
       console.error('❌ [A2A] Failed to log learning history:', error);
-      throw error;
     }
   }
 
@@ -164,18 +195,23 @@ export class A2ASignalManager {
    * Record performance metrics
    */
   async recordPerformanceMetrics(metrics: PerformanceMetrics): Promise<void> {
+    if (!this.supabase) return;
+
     try {
-      await db.insert(agentPerformanceMetrics).values({
-        agentName: metrics.agentName,
-        metricType: metrics.metricType,
-        metricValue: metrics.value.toString(),
-        timeWindow: metrics.timeWindow
-      });
+      const { error } = await this.supabase
+        .from('agent_performance_metrics')
+        .insert({
+          agent_name: metrics.agentName,
+          metric_type: metrics.metricType,
+          metric_value: metrics.value.toString(),
+          time_window: metrics.timeWindow
+        });
+
+      if (error) throw error;
 
       console.log(`📊 [A2A] Performance metrics recorded: ${metrics.agentName}.${metrics.metricType} = ${metrics.value}`);
     } catch (error) {
       console.error('❌ [A2A] Failed to record performance metrics:', error);
-      throw error;
     }
   }
 
@@ -183,20 +219,23 @@ export class A2ASignalManager {
    * Get performance metrics for an agent
    */
   async getAgentPerformance(agentName: string, timeWindow: string = '1h'): Promise<any[]> {
+    if (!this.supabase) return [];
+
     try {
-      const metrics = await db.select()
-        .from(agentPerformanceMetrics)
-        .where(and(
-          eq(agentPerformanceMetrics.agentName, agentName),
-          eq(agentPerformanceMetrics.timeWindow, timeWindow)
-        ))
-        .orderBy(desc(agentPerformanceMetrics.timestamp))
+      const { data, error } = await this.supabase
+        .from('agent_performance_metrics')
+        .select('*')
+        .eq('agent_name', agentName)
+        .eq('time_window', timeWindow)
+        .order('created_at', { ascending: false })
         .limit(50);
 
-      return metrics;
+      if (error) throw error;
+
+      return data || [];
     } catch (error) {
       console.error('❌ [A2A] Failed to get agent performance:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -209,32 +248,32 @@ export class A2ASignalManager {
     capabilities?: string[];
     metadata?: any;
   }): Promise<void> {
+    if (!this.supabase) return;
+
+    // Check mocked mode for tests
+    if (process.env.SKIP_A2A_DB_WRITE === 'true') {
+        console.log(`🔧 [A2A] (MOCKED) Agent registry updated: ${agentName} (${data.status})`);
+        return;
+    }
+
     try {
-      await db.insert(agentRegistry)
-        .values({
-          agentName,
-          agentType: data.agentType,
+      const { error } = await this.supabase
+        .from('agent_registry')
+        .upsert({
+          agent_name: agentName,
+          agent_type: data.agentType,
           status: data.status,
           capabilities: data.capabilities || [],
-          lastHeartbeat: new Date(),
-          metadata: data.metadata || {}
-        })
-        .onConflictDoUpdate({
-          target: agentRegistry.agentName,
-          set: {
-            agentType: data.agentType,
-            status: data.status,
-            capabilities: data.capabilities || [],
-            lastHeartbeat: new Date(),
-            metadata: data.metadata || {},
-            updatedAt: new Date()
-          }
-        });
+          last_heartbeat: new Date().toISOString(),
+          metadata: data.metadata || {},
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'agent_name' });
+
+      if (error) throw error;
 
       console.log(`🔧 [A2A] Agent registry updated: ${agentName} (${data.status})`);
     } catch (error) {
       console.error('❌ [A2A] Failed to update agent registry:', error);
-      throw error;
     }
   }
 
@@ -242,15 +281,20 @@ export class A2ASignalManager {
    * Get all registered agents
    */
   async getRegisteredAgents(): Promise<any[]> {
-    try {
-      const agents = await db.select()
-        .from(agentRegistry)
-        .orderBy(desc(agentRegistry.lastHeartbeat));
+    if (!this.supabase) return [];
 
-      return agents;
+    try {
+      const { data, error } = await this.supabase
+        .from('agent_registry')
+        .select('*')
+        .order('last_heartbeat', { ascending: false });
+
+      if (error) throw error;
+
+      return data || [];
     } catch (error) {
       console.error('❌ [A2A] Failed to get registered agents:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -258,16 +302,21 @@ export class A2ASignalManager {
    * Get agent health status
    */
   async getAgentHealth(agentName: string): Promise<any> {
-    try {
-      const agents = await db.select()
-        .from(agentRegistry)
-        .where(eq(agentRegistry.agentName, agentName))
-        .limit(1);
+    if (!this.supabase) return null;
 
-      return agents[0] || null;
+    try {
+      const { data, error } = await this.supabase
+        .from('agent_registry')
+        .select('*')
+        .eq('agent_name', agentName)
+        .single();
+
+      if (error) throw error;
+
+      return data || null;
     } catch (error) {
       console.error('❌ [A2A] Failed to get agent health:', error);
-      throw error;
+      return null;
     }
   }
 
