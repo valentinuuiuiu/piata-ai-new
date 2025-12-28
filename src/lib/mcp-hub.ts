@@ -47,8 +47,11 @@ export class MCPHub {
   private remoteCallTimeoutMs = Number(process.env.MCP_HUB_REMOTE_CALL_TIMEOUT_MS || 60_000);
 
   private constructor() {
-    this.registerDefaultTools();
-    this.registerDefaultWorkflows();
+    // Only register tools if we are not in a build environment
+    if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PHASE !== 'phase-production-build') {
+        this.registerDefaultTools();
+        this.registerDefaultWorkflows();
+    }
   }
 
   public static getInstance(): MCPHub {

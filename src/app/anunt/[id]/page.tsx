@@ -1,15 +1,23 @@
 import { createClient } from '@/lib/supabase/server';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import AnuntDetails from '@/components/AnuntDetails';
 
 export default async function AnuntPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  // If ID is not a number, try to search for it by title
+  const numericId = parseInt(id);
+  if (isNaN(numericId)) {
+    console.log(`[Server] Invalid ID "${id}", redirecting to search`);
+    redirect(`/cautare?q=${encodeURIComponent(id)}`);
+  }
+
   const supabase = await createClient();
 
   const { data: anunt, error } = await supabase
     .from('anunturi')
     .select('*, category:categories(name)')
-    .eq('id', parseInt(id))
+    .eq('id', numericId)
     .single();
 
   if (anunt) {

@@ -278,10 +278,10 @@ export async function POST(req: NextRequest) {
       }
       
       // Create listing and send confirmation email via PAI's internal system
-      const { createListingWithEmailConfirmation } = await import('@/lib/piata-agent');
+      const { piataAgent } = await import('@/lib/piata-agent');
       
       try {
-        const result = await createListingWithEmailConfirmation({
+        const result = await piataAgent.createListingWithEmailConfirmation({
           title,
           description: description || '',
           price: price ? parseFloat(price) : undefined,

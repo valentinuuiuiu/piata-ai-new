@@ -17,6 +17,11 @@ import { AgentTask, AgentResult, AgentCapability } from './agents/types';
 // AGENT CONFIGURATIONS
 // =============================================================================
 
+export interface AgentCapabilityDescription {
+  name: string;
+  description: string;
+}
+
 export interface InternalAgentConfig {
   id: string;
   name: string;
@@ -24,7 +29,7 @@ export interface InternalAgentConfig {
   model?: string;
   systemPrompt?: string;
   enabled: boolean;
-  capabilities: AgentCapability[];
+  capabilities: AgentCapabilityDescription[];
   description: string;
 }
 

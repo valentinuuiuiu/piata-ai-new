@@ -4,7 +4,7 @@
  * Integrated workflows that coordinate Email, Social Media, SEO, and Referral systems.
  */
 
-import { Workflow } from './workflow-types';
+import { Workflow } from './internal-workflow-registry';
 
 export const MULTI_CHANNEL_WORKFLOWS: Workflow[] = [
   {
