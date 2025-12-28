@@ -6,7 +6,31 @@
 import { createServiceClient } from './supabase/server';
 import { a2aSignalManager } from './a2a/signal-manager';
 
-const supabase = createServiceClient();
+// Check if we are in build phase
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
+let supabase: any;
+
+function getSupabase() {
+  if (isBuildPhase) {
+    // Return a mock client during build
+    return new Proxy({}, {
+      get: () => () => ({
+        data: null,
+        error: null,
+        select: () => ({ data: null, error: null }),
+        insert: () => ({ data: null, error: null }),
+        rpc: () => ({ data: null, error: null }),
+        // Add other methods as needed
+      })
+    });
+  }
+
+  if (!supabase) {
+    supabase = createServiceClient();
+  }
+  return supabase;
+}
 
 export interface AnalyticsEvent {
   eventType: 'click' | 'view' | 'conversion' | 'open' | 'share' | 'referral';
@@ -41,8 +65,9 @@ export class AnalyticsSystem {
    * Track a marketing event in real-time
    */
   async trackEvent(event: AnalyticsEvent): Promise<void> {
+    if (isBuildPhase) return;
     try {
-      const { data, error } = await supabase.rpc('track_marketing_event', {
+      const { data, error } = await getSupabase().rpc('track_marketing_event', {
         p_event_type: event.eventType,
         p_channel: event.channel,
         p_campaign_id: event.campaignId,
@@ -89,8 +114,9 @@ export class AnalyticsSystem {
    * Trigger a performance alert
    */
   async triggerAlert(alert: PerformanceAlert): Promise<void> {
+    if (isBuildPhase) return;
     try {
-      const { error } = await supabase.from('performance_alerts_history').insert({
+      const { error } = await getSupabase().from('performance_alerts_history').insert({
         alert_type: alert.metricName,
         message: alert.message,
         current_value: alert.currentValue,
@@ -121,21 +147,22 @@ export class AnalyticsSystem {
    * Get real-time dashboard data
    */
   async getDashboardData(timeframe: string = '24h') {
+    if (isBuildPhase) return null;
     try {
-      const { data: stats, error: statsError } = await supabase
+      const { data: stats, error: statsError } = await getSupabase()
         .from('realtime_marketing_stats')
         .select('*');
 
       if (statsError) throw statsError;
 
-      const { data: geo, error: geoError } = await supabase
+      const { data: geo, error: geoError } = await getSupabase()
         .from('geographic_performance')
         .select('*')
         .eq('date', new Date().toISOString().split('T')[0]);
 
       if (geoError) throw geoError;
 
-      const { data: roi, error: roiError } = await supabase
+      const { data: roi, error: roiError } = await getSupabase()
         .from('marketing_roi')
         .select('*')
         .order('date', { ascending: false })
@@ -159,7 +186,8 @@ export class AnalyticsSystem {
    * Calculate ROI and optimize budget
    */
   async optimizeBudget(): Promise<any> {
-    const { data: roiData } = await supabase
+    if (isBuildPhase) return null;
+    const { data: roiData } = await getSupabase()
       .from('marketing_roi')
       .select('*')
       .eq('date', new Date().toISOString().split('T')[0]);
@@ -167,7 +195,7 @@ export class AnalyticsSystem {
     if (!roiData || roiData.length === 0) return null;
 
     // Simple optimization: find channels with ROI > 2 and suggest budget increase
-    const recommendations = roiData.map(item => ({
+    const recommendations = roiData.map((item: any) => ({
       channel: item.channel,
       currentRoi: item.roi,
       recommendation: item.roi > 2 ? 'INCREASE_BUDGET' : item.roi < 0.5 ? 'DECREASE_BUDGET' : 'MAINTAIN'

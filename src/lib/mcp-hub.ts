@@ -344,6 +344,9 @@ export class MCPHub {
 
     // Bridge to legacy automation_logs
     try {
+      const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+      if (isBuildPhase) return { workflowId, status: finalStatus, results };
+
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!

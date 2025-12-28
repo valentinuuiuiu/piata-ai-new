@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic';
+
 // KAN Admin Dashboard - Protected Route
 // Only accessible by ionutbaltag3@gmail.com - The creator and owner
 
@@ -10,10 +12,18 @@ export default async function KANLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
+
+  // Gracefully handle mock client/build phase
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (!error) user = data.user;
+  } catch (e) {
+    // In build phase with mock client, this might fail or return null
+  }
 
   // Check if user is authenticated
-  if (error || !user) {
+  if (!user) {
     redirect('/autentificare?callbackUrl=/kan')
   }
 

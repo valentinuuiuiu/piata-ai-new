@@ -11,6 +11,9 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+// Check if we are in build phase
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
 export interface AgentTool {
   name: string;
   description: string;
@@ -75,7 +78,13 @@ class PiataAIAgent {
     this.initializeTools();
     this.initializePatterns();
     this.initializeAgents();
-    this.startTaskProcessor();
+
+    // Only start task processor if NOT in build phase
+    if (!isBuildPhase) {
+      this.startTaskProcessor();
+    } else {
+      console.log('🔮 [Taita] Task processor disabled during build phase.');
+    }
   }
 
   private initializeAgents() {

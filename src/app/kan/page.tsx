@@ -1,14 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic';
+
 // KAN Dashboard - Admin Control Panel
-// Protected ONLY for ionutbaltag3@gmail.com - The creator and owner of this project
+// Protected ONLY for ionutbaltag3@gmail.com - The creator and owner
 
 export default async function KANDashboard() {
   const supabase = await createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
 
-  if (error || !user) {
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (!error) user = data?.user;
+  } catch (e) {
+    // Ignore error in build/mock
+  }
+
+  if (!user) {
     redirect('/autentificare?callbackUrl=/kan')
   }
 

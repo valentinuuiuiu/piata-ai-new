@@ -7,6 +7,9 @@ import { db } from '../drizzle/db';
 import { a2aSignals, agentLearningHistory, agentPerformanceMetrics, agentRegistry } from '../drizzle/a2a-schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 
+// Check if we are in build phase
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
 export interface A2ASignalData {
   signalType: string;
   fromAgent: string;
@@ -47,6 +50,10 @@ export class A2ASignalManager {
    * Log an A2A signal to the database
    */
   async logSignal(signalData: A2ASignalData): Promise<number> {
+    if (isBuildPhase) {
+      console.log(`📡 [A2A-BUILD] Signal logged (mock): ${signalData.signalType}`);
+      return 0;
+    }
     try {
       const result = await db.insert(a2aSignals).values({
         signalType: signalData.signalType,
@@ -61,6 +68,8 @@ export class A2ASignalManager {
       return result[0].id;
     } catch (error) {
       console.error('❌ [A2A] Failed to log signal:', error);
+      // Don't throw in mock/dev mode if DB is unreachable, just log
+      if (process.env.NODE_ENV !== 'production') return 0;
       throw error;
     }
   }
@@ -69,6 +78,7 @@ export class A2ASignalManager {
    * Update signal status
    */
   async updateSignalStatus(signalId: number, status: string, errorMessage?: string): Promise<void> {
+    if (isBuildPhase) return;
     try {
       await db.update(a2aSignals)
         .set({
@@ -81,6 +91,7 @@ export class A2ASignalManager {
       console.log(`📡 [A2A] Signal ${signalId} status updated to: ${status}`);
     } catch (error) {
       console.error('❌ [A2A] Failed to update signal status:', error);
+      if (process.env.NODE_ENV !== 'production') return;
       throw error;
     }
   }
@@ -89,6 +100,7 @@ export class A2ASignalManager {
    * Retrieve signals with filtering
    */
   async getSignals(filter: SignalFilter = {}, limit: number = 100): Promise<any[]> {
+    if (isBuildPhase) return [];
     try {
       const conditions = [];
 
@@ -122,6 +134,7 @@ export class A2ASignalManager {
       return signals;
     } catch (error) {
       console.error('❌ [A2A] Failed to retrieve signals:', error);
+      if (process.env.NODE_ENV !== 'production') return [];
       throw error;
     }
   }
@@ -140,6 +153,7 @@ export class A2ASignalManager {
     agentPerformance?: any;
     context?: any;
   }): Promise<void> {
+    if (isBuildPhase) return;
     try {
       await db.insert(agentLearningHistory).values({
         fromAgent: data.fromAgent,
@@ -156,6 +170,7 @@ export class A2ASignalManager {
       console.log(`🧠 [A2A] Learning history logged: ${data.fromAgent} → ${data.toAgent} (${data.outcome})`);
     } catch (error) {
       console.error('❌ [A2A] Failed to log learning history:', error);
+      if (process.env.NODE_ENV !== 'production') return;
       throw error;
     }
   }
@@ -164,6 +179,7 @@ export class A2ASignalManager {
    * Record performance metrics
    */
   async recordPerformanceMetrics(metrics: PerformanceMetrics): Promise<void> {
+    if (isBuildPhase) return;
     try {
       await db.insert(agentPerformanceMetrics).values({
         agentName: metrics.agentName,
@@ -175,6 +191,7 @@ export class A2ASignalManager {
       console.log(`📊 [A2A] Performance metrics recorded: ${metrics.agentName}.${metrics.metricType} = ${metrics.value}`);
     } catch (error) {
       console.error('❌ [A2A] Failed to record performance metrics:', error);
+      if (process.env.NODE_ENV !== 'production') return;
       throw error;
     }
   }
@@ -183,6 +200,7 @@ export class A2ASignalManager {
    * Get performance metrics for an agent
    */
   async getAgentPerformance(agentName: string, timeWindow: string = '1h'): Promise<any[]> {
+    if (isBuildPhase) return [];
     try {
       const metrics = await db.select()
         .from(agentPerformanceMetrics)
@@ -196,6 +214,7 @@ export class A2ASignalManager {
       return metrics;
     } catch (error) {
       console.error('❌ [A2A] Failed to get agent performance:', error);
+      if (process.env.NODE_ENV !== 'production') return [];
       throw error;
     }
   }
@@ -209,6 +228,10 @@ export class A2ASignalManager {
     capabilities?: string[];
     metadata?: any;
   }): Promise<void> {
+    if (isBuildPhase) {
+      console.log(`🔧 [A2A-BUILD] Agent registry update skipped (mock): ${agentName}`);
+      return;
+    }
     try {
       await db.insert(agentRegistry)
         .values({
@@ -234,6 +257,8 @@ export class A2ASignalManager {
       console.log(`🔧 [A2A] Agent registry updated: ${agentName} (${data.status})`);
     } catch (error) {
       console.error('❌ [A2A] Failed to update agent registry:', error);
+      // Suppress error in non-prod environments or if DB is unreachable
+      if (process.env.NODE_ENV !== 'production') return;
       throw error;
     }
   }
@@ -242,6 +267,7 @@ export class A2ASignalManager {
    * Get all registered agents
    */
   async getRegisteredAgents(): Promise<any[]> {
+    if (isBuildPhase) return [];
     try {
       const agents = await db.select()
         .from(agentRegistry)
@@ -250,6 +276,7 @@ export class A2ASignalManager {
       return agents;
     } catch (error) {
       console.error('❌ [A2A] Failed to get registered agents:', error);
+      if (process.env.NODE_ENV !== 'production') return [];
       throw error;
     }
   }
@@ -258,6 +285,7 @@ export class A2ASignalManager {
    * Get agent health status
    */
   async getAgentHealth(agentName: string): Promise<any> {
+    if (isBuildPhase) return null;
     try {
       const agents = await db.select()
         .from(agentRegistry)
@@ -267,6 +295,7 @@ export class A2ASignalManager {
       return agents[0] || null;
     } catch (error) {
       console.error('❌ [A2A] Failed to get agent health:', error);
+      if (process.env.NODE_ENV !== 'production') return null;
       throw error;
     }
   }

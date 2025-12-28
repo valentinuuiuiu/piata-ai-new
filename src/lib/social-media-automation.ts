@@ -82,6 +82,23 @@ export class RomanianSocialMediaAutomation {
     const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+    // Check build phase
+    const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
+    if ((!url || !key) && isBuildPhase) {
+        console.warn('⚠️  Supabase credentials missing during build in SocialMediaAutomation. Using mock client.');
+        // Return a minimal mock client
+        return new Proxy({}, {
+            get: () => () => ({
+                data: null,
+                error: null,
+                select: () => ({ data: null, error: null }),
+                insert: () => ({ data: null, error: null }),
+                // Add methods as needed
+            })
+        });
+    }
+
     if (!url || !key) {
       throw new Error('Supabase is not configured: set SUPABASE_URL and SUPABASE_ANON_KEY (or NEXT_PUBLIC_ versions)');
     }
