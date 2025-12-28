@@ -9,6 +9,9 @@
  */
 
 import { GROK_AGENT } from './openrouter-agent';
+import { db } from './drizzle/db';
+import { reviews } from './drizzle/schema';
+import { isNotNull, desc } from 'drizzle-orm';
 
 export interface NotebookSource {
   type: 'text' | 'url' | 'sheet' | 'doc';
@@ -105,6 +108,15 @@ Make it:
    * Analyze user reviews and feedback
    */
   async analyzeUserFeedback(reviews: string[]): Promise<NotebookInsight> {
+    if (reviews.length === 0) {
+      return {
+        summary: "No user reviews available for analysis.",
+        keyPoints: [],
+        marketingAngles: [],
+        recommendations: ["Collect user feedback to generate insights."]
+      };
+    }
+
     const allReviews = reviews.join('\n\n');
     
     const sources: NotebookSource[] = [{
@@ -226,8 +238,33 @@ export const MARKETING_WORKFLOWS = {
 
   FEEDBACK_ANALYSIS: async () => {
     const notebook = getNotebookLLM();
-    // TODO: Fetch reviews from Supabase
-    const reviews: string[] = []; // placeholder
-    return notebook.analyzeUserFeedback(reviews);
+    let reviewsList: string[] = [];
+
+    try {
+      // Fetch reviews from Supabase
+      const result = await db
+        .select({
+          comment: reviews.comment,
+          rating: reviews.rating,
+          source: reviews.source
+        })
+        .from(reviews)
+        .where(isNotNull(reviews.comment))
+        .orderBy(desc(reviews.createdAt))
+        .limit(50); // Analyze most recent 50 reviews
+
+      if (result && result.length > 0) {
+        reviewsList = result.map(r =>
+          `[Rating: ${r.rating}/5] [Source: ${r.source || 'web'}] ${r.comment}`
+        );
+      } else {
+        console.log('No reviews found in database.');
+      }
+    } catch (error) {
+      console.error('Error fetching reviews from Supabase:', error);
+      // Fallback to empty list so analysis can handle it gracefully
+    }
+
+    return notebook.analyzeUserFeedback(reviewsList);
   }
 };
