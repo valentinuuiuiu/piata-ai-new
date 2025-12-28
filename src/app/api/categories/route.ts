@@ -115,7 +115,7 @@ export async function GET(req: Request) {
           id: 1,
           name: 'Imobiliare',
           slug: 'imobiliare',
-          icon: '',
+          icon: '🏠',
           listing_count: 1250,
           subcat_count: 8
         },
@@ -123,7 +123,7 @@ export async function GET(req: Request) {
           id: 2,
           name: 'Auto Moto',
           slug: 'auto-moto',
-          icon: '',
+          icon: '🚗',
           listing_count: 890,
           subcat_count: 10
         },
@@ -131,15 +131,15 @@ export async function GET(req: Request) {
           id: 3,
           name: 'Electronice',
           slug: 'electronice',
-          icon: '',
+          icon: '📱',
           listing_count: 2340,
           subcat_count: 10
         },
         {
           id: 4,
-          name: 'Moda',
+          name: 'Modă și Accesorii',
           slug: 'moda',
-          icon: '',
+          icon: '👗',
           listing_count: 3200,
           subcat_count: 8
         },
@@ -147,15 +147,15 @@ export async function GET(req: Request) {
           id: 5,
           name: 'Servicii',
           slug: 'servicii',
-          icon: '',
+          icon: '🔧',
           listing_count: 670,
           subcat_count: 9
         },
         {
           id: 6,
-          name: 'Casa & Gradina',
+          name: 'Casă și Grădină',
           slug: 'casa-gradina',
-          icon: '',
+          icon: '🏡',
           listing_count: 1540,
           subcat_count: 8
         },
@@ -163,7 +163,7 @@ export async function GET(req: Request) {
           id: 7,
           name: 'Sport & Hobby',
           slug: 'sport-hobby',
-          icon: '',
+          icon: '⚽',
           listing_count: 780,
           subcat_count: 7
         },
@@ -171,40 +171,56 @@ export async function GET(req: Request) {
           id: 8,
           name: 'Animale',
           slug: 'animale',
-          icon: '',
+          icon: '🐾',
           listing_count: 420,
           subcat_count: 7
         },
         {
           id: 9,
-          name: 'Locuri de Munca',
+          name: 'Locuri de Muncă',
           slug: 'locuri-munca',
-          icon: '',
+          icon: '💼',
           listing_count: 1890,
           subcat_count: 10
         },
         {
           id: 10,
-          name: 'Mama & Copilul',
+          name: 'Mama și Copilul',
           slug: 'mama-copilul',
-          icon: '',
+          icon: '👶',
           listing_count: 980,
           subcat_count: 8
         },
         {
           id: 11,
-          name: 'Carti & Muzica',
-          slug: 'carti-muzica',
-          icon: '',
-          listing_count: 560,
-          subcat_count: 6
+          name: 'Matrimoniale',
+          slug: 'matrimoniale',
+          icon: '💑',
+          listing_count: 120,
+          subcat_count: 3
         },
         {
           id: 12,
+          name: 'Cazare și Turism',
+          slug: 'cazare-turism',
+          icon: '✈️',
+          listing_count: 350,
+          subcat_count: 3
+        },
+        {
+          id: 13,
           name: 'Diverse',
           slug: 'diverse',
-          icon: '',
+          icon: '📦',
           listing_count: 1200,
+          subcat_count: 6
+        },
+        {
+          id: 14,
+          name: 'Cărți & Muzică',
+          slug: 'carti-muzica',
+          icon: '📚',
+          listing_count: 560,
           subcat_count: 6
         }
       ];
@@ -229,7 +245,11 @@ export async function GET(req: Request) {
         { id: 12, name: 'Accesorii', slug: 'accesorii', category_id: 4 },
         { id: 13, name: 'Reparații', slug: 'reparatii', category_id: 5 },
         { id: 14, name: 'Curățenie', slug: 'curatenie', category_id: 5 },
-        { id: 15, name: 'Transport', slug: 'transport', category_id: 5 }
+        { id: 15, name: 'Transport', slug: 'transport', category_id: 5 },
+        // Matrimoniale subcategories
+        { id: 40, name: 'Femei caută bărbați', slug: 'femei-cauta-barbati', category_id: 11 },
+        { id: 41, name: 'Bărbați caută femei', slug: 'barbati-cauta-femei', category_id: 11 },
+        { id: 42, name: 'Prietenie', slug: 'prietenie', category_id: 11 }
       ];
 
       return NextResponse.json({
