@@ -23,7 +23,7 @@ export abstract class BaseAgent implements Agent {
       setAttribute('agent.type', this.type);
       setAttribute('agent.task.id', task.id);
       setAttribute('agent.task.goal', task.goal);
-      setAttribute('agent.capabilities', this.capabilities.map(c => c.name));
+      setAttribute('agent.capabilities', this.capabilities.map(c => c.toString()));
 
       recordEvent('agent.task.started', { 
         agent: this.name, 

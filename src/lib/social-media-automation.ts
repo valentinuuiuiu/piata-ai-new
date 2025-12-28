@@ -459,6 +459,23 @@ export class RomanianSocialMediaAutomation {
       mobile_first_approach: true
     };
   }
+
+  // Public methods to support CommunityBuildingSystem
+
+  public async createCommunityGroup(name: string, description: string): Promise<void> {
+    console.log(`Creating community group: ${name}`);
+    return Promise.resolve();
+  }
+
+  public async promoteEvent(event: any): Promise<void> {
+    console.log(`Promoting event: ${event.title}`);
+    return Promise.resolve();
+  }
+
+  public async autoCommentOnTrendingPosts(): Promise<void> {
+    console.log('Commenting on trending posts...');
+    return Promise.resolve();
+  }
 }
 
-export default RomanianSocialMediaAutomation;
+export const socialMediaAutomation = new RomanianSocialMediaAutomation();

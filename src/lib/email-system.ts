@@ -872,4 +872,27 @@ Revino acum: https://platforma-ta.ro/welcome-back?code=ÎNAPOI50
       metadata: { emailId }
     });
   }
+
+  // Public method to broadcast event notifications
+  public async broadcastEvent(event: any): Promise<void> {
+    console.log(`Broadcasting event ${event.title} to all users...`);
+    // Implementation to send emails about the event
+    // This would typically iterate through subscribed users
+    return Promise.resolve();
+  }
+
+  // Public method to send template email
+  public async sendTemplate(email: string, templateName: string, data: any): Promise<void> {
+    console.log(`Sending template ${templateName} to ${email} with data:`, data);
+    return Promise.resolve();
+  }
+
+  // Public method to send welcome email
+  public async sendWelcomeToCommunity(): Promise<void> {
+    // Logic to welcome new community members
+    console.log('Sending community welcome emails...');
+    return Promise.resolve();
+  }
 }
+
+export const emailSystem = new EmailMarketingSystem();
