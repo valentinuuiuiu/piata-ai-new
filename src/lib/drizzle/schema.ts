@@ -165,3 +165,17 @@ export type ReferralCode = InferSelectModel<typeof referralCodes>;
 export type Referral = InferSelectModel<typeof referrals>;
 export type ReferralReward = InferSelectModel<typeof referralRewards>;
 export type ReferralFraudLog = InferSelectModel<typeof referralFraudLogs>;
+
+// Reviews & Feedback
+export const reviews = pgTable('reviews', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
+  source: varchar('source', { length: 50 }).default('web'),
+  status: varchar('status', { length: 20 }).default('pending'), // pending, approved, rejected
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type Review = InferSelectModel<typeof reviews>;
+export type NewReview = InferInsertModel<typeof reviews>;
