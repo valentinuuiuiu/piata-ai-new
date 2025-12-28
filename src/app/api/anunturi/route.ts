@@ -63,7 +63,8 @@ export async function GET(request: Request) {
       }
       return {
         ...listing,
-        images
+        images,
+        description: listing.description || '',
       };
     }) || [];
 

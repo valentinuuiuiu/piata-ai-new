@@ -17,13 +17,13 @@ test('Verify ads are displayed correctly on live site', async ({ page }) => {
   });
 
   // Navigate to the live site
-  await page.goto('https://www.piata-ai.ro');
+  await page.goto('https://piata-ai.vercel.app');
 
   // Wait for the page to load
   await page.waitForLoadState('networkidle');
 
   // Make a direct API call to verify the ads
-  const response = await page.request.get('https://www.piata-ai.ro/api/anunturi');
+  const response = await page.request.get('https://piata-ai.vercel.app/api/anunturi');
   expect(response.ok()).toBeTruthy();
 
   const ads = await response.json();
