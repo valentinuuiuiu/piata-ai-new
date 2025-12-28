@@ -10,7 +10,7 @@
 import { 
   workflowRegistry 
 } from './internal-workflow-registry';
-import { Workflow, WorkflowStep, WorkflowExecution } from './workflow-types';
+import type { Workflow, WorkflowStep, WorkflowExecution } from '@/types/workflow';
 import { withSpan, withWorkflowSpan, setAttribute, recordEvent } from './tracing';
 import { JulesManager } from './jules-manager';
 import { OpenRouterAgent } from './openrouter-agent';

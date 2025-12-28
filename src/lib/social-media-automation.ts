@@ -448,6 +448,19 @@ export class RomanianSocialMediaAutomation {
   /**
    * Romanian market optimization
    */
+  async promoteEvent(event: any): Promise<void> {
+    console.log(`Promoting event: ${event.title}`);
+  }
+  async autoCommentOnTrendingPosts(): Promise<void> {
+    console.log("Auto-commenting on trending posts...");
+  }
+
+  async createCommunityGroup(name: string, description: string): Promise<boolean> {
+    console.log(`Creating community group: ${name}`);
+    // Implementation stub
+    return true;
+  }
+
   optimizeForRomanianMarket(): any {
     return {
       mobile_optimization: true,
@@ -462,3 +475,4 @@ export class RomanianSocialMediaAutomation {
 }
 
 export default RomanianSocialMediaAutomation;
+export const socialMediaAutomation = new RomanianSocialMediaAutomation();

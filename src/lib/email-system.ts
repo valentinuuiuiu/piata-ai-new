@@ -819,6 +819,17 @@ Revino acum: https://platforma-ta.ro/welcome-back?code=ÎNAPOI50
     return Array.from(this.campaigns.values());
   }
 
+  public async sendTemplate(email: string, templateId: string, data: any): Promise<boolean> {
+    console.log(`Sending template ${templateId} to ${email}`);
+    return true;
+  }
+  public async broadcastEvent(event: any): Promise<void> {
+    console.log(`Broadcasting event: ${event.title}`);
+  }
+  public async sendWelcomeToCommunity(): Promise<void> {
+    console.log("Sending welcome emails...");
+  }
+
   public sendEmail(userId: string, templateId: string, personalizations?: Record<string, any>): Promise<boolean> {
     // Implementation for sending emails via Resend/SendGrid/etc.
     console.log(`Sending email to user ${userId} with template ${templateId}`);
@@ -873,3 +884,4 @@ Revino acum: https://platforma-ta.ro/welcome-back?code=ÎNAPOI50
     });
   }
 }
+export const emailSystem = new EmailMarketingSystem();
