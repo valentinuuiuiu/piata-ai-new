@@ -553,10 +553,54 @@ export async function listWorkflows() {
 }
 
 export async function getWorkflowStatus(workflowId: string) {
-  // TODO: Get latest execution status from database
-  return {
-    workflowId,
-    lastRun: null,
-    status: 'idle'
+  if (!supabase) {
+    console.warn('[Workflow] Supabase client not initialized, returning idle status')
+    return {
+      workflowId,
+      lastRun: null,
+      status: 'idle'
+    }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('automation_tasks')
+      .select('*')
+      .like('id', `${workflowId}-%`)
+      .order('last_run', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error(`[Workflow] Failed to get status for ${workflowId}:`, error)
+      return {
+        workflowId,
+        lastRun: null,
+        status: 'idle'
+      }
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        workflowId,
+        lastRun: null,
+        status: 'idle'
+      }
+    }
+
+    const latest = data[0]
+    return {
+      workflowId,
+      lastRun: latest.last_run ? new Date(latest.last_run) : null,
+      status: latest.status || 'unknown',
+      results: latest.results
+    }
+  } catch (error) {
+    console.error(`[Workflow] Error getting status for ${workflowId}:`, error)
+    return {
+      workflowId,
+      lastRun: null,
+      status: 'error',
+      error: error
+    }
   }
 }
