@@ -101,8 +101,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // 1. Authenticate user using standard client
+    const supabaseAuth = await createClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -114,27 +115,38 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    // Verify ownership
-    const { data: ad, error: fetchError } = await supabase
+    // 2. Fetch ad to check ownership (using service client to ensure we can see it even if some RLS hides it)
+    // Actually, checking ownership requires seeing the record.
+    const supabaseAdmin = createServiceClient();
+
+    const { data: ad, error: fetchError } = await supabaseAdmin
         .from('anunturi')
         .select('user_id')
         .eq('id', id)
         .single();
 
     if (fetchError || !ad) {
-       return NextResponse.json({ error: 'Ad not found or permission denied' }, { status: 404 });
+       return NextResponse.json({ error: 'Ad not found' }, { status: 404 });
     }
 
-    if (ad.user_id !== user.id) {
+    // 3. Check permissions
+    // Allow if user is the owner OR if user is the specific admin
+    const ADMIN_EMAIL = 'ionutbaltag3@gmail.com';
+    const isOwner = ad.user_id === user.id;
+    const isAdmin = user.email === ADMIN_EMAIL;
+
+    if (!isOwner && !isAdmin) {
        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { error: deleteError } = await supabase
+    // 4. Perform Delete using Service Client (bypassing RLS) to ensure Admin/Owner can definitely delete it
+    const { error: deleteError } = await supabaseAdmin
       .from('anunturi')
       .delete()
       .eq('id', id);
 
     if (deleteError) {
+      console.error('Delete failed:', deleteError);
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 
