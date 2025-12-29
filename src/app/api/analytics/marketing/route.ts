@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { analyticsSystem } from '@/lib/analytics-system';
 
+// Ensure this route is dynamic and not statically generated
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

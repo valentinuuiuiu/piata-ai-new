@@ -1,5 +1,5 @@
 import { a2aSignalManager } from './a2a';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from './supabase/server'; // Use shared robust client
 import { MCPClient } from './mcp-client';
 
 type RemoteToolDescriptor = {
@@ -67,6 +67,7 @@ export class MCPHub {
       execute: async (args) => {
         const { AIOrchestrator } = await import('./ai-orchestrator');
         const orchestrator = new AIOrchestrator();
+        await orchestrator.initialize(); // Ensure initialized
         const text = args?.text || args?.lastStepResult?.output?.optimized || args?.lastStepResult?.optimized || '';
         return orchestrator.routeRequest(`Optimize this for SEO: ${text}`, args?.context);
       }
@@ -132,6 +133,7 @@ export class MCPHub {
       execute: async (args) => {
         const { AIOrchestrator } = await import('./ai-orchestrator');
         const orchestrator = new AIOrchestrator();
+        await orchestrator.initialize();
         return orchestrator.routeRequest('Research current hot categories and price trends on Romanian marketplaces.', args.context);
       }
     });
@@ -157,12 +159,22 @@ export class MCPHub {
     this.tools.set(tool.name, tool);
     console.log(`🛠️ [MCPHub] Registered tool: ${tool.name}`);
     
-    // Register in A2A
+    // Check for build phase or missing credentials
+    if (process.env.NEXT_PHASE === 'phase-production-build' || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return;
+    }
+
+    // Register in A2A (fire and forget, handle errors silently)
     a2aSignalManager.updateAgentRegistry(`tool_${tool.name}`, {
       agentType: 'mcp_tool',
       status: 'healthy',
       capabilities: [tool.category, 'tool_execution'],
       metadata: { description: tool.description }
+    }).catch(err => {
+         // Ignore connection errors during startup/build
+         if (err?.code !== 'ECONNREFUSED') {
+             console.error(`[MCPHub] A2A registration warning for ${tool.name}:`, err);
+         }
     });
   }
 
@@ -344,10 +356,7 @@ export class MCPHub {
 
     // Bridge to legacy automation_logs
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
+      const supabase = createServiceClient();
       await supabase.from('automation_logs').insert({
         automation_name: `Workflow: ${workflow.name}`,
         status: finalStatus === 'completed' ? 'success' : 'failed',

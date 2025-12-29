@@ -120,14 +120,28 @@ export class AIOrchestrator {
 
   constructor() {
     this.agents = new Map();
-    this.registerDefaultAgents();
-    
-    // Initialize A2A Protocol for AI Orchestrator
-    this.initializeA2AProtocol();
+    // Do not register default agents in constructor to avoid side effects during instantiation/build
+    // Initialization should be explicit via initialize()
+  }
+
+  public async initialize() {
+    // Only run side-effects if we are not in a build phase or if we have DB access
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+        console.log('[Orchestrator] Skipping initialization during build phase');
+        return;
+    }
+
+    await this.registerDefaultAgents();
+    await this.initializeA2AProtocol();
   }
 
   private async initializeA2AProtocol(): Promise<void> {
     try {
+      if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+          console.warn('[Orchestrator] Skipping A2A registration due to missing credentials');
+          return;
+      }
+
       // Register AI Orchestrator in A2A protocol
       await a2aSignalManager.updateAgentRegistry('ai-orchestrator', {
         agentType: 'ai_orchestrator',
@@ -200,6 +214,9 @@ export class AIOrchestrator {
     this.agents.set(agent.name, agent);
     console.log(`[Orchestrator] Registered agent: ${agent.name} with capabilities: ${agent.capabilities.join(', ')}`);
     
+    // Check if we can/should talk to the DB
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+
     // Register agent in A2A protocol
     try {
       await a2aSignalManager.updateAgentRegistry(agent.name.toLowerCase(), {
@@ -217,7 +234,10 @@ export class AIOrchestrator {
       
       console.log(`🧠 [A2A] Agent registered in A2A protocol: ${agent.name}`);
     } catch (error) {
-      console.error(`❌ [A2A] Failed to register agent ${agent.name} in A2A protocol:`, error);
+        // Silent fail or low-level log if connection refused (common during build/startup)
+       if ((error as any)?.code !== 'ECONNREFUSED') {
+          console.error(`❌ [A2A] Failed to register agent ${agent.name} in A2A protocol:`, error);
+       }
     }
   }
 

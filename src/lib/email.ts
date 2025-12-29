@@ -193,3 +193,62 @@ export async function sendNewsletterWelcome(email: string) {
     text: 'Bun venit la Piata AI! Mulțumim pentru abonare.',
   });
 }
+
+export async function sendListingConfirmationEmail(email: string, token: string, title: string) {
+  const confirmationLink = `https://piata.ro/confirmare-anunt?token=${token}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+      <div style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #00f0ff, #ff00f0);">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Confirmă anunțul tău</h1>
+      </div>
+
+      <div style="padding: 30px 20px;">
+        <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Salut,</p>
+
+        <p style="font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 20px;">
+          Ai postat recent un anunț pe Piata AI: <strong>"${title}"</strong>.
+        </p>
+
+        <p style="font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 30px;">
+          Pentru a fi publicat, te rugăm să confirmi adresa de email apăsând pe butonul de mai jos:
+        </p>
+
+        <div style="text-align: center; margin-bottom: 30px;">
+          <a href="${confirmationLink}"
+             style="background: linear-gradient(135deg, #00f0ff, #ff00f0);
+                    color: white;
+                    padding: 12px 30px;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    font-weight: bold;
+                    display: inline-block;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            Confirmă Anunțul ✅
+          </a>
+        </div>
+
+        <p style="font-size: 14px; color: #777; margin-bottom: 10px;">
+          Sau copiază acest link în browser:
+        </p>
+        <p style="font-size: 12px; color: #999; word-break: break-all;">
+          <a href="${confirmationLink}" style="color: #00f0ff;">${confirmationLink}</a>
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+        <p style="color: #999; font-size: 12px; text-align: center;">
+          Dacă nu ai postat acest anunț, poți ignora acest email.<br>
+          Piata AI - Marketplace-ul Viitorului
+        </p>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: '✅ Confirmă anunțul tău pe Piata AI',
+    html,
+    text: `Salut, te rugăm să confirmi anunțul "${title}" accesând: ${confirmationLink}`,
+  });
+}
