@@ -1,4 +1,7 @@
-import { createClient } from 'redis';
+import { createClient as createRedisClient } from 'redis';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { AIOrchestrator } from './ai-orchestrator';
+import { AgentCapability } from './agents/types';
 
 /**
  * Redis Job Scheduler - Simple & Powerful
@@ -19,12 +22,12 @@ export interface ScheduledJob {
 }
 
 class JobScheduler {
-  private redis: ReturnType<typeof createClient>;
+  private redis: ReturnType<typeof createRedisClient>;
   private isConnected: boolean = false;
   private intervalId: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.redis = createClient({
+    this.redis = createRedisClient({
       url: process.env.REDIS_URL || 'redis://localhost:6379'
     });
 
@@ -136,11 +139,11 @@ class JobScheduler {
       // Dynamic handler execution
       // In production, map handler strings to actual functions
       const handlers: Record<string, Function> = {
-        'sendDailyNewsletter': this.sendDailyNewsletter,
-        'syncGoogleSheets': this.syncGoogleSheets,
-        'validateNewListings': this.validateNewListings,
-        'optimizePricing': this.optimizePricing,
-        'generateAnalytics': this.generateAnalytics
+        'sendDailyNewsletter': this.sendDailyNewsletter.bind(this),
+        'syncGoogleSheets': this.syncGoogleSheets.bind(this),
+        'validateNewListings': this.validateNewListings.bind(this),
+        'optimizePricing': this.optimizePricing.bind(this),
+        'generateAnalytics': this.generateAnalytics.bind(this)
       };
       
       const handler = handlers[job.handler];
@@ -222,7 +225,130 @@ class JobScheduler {
 
   private async validateNewListings(data: any) {
     console.log('[Job] Validating new listings with AI...');
-    // TODO: Use Grok agent to validate listings
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[Job] Missing Supabase credentials');
+      return;
+    }
+
+    const supabase = createSupabaseClient(supabaseUrl, supabaseKey);
+
+    try {
+        // Fetch listings that haven't been validated yet
+        // We look for listings where ai_validated_at is null and status is active
+        const { data: listings, error } = await supabase
+          .from('anunturi')
+          .select('id, title, description, price, category_id')
+          .is('ai_validated_at', null)
+          .eq('status', 'active')
+          .limit(5); // Process in small batches to avoid timeouts
+
+        if (error) {
+          console.error('[Job] Error fetching listings:', error);
+          return;
+        }
+
+        if (!listings || listings.length === 0) {
+          console.log('[Job] No new listings to validate');
+          return;
+        }
+
+        console.log(`[Job] Found ${listings.length} listings to validate`);
+
+        const orchestrator = new AIOrchestrator();
+        await orchestrator.initialize();
+
+        const grokAgent = orchestrator.getAgent('Grok');
+        if (!grokAgent) {
+            console.error('[Job] Grok agent not found. Registered agents:', orchestrator.getAllAgents().map(a => a.name));
+            return;
+        }
+
+        for (const listing of listings) {
+            try {
+                console.log(`[Job] Validating listing ${listing.id}: ${listing.title}`);
+
+                const prompt = `
+You are an AI Compliance Officer for a Romanian marketplace.
+Please validate the following listing:
+Title: ${listing.title}
+Description: ${listing.description || 'No description'}
+Price: ${listing.price}
+Category ID: ${listing.category_id}
+
+Check for:
+1. Illegal items or services (drugs, weapons, etc.)
+2. Spam or scam patterns
+3. Inappropriate content
+4. Mismatched category
+5. Reasonable price (not obviously fake)
+
+Return a strict JSON object with:
+- score (0-100, where 100 is perfect/safe)
+- issues (array of strings, empty if none)
+- suggestions (array of strings for improvement)
+- approved (boolean, true if score > 70 and no critical issues)
+- reasoning (short explanation)
+`;
+
+                const result = await grokAgent.run({
+                    id: `validate-${listing.id}-${Date.now()}`,
+                    type: AgentCapability.ANALYSIS,
+                    goal: prompt
+                });
+
+                if (result.status === 'success' && result.output) {
+                    let validationData;
+                    // Helper to parse JSON from LLM output (which might be wrapped in backticks)
+                    const extractJson = (text: string) => {
+                        try {
+                            // Try parsing directly
+                            return JSON.parse(text);
+                        } catch {
+                            // Try extracting from code block
+                            const match = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+                            if (match) return JSON.parse(match[1]);
+                            // Try extracting first object-like structure
+                            const objMatch = text.match(/(\{[\s\S]*\})/);
+                            if (objMatch) return JSON.parse(objMatch[1]);
+                            return null;
+                        }
+                    };
+
+                    if (typeof result.output === 'string') {
+                        validationData = extractJson(result.output);
+                    } else {
+                        validationData = result.output;
+                    }
+
+                    if (validationData) {
+                        await supabase.from('anunturi').update({
+                            ai_validation_score: validationData.score || 0,
+                            ai_validation_issues: validationData.issues || [],
+                            ai_validation_suggestions: validationData.suggestions || [],
+                            ai_approved: validationData.approved !== undefined ? validationData.approved : (validationData.score > 70),
+                            ai_reasoning: validationData.reasoning || 'No reasoning provided',
+                            ai_validated_at: new Date().toISOString()
+                        }).eq('id', listing.id);
+
+                        console.log(`[Job] Validated listing ${listing.id}. Score: ${validationData.score}`);
+                    } else {
+                        console.error(`[Job] Failed to parse validation data for listing ${listing.id}`, result.output);
+                    }
+                } else {
+                    console.error(`[Job] Validation failed for listing ${listing.id}: ${result.error}`);
+                }
+
+            } catch (err) {
+                console.error(`[Job] Error validating listing ${listing.id}:`, err);
+            }
+        }
+    } catch (err) {
+        console.error('[Job] Fatal error in validateNewListings:', err);
+    }
   }
 
   private async optimizePricing(data: any) {
