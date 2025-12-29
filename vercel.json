@@ -4,12 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["fra1"],
-  "crons": [
-    {
-      "path": "/api/cron/jules-orchestrator",
-      "schedule": "0 8 * * *"
-    }
-  ],
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://piata-ai.vercel.app"
   },
