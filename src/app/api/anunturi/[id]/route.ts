@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient, createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
@@ -93,5 +93,55 @@ export async function GET(
       error: 'Failed to fetch ad',
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const { data: ad, error: fetchError } = await supabase
+        .from('anunturi')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !ad) {
+       return NextResponse.json({ error: 'Ad not found or permission denied' }, { status: 404 });
+    }
+
+    if (ad.user_id !== user.id) {
+       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('anunturi')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+     console.error('DELETE error:', error);
+     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
