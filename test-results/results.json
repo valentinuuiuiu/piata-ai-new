@@ -10,7 +10,9 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "reporter": [
       [
@@ -40,7 +42,9 @@
         "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "/app/tests",
@@ -54,7 +58,9 @@
         "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "firefox",
         "name": "firefox",
         "testDir": "/app/tests",
@@ -68,7 +74,9 @@
         "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "webkit",
         "name": "webkit",
         "testDir": "/app/tests",
@@ -82,7 +90,9 @@
         "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "Mobile Chrome",
         "name": "Mobile Chrome",
         "testDir": "/app/tests",
@@ -96,7 +106,9 @@
         "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "Mobile Safari",
         "name": "Mobile Safari",
         "testDir": "/app/tests",
@@ -120,19 +132,99 @@
       "timeout": 120000
     }
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: Process from config.webServer was not able to start. Exit code: 1",
-      "stack": "Error: Process from config.webServer was not able to start. Exit code: 1"
+      "title": "verify_dashboard_temp.spec.ts",
+      "file": "verify_dashboard_temp.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Dashboard UI Verification",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 13378,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'Panou de Control' })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'Panou de Control' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'Panou de Control' })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'Panou de Control' })\u001b[22m\n\n    at /app/tests/verify_dashboard_temp.spec.ts:87:73",
+                    "location": {
+                      "file": "/app/tests/verify_dashboard_temp.spec.ts",
+                      "column": 73,
+                      "line": 87
+                    },
+                    "snippet": "  85 |   // Verify Elements\n  86 |   console.log('Verifying UI elements...');\n> 87 |   await expect(page.getByRole('heading', { name: 'Panou de Control' })).toBeVisible();\n     |                                                                         ^\n  88 |   \n  89 |   // Check Stats Cards\n  90 |   await expect(page.getByText('Credite Disponibile')).toBeVisible();"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/app/tests/verify_dashboard_temp.spec.ts",
+                        "column": 73,
+                        "line": 87
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'Panou de Control' })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'Panou de Control' })\u001b[22m\n\n\n  85 |   // Verify Elements\n  86 |   console.log('Verifying UI elements...');\n> 87 |   await expect(page.getByRole('heading', { name: 'Panou de Control' })).toBeVisible();\n     |                                                                         ^\n  88 |   \n  89 |   // Check Stats Cards\n  90 |   await expect(page.getByText('Credite Disponibile')).toBeVisible();\n    at /app/tests/verify_dashboard_temp.spec.ts:87:73"
+                    }
+                  ],
+                  "stdout": [
+                    {
+                      "text": "Navigating to dashboard...\n"
+                    },
+                    {
+                      "text": "Verifying UI elements...\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-12-29T07:31:22.761Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/app/test-results/verify_dashboard_temp-Dashboard-UI-Verification-chromium/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/app/test-results/verify_dashboard_temp-Dashboard-UI-Verification-chromium/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/app/tests/verify_dashboard_temp.spec.ts",
+                    "column": 73,
+                    "line": 87
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "d973de49fdee10cdc81d-2fa842fdc7140de5bd4f",
+          "file": "verify_dashboard_temp.spec.ts",
+          "line": 4,
+          "column": 5
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2025-12-28T02:34:47.683Z",
-    "duration": 530.5169999999998,
+    "startTime": "2025-12-29T07:31:21.684Z",
+    "duration": 14576.657000000001,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }
