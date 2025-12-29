@@ -14,6 +14,7 @@
 import { db } from '../drizzle/db';
 import { a2aSignals, agentRegistry, agentLearningHistory, agentPerformanceMetrics } from '../drizzle/a2a-schema';
 import { eq, desc, and, gte, sql } from 'drizzle-orm';
+import { guardian } from './guardian-agent';
 
 // ============ TYPES ============
 
@@ -108,6 +109,18 @@ const AGENTS: Record<string, AgentConfig> = {
     healthCheckInterval: 120,
     maxRetries: 3,
     timeout: 60000
+  },
+
+  // 🛡️ SECURITY AGENT
+  'guardian': {
+    name: 'GUARDIAN',
+    tier: 'specialist',
+    model: 'google/gemini-2.0-flash-exp:free', // Using fast reasoning model for analysis if needed
+    provider: 'internal',
+    capabilities: ['security', 'fraud_detection', 'trust_scoring', 'surveillance'],
+    healthCheckInterval: 60,
+    maxRetries: 3,
+    timeout: 30000
   },
   
   // 🔧 MCP TOOL AGENTS
@@ -267,6 +280,16 @@ export class UnifiedAgentOrchestrator {
         agent: 'supabase',
         confidence: 0.95,
         reasoning: 'SUPABASE MCP handles all database operations'
+      };
+    }
+
+    // 🛡️ SECURITY → GUARDIAN
+    if (goal.includes('security') || goal.includes('fraud') || goal.includes('scam') ||
+        goal.includes('suspicious') || goal.includes('trust score') || goal.includes('surveillance')) {
+      return {
+        agent: 'guardian',
+        confidence: 0.95,
+        reasoning: 'GUARDIAN monitors security, fraud, and user trust scores'
       };
     }
 
@@ -434,6 +457,37 @@ export class UnifiedAgentOrchestrator {
   private async executeInternal(request: TaskRequest, agent: AgentConfig): Promise<TaskResult> {
     const startTime = Date.now();
     
+    if (agent.name === 'GUARDIAN') {
+      try {
+        let output;
+
+        if (request.goal.includes('scan') || request.goal.includes('surveillance')) {
+          const findings = await guardian.scanForSuspiciousActivity();
+          await guardian.reportFindings(findings);
+          output = { message: 'Security scan completed', findingsCount: findings.length, findings };
+        } else if (request.goal.includes('score') && request.context?.userId) {
+          const score = await guardian.calculateTrustScore(request.context.userId);
+          output = score;
+        } else {
+          // Default to scan
+          const findings = await guardian.scanForSuspiciousActivity();
+          output = { message: 'Security scan completed', findingsCount: findings.length, findings };
+        }
+
+        return {
+          status: 'success',
+          output,
+          metadata: {
+            agentUsed: agent.name,
+            duration: Date.now() - startTime,
+            attempts: 1
+          }
+        };
+      } catch (error: any) {
+        throw new Error(`Guardian failed: ${error.message}`);
+      }
+    }
+
     return {
       status: 'success',
       output: { message: 'Internal task completed' },
