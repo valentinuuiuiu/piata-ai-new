@@ -1,10 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function Web3Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   const connectWallet = async () => {
     setLoading(true)
@@ -34,11 +37,38 @@ export default function Web3Auth() {
         params: [message, address]
       })
 
-      // TODO: Implement Supabase Web3 Auth
-      // For now, we just log the success
-      console.log('Web3 Connected:', { address, signature });
-      alert('Wallet connected! (Web3 Auth integration pending)');
+      // Authenticate with Supabase
+      const response = await fetch('/api/auth/web3', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address,
+          signature,
+          message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      // Set Supabase session
+      const supabase = createClient();
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      console.log('Web3 Connected:', { address, signature, user: data.user });
       
+      // Refresh state using router
+      router.refresh();
+
     } catch (err: any) {
       console.error('Web3 auth error:', err)
       setError(err.message || 'Failed to connect wallet')
