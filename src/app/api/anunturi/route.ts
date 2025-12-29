@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { sendListingConfirmationEmail } from '@/lib/email';
 
 // Default contact email for all listings
 const DEFAULT_CONTACT_EMAIL = 'claude.dev@mail.com';
@@ -228,6 +229,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create listing', details: insertError.message }, { status: 500 });
     }
 
+    // 📧 SEND CONFIRMATION EMAIL VIA RESEND
+    // We do this asynchronously (fire and forget) to keep response fast,
+    // but in Vercel functions, we should await it if possible to ensure delivery
+    // or use `waitUntil` (available in edge functions, less so in nodejs).
+    // Since we are `runtime = 'nodejs'`, we should await it to be safe.
+    try {
+      console.log(`Sending confirmation email to ${contactEmail} for listing ${listing.id}`);
+      await sendListingConfirmationEmail(contactEmail, confirmationToken, listing.title);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // We don't fail the request, but we should log it.
+    }
+
     // 💰 CREDIT DEDUCTION
     if (categoryInfo && listing?.id) {
       const creditsToDeduct = categoryInfo.creditsRequired;
@@ -260,7 +274,7 @@ export async function POST(request: Request) {
         id: listing.id,
         title: listing.title,
         status: 'pending_verification',
-        message: 'Anunț creat. Verifică email-ul pentru confirmare după validarea AI.'
+        message: 'Anunț creat. Verifică email-ul pentru confirmare.'
       }
     });
 

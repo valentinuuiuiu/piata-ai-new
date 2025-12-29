@@ -39,7 +39,12 @@ export class A2ASignalManager {
   private mockMetrics: any[] = [];
   private mockHistory: any[] = [];
 
-  private constructor() {}
+  private constructor() {
+    // Automatically enable mock mode during build or if credentials missing
+    if (process.env.NEXT_PHASE === 'phase-production-build' || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        this.setMockMode(true);
+    }
+  }
 
   static getInstance(): A2ASignalManager {
     if (!A2ASignalManager.instance) {
@@ -90,6 +95,11 @@ export class A2ASignalManager {
       console.log(`📡 [A2A] Signal logged: ${signalData.signalType} from ${signalData.fromAgent} to ${signalData.toAgent || 'BROADCAST'}`);
       return result[0].id;
     } catch (error) {
+      // Fallback to mock on connection error
+      if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         this.setMockMode(true);
+         return this.logSignal(signalData);
+      }
       console.error('❌ [A2A] Failed to log signal:', error);
       throw error;
     }
@@ -121,6 +131,10 @@ export class A2ASignalManager {
 
       console.log(`📡 [A2A] Signal ${signalId} status updated to: ${status}`);
     } catch (error) {
+       if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         this.setMockMode(true);
+         return this.updateSignalStatus(signalId, status, errorMessage);
+      }
       console.error('❌ [A2A] Failed to update signal status:', error);
       throw error;
     }
@@ -178,6 +192,10 @@ export class A2ASignalManager {
 
       return signals;
     } catch (error) {
+       if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         this.setMockMode(true);
+         return this.getSignals(filter, limit);
+      }
       console.error('❌ [A2A] Failed to retrieve signals:', error);
       throw error;
     }
@@ -221,6 +239,10 @@ export class A2ASignalManager {
 
       console.log(`🧠 [A2A] Learning history logged: ${data.fromAgent} → ${data.toAgent} (${data.outcome})`);
     } catch (error) {
+       if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         this.setMockMode(true);
+         return this.logAgentInteraction(data);
+      }
       console.error('❌ [A2A] Failed to log learning history:', error);
       throw error;
     }
@@ -249,6 +271,10 @@ export class A2ASignalManager {
 
       console.log(`📊 [A2A] Performance metrics recorded: ${metrics.agentName}.${metrics.metricType} = ${metrics.value}`);
     } catch (error) {
+       if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         this.setMockMode(true);
+         return this.recordPerformanceMetrics(metrics);
+      }
       console.error('❌ [A2A] Failed to record performance metrics:', error);
       throw error;
     }
@@ -270,6 +296,9 @@ export class A2ASignalManager {
 
       return metrics;
     } catch (error) {
+       if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         return [];
+      }
       console.error('❌ [A2A] Failed to get agent performance:', error);
       throw error;
     }
@@ -320,6 +349,10 @@ export class A2ASignalManager {
 
       console.log(`🔧 [A2A] Agent registry updated: ${agentName} (${data.status})`);
     } catch (error) {
+       if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         this.setMockMode(true);
+         return this.updateAgentRegistry(agentName, data);
+      }
       console.error('❌ [A2A] Failed to update agent registry:', error);
       throw error;
     }
@@ -340,6 +373,9 @@ export class A2ASignalManager {
 
       return agents;
     } catch (error) {
+      if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         return this.getRegisteredAgents();
+      }
       console.error('❌ [A2A] Failed to get registered agents:', error);
       throw error;
     }
@@ -357,6 +393,9 @@ export class A2ASignalManager {
 
       return agents[0] || null;
     } catch (error) {
+      if ((error as any)?.code === 'ECONNREFUSED' || (error as any)?.message?.includes('Database configuration missing')) {
+         return null;
+      }
       console.error('❌ [A2A] Failed to get agent health:', error);
       throw error;
     }

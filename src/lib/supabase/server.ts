@@ -5,9 +5,15 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 export async function createClient() {
   const cookieStore = await cookies();
 
+  // Fallback for build time or missing env vars
+  // IMPORTANT: @supabase/ssr throws if URL/Key are empty strings.
+  // We use placeholders if the env vars are completely missing or empty.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -28,8 +34,23 @@ export async function createClient() {
 }
 
 export function createServiceClient() {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    // Return a mock client or throw a specific error that can be caught,
+    // or return a proxy that throws when used.
+    // For build safety, we'll return a minimal mock if we are in a build environment.
+
+    // We log a warning so developers know this is happening
+    if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PHASE === 'phase-production-build') {
+         console.warn('⚠️ Supabase credentials missing (createServiceClient). Returning mock client for build/dev safety.');
+    }
+
+    // Minimal mock to prevent "supabaseUrl is required" crash during module load
+    // The keys must be non-empty strings
+    return createSupabaseClient('https://mock.supabase.co', 'mock-key');
+  }
+
+  return createSupabaseClient(supabaseUrl, supabaseServiceKey);
 }

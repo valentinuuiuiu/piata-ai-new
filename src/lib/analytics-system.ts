@@ -6,8 +6,6 @@
 import { createServiceClient } from './supabase/server';
 import { a2aSignalManager } from './a2a/signal-manager';
 
-const supabase = createServiceClient();
-
 export interface AnalyticsEvent {
   eventType: 'click' | 'view' | 'conversion' | 'open' | 'share' | 'referral';
   channel: 'email' | 'facebook' | 'instagram' | 'tiktok' | 'seo' | 'referral' | 'direct';
@@ -37,11 +35,16 @@ export class AnalyticsSystem {
     return AnalyticsSystem.instance;
   }
 
+  private getSupabase() {
+    return createServiceClient();
+  }
+
   /**
    * Track a marketing event in real-time
    */
   async trackEvent(event: AnalyticsEvent): Promise<void> {
     try {
+      const supabase = this.getSupabase();
       const { data, error } = await supabase.rpc('track_marketing_event', {
         p_event_type: event.eventType,
         p_channel: event.channel,
@@ -90,6 +93,7 @@ export class AnalyticsSystem {
    */
   async triggerAlert(alert: PerformanceAlert): Promise<void> {
     try {
+      const supabase = this.getSupabase();
       const { error } = await supabase.from('performance_alerts_history').insert({
         alert_type: alert.metricName,
         message: alert.message,
@@ -122,6 +126,7 @@ export class AnalyticsSystem {
    */
   async getDashboardData(timeframe: string = '24h') {
     try {
+      const supabase = this.getSupabase();
       const { data: stats, error: statsError } = await supabase
         .from('realtime_marketing_stats')
         .select('*');
@@ -159,6 +164,7 @@ export class AnalyticsSystem {
    * Calculate ROI and optimize budget
    */
   async optimizeBudget(): Promise<any> {
+    const supabase = this.getSupabase();
     const { data: roiData } = await supabase
       .from('marketing_roi')
       .select('*')
