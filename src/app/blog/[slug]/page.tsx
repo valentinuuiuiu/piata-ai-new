@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 
 interface BlogPost {
   id: number;
@@ -96,6 +98,7 @@ export default function BlogPostPage() {
 
         <div className="prose prose-invert prose-lg max-w-none mb-12">
           <ReactMarkdown
+            rehypePlugins={[rehypeRaw, rehypeSanitize]}
             components={{
               h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-[#00f0ff] mt-8 mb-4" {...props} />,
               h2: ({node, ...props}) => <h2 className="text-2xl font-bold text-[#ff00f0] mt-6 mb-3" {...props} />,
