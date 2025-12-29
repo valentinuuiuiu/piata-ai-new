@@ -9,7 +9,7 @@
  */
 
 import { GROK_AGENT } from './openrouter-agent';
-import { createServiceClient } from './supabase/server';
+import { createServiceClient } from './supabase/service-client';
 
 export interface NotebookSource {
   type: 'text' | 'url' | 'sheet' | 'doc';
