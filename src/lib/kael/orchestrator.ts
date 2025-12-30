@@ -44,7 +44,7 @@ const MODELS = {
 export class KAELOrchestrator {
   private static instance: KAELOrchestrator;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): KAELOrchestrator {
     if (!KAELOrchestrator.instance) {
@@ -60,17 +60,17 @@ export class KAELOrchestrator {
     const wordCount = prompt.split(' ').length;
     const technicalTerms = /\b(code|api|database|sql|function|class|interface|async|await|react|nextjs|supabase|deployment|docker|linux|bash)\b/gi;
     const complexTerms = /\b(analyze|compare|evaluate|design|architecture|strategy|comprehensive|step-by-step|reasoning|chain-of-thought)\b/gi;
-    
+
     const techCount = (prompt.match(technicalTerms) || []).length;
     const complexCount = (prompt.match(complexTerms) || []).length;
-    
+
     let complexity = 1;
     if (wordCount > 100) complexity += 1;
     if (wordCount > 500) complexity += 1;
     if (techCount > 0) complexity += 1;
     if (techCount > 5) complexity += 2;
     if (complexCount > 0) complexity += 1;
-    
+
     // Cap complexity at 10
     complexity = Math.min(complexity, 10);
 
@@ -147,10 +147,39 @@ export class KAELOrchestrator {
       ...MODELS.standard,
       ...MODELS.basic
     ];
-    
+
     // Find a model that isn't the failed one
     const fallback = allModels.find(m => m !== failedModel) || 'google/gemma-2-9b-it:free';
     return fallback;
+  }
+  public async generateTool(description: string, model: string = 'anthropic/claude-3-haiku'): Promise<{ code: string; filename: string }> {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY not configured");
+
+    const prompt = "You are KAEL Architect. Create a standalone, error-handling TypeScript script (using imports like fs, path, https) for this task: " + description + ". Return ONLY code.";
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://piata-ai.ro",
+        "X-Title": "KAEL Tool Factory"
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    if (!response.ok) throw new Error("OpenRouter API Error: " + response.statusText);
+
+    const data = await response.json();
+    let code = data.choices[0]?.message?.content || "";
+    code = code.replace(/```typescript/g, '').replace(/```/g, '').trim();
+
+    const filename = "tool_" + Date.now() + ".ts";
+    return { code, filename };
   }
 }
 

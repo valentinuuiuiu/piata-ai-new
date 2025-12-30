@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '../../lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { AgentRegistry, AutomationLog } from '@/lib/types/admin'
+import { AgentRegistry, AutomationLog } from '../../lib/types/admin'
 
 // KAN Dashboard - Admin Control Panel
 // Protected ONLY for ionutbaltag3@gmail.com - The creator and owner of this project
@@ -152,6 +152,14 @@ export default async function KANDashboard() {
             <h4 className="font-semibold text-lg">Agent Training</h4>
             <p className="text-sm text-gray-600">View learning history and performance</p>
           </a>
+
+          <a
+            href="/kan/tasks"
+            className="p-4 border-2 border-gray-200 rounded-lg hover:border-cyan-500 hover:bg-cyan-50 transition"
+          >
+            <h4 className="font-semibold text-lg">Task Creator</h4>
+            <p className="text-sm text-gray-600">Generate new tools from natural language</p>
+          </a>
         </div>
       </div>
 
@@ -159,18 +167,18 @@ export default async function KANDashboard() {
       <div className="bg-gradient-to-r from-pink-900 to-purple-900 text-white p-6 rounded-lg shadow-md">
         <h3 className="text-xl font-semibold mb-4">🤖 AI Orchestrator Status</h3>
         {registeredAgents.length === 0 ? (
-           <p className="text-sm text-pink-200 italic mb-4">No agents active in the registry. Showing expected agents:</p>
+          <p className="text-sm text-pink-200 italic mb-4">No agents active in the registry. Showing expected agents:</p>
         ) : null}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           {displayAgents.map((agent: any) => (
-             <div key={agent.agent_name}>
-                <p className="text-pink-300">{agent.agent_name}</p>
-                <p className="text-2xl">{agent.status === 'active' || agent.status === 'idle' ? '✓' : (agent.status === 'unknown' ? '?' : '⚠')}</p>
-                <p className="text-xs opacity-75">{agent.agent_type}</p>
-                {agent.last_heartbeat && (
-                   <p className="text-[10px] opacity-50 mt-1">Last seen: {new Date(agent.last_heartbeat).toLocaleTimeString()}</p>
-                )}
-             </div>
+            <div key={agent.agent_name}>
+              <p className="text-pink-300">{agent.agent_name}</p>
+              <p className="text-2xl">{agent.status === 'active' || agent.status === 'idle' ? '✓' : (agent.status === 'unknown' ? '?' : '⚠')}</p>
+              <p className="text-xs opacity-75">{agent.agent_type}</p>
+              {agent.last_heartbeat && (
+                <p className="text-[10px] opacity-50 mt-1">Last seen: {new Date(agent.last_heartbeat).toLocaleTimeString()}</p>
+              )}
+            </div>
           ))}
         </div>
       </div>

@@ -17,7 +17,7 @@ if [ -z "$OPENROUTER_API_KEY" ]; then
 fi
 
 echo "✅ GROK is ready to think..."
-echo "Model: x-ai/grok-2-1212:free"
+echo "Model: x-ai/grok-2-1212"
 echo "Specialty: Rapid insights, market analysis, automation"
 
 # Start an interactive agent session
@@ -26,7 +26,7 @@ node -e "
 const https = require('https');
 
 const API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = 'x-ai/grok-2-1212:free';
+const MODEL = 'x-ai/grok-2-1212';
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
 console.log('\n⚡ GROK Agent Running (Press Ctrl+C to exit)\n');

@@ -12,6 +12,9 @@
     "noEmit": true,
     "incremental": true,
     "module": "CommonJS",
+    "types": [
+      "node"
+    ],
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
