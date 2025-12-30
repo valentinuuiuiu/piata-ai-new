@@ -20,6 +20,19 @@ export default async function KANDashboard() {
     redirect('/')
   }
 
+  // Fetch live stats from Supabase
+  const [adsResult, usersResult, agentsResult, signalsResult] = await Promise.all([
+    supabase.from('anunturi').select('id', { count: 'exact', head: true }),
+    supabase.from('users').select('id', { count: 'exact', head: true }),
+    supabase.from('agent_registry').select('id', { count: 'exact', head: true }),
+    supabase.from('a2a_signals').select('id', { count: 'exact', head: true })
+  ])
+
+  const totalAds = adsResult.count || 0
+  const totalUsers = usersResult.count || 0
+  const totalAgents = agentsResult.count || 0
+  const totalSignals = signalsResult.count || 0
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
@@ -30,24 +43,30 @@ export default async function KANDashboard() {
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Quick Stats - LIVE DATA */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold mb-2">Total Ads</h3>
-          <p className="text-4xl font-bold text-blue-600">68</p>
+          <p className="text-4xl font-bold text-blue-600">{totalAds}</p>
           <p className="text-sm text-gray-500 mt-2">Active marketplace listings</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-2">System Status</h3>
-          <p className="text-4xl font-bold text-green-600">✓</p>
-          <p className="text-sm text-gray-500 mt-2">All services operational</p>
+          <h3 className="text-lg font-semibold mb-2">Total Users</h3>
+          <p className="text-4xl font-bold text-green-600">{totalUsers}</p>
+          <p className="text-sm text-gray-500 mt-2">Registered accounts</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-2">HTTPS Status</h3>
-          <p className="text-4xl font-bold text-purple-600">⏳</p>
-          <p className="text-sm text-gray-500 mt-2">Cloudflare activating</p>
+          <h3 className="text-lg font-semibold mb-2">AI Agents</h3>
+          <p className="text-4xl font-bold text-purple-600">{totalAgents}</p>
+          <p className="text-sm text-gray-500 mt-2">Registered in A2A</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-2">A2A Signals</h3>
+          <p className="text-4xl font-bold text-pink-600">{totalSignals}</p>
+          <p className="text-sm text-gray-500 mt-2">Agent communications</p>
         </div>
       </div>
 
@@ -141,9 +160,9 @@ export default async function KANDashboard() {
           <p>✓ KAN validator: Active (NOW)</p>
           <p>✓ Fabric patterns: 4 patterns loaded</p>
           <p>✓ Sacred Nodes: Validating</p>
-          <p>⏳ Cloudflare tunnel: DNS propagating</p>
-          <p>✓ Database: 68 ads ready</p>
-          <p>✓ NextAuth: Admin roles configured</p>
+          <p>✓ A2A Signals: {totalSignals} processed</p>
+          <p>✓ Database: {totalAds} ads ready</p>
+          <p>✓ AI Agents: {totalAgents} registered</p>
         </div>
       </div>
 
