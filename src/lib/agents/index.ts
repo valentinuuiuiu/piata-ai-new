@@ -40,28 +40,28 @@ export const AGENT_CONFIGS = {
   KATE: {
     name: 'KATE',
     type: 'openrouter' as const,
-    model: 'google/gemini-2.0-flash-exp:free',
+    model: 'x-ai/grok-code-fast-1',
     capabilities: ['code_generation', 'debugging', 'refactoring', 'code_review'],
     specialty: 'Code Specialist'
   },
   GROK: {
     name: 'GROK',
     type: 'openrouter' as const,
-    model: 'x-ai/grok-2-1212:free',
+    model: 'x-ai/grok-4.1-fast',
     capabilities: ['fast_analysis', 'automation', 'market_insights', 'quick_tasks'],
     specialty: 'Fast Thinker'
   },
   CLAUDE: {
     name: 'CLAUDE',
     type: 'openrouter' as const,
-    model: 'anthropic/claude-3.5-sonnet',
+    model: 'google/gemini-3-flash-preview',
     capabilities: ['complex_reasoning', 'planning', 'writing', 'analysis'],
     specialty: 'Master Analyst'
   },
   QWEN: {
     name: 'QWEN',
     type: 'openrouter' as const,
-    model: 'qwen/qwen-2.5-72b-instruct',
+    model: 'minimax/minimax-m2',
     capabilities: ['multilingual', 'romanian_content', 'translation', 'long_context'],
     specialty: 'Multilingual Specialist'
   },

@@ -77,7 +77,7 @@ const AGENTS: Record<string, AgentConfig> = {
   'kate': {
     name: 'KATE',
     tier: 'specialist',
-    model: 'kwaipilot/kat-coder-pro:free',
+    model: 'x-ai/grok-code-fast-1',
     provider: 'openrouter',
     capabilities: ['code_generation', 'debugging', 'refactoring', 'code_review'],
     healthCheckInterval: 60,
@@ -97,7 +97,7 @@ const AGENTS: Record<string, AgentConfig> = {
   'antigravity': {
     name: 'ANTIGRAVITY',
     tier: 'orchestrator',
-    model: 'z-ai/glm-4.7',
+    model: 'google/gemini-3-flash-preview',
     provider: 'openrouter',
     capabilities: ['complex_reasoning', 'planning', 'writing', 'analysis', 'agent_coordination'],
     healthCheckInterval: 120,
@@ -107,7 +107,7 @@ const AGENTS: Record<string, AgentConfig> = {
   'minimax': {
     name: 'MINIMAX',
     tier: 'specialist',
-    model: 'minimax/minimax-m2.1',
+    model: 'minimax/minimax-m2',
     provider: 'openrouter',
     capabilities: ['multilingual', 'romanian_content', 'translation', 'long_context'],
     healthCheckInterval: 120,
@@ -119,7 +119,7 @@ const AGENTS: Record<string, AgentConfig> = {
   'guardian': {
     name: 'GUARDIAN',
     tier: 'specialist',
-    model: 'google/gemini-2.0-flash-exp:free', // Using fast reasoning model for analysis if needed
+    model: 'google/gemma-3-27b-it:free', // Using fast reasoning model for analysis if needed
     provider: 'internal',
     capabilities: ['security', 'fraud_detection', 'trust_scoring', 'surveillance'],
     healthCheckInterval: 60,
