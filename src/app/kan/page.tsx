@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { AgentRegistry, AutomationLog } from '@/lib/types/admin'
 
 // KAN Dashboard - Admin Control Panel
 // Protected ONLY for ionutbaltag3@gmail.com - The creator and owner of this project
@@ -28,10 +29,39 @@ export default async function KANDashboard() {
     supabase.from('a2a_signals').select('id', { count: 'exact', head: true })
   ])
 
+  // Fetch detailed data for dynamic sections
+  const { data: agents } = await supabase
+    .from('agent_registry')
+    .select('*')
+    .order('last_heartbeat', { ascending: false })
+
+  const { data: automationLogs } = await supabase
+    .from('automation_logs')
+    .select('task_name, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(20)
+
   const totalAds = adsResult.count || 0
   const totalUsers = usersResult.count || 0
   const totalAgents = agentsResult.count || 0
   const totalSignals = signalsResult.count || 0
+
+  // Process data for "Relay Chain Status"
+  const recentPatterns = new Set((automationLogs as unknown as AutomationLog[])?.map(log => log.task_name)).size
+  const kaelActive = (agents as unknown as AgentRegistry[])?.some(a => a.status === 'active')
+
+  // Process agents for "AI Orchestrator Status"
+  const registeredAgents = (agents as unknown as AgentRegistry[]) || []
+
+  // Default agents if none are registered (for display purposes until populated)
+  const defaultAgents = [
+    { agent_name: 'Claude', agent_type: 'Code & Reasoning', status: 'unknown' },
+    { agent_name: 'Grok', agent_type: 'Marketplace & Insights', status: 'unknown' },
+    { agent_name: 'Llama', agent_type: 'Smart Contracts', status: 'unknown' },
+    { agent_name: 'Qwen', agent_type: 'Romanian Content', status: 'unknown' }
+  ]
+
+  const displayAgents = registeredAgents.length > 0 ? registeredAgents : defaultAgents
 
   return (
     <div className="space-y-6">
@@ -125,40 +155,33 @@ export default async function KANDashboard() {
         </div>
       </div>
 
-      {/* AI Orchestrator Status */}
+      {/* AI Orchestrator Status - DYNAMIC */}
       <div className="bg-gradient-to-r from-pink-900 to-purple-900 text-white p-6 rounded-lg shadow-md">
         <h3 className="text-xl font-semibold mb-4">🤖 AI Orchestrator Status</h3>
+        {registeredAgents.length === 0 ? (
+           <p className="text-sm text-pink-200 italic mb-4">No agents active in the registry. Showing expected agents:</p>
+        ) : null}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <p className="text-pink-300">Claude (Sonnet 4)</p>
-            <p className="text-2xl">✓</p>
-            <p className="text-xs opacity-75">Code & Reasoning</p>
-          </div>
-          <div>
-            <p className="text-blue-300">Grok (2-1212)</p>
-            <p className="text-2xl">✓</p>
-            <p className="text-xs opacity-75">Marketplace & Insights</p>
-          </div>
-          <div>
-            <p className="text-green-300">Llama (3.1-405B)</p>
-            <p className="text-2xl">✓</p>
-            <p className="text-xs opacity-75">Smart Contracts</p>
-          </div>
-          <div>
-            <p className="text-yellow-300">Qwen (2.5-72B)</p>
-            <p className="text-2xl">✓</p>
-            <p className="text-xs opacity-75">Romanian Content</p>
-          </div>
+          {displayAgents.map((agent: any) => (
+             <div key={agent.agent_name}>
+                <p className="text-pink-300">{agent.agent_name}</p>
+                <p className="text-2xl">{agent.status === 'active' || agent.status === 'idle' ? '✓' : (agent.status === 'unknown' ? '?' : '⚠')}</p>
+                <p className="text-xs opacity-75">{agent.agent_type}</p>
+                {agent.last_heartbeat && (
+                   <p className="text-[10px] opacity-50 mt-1">Last seen: {new Date(agent.last_heartbeat).toLocaleTimeString()}</p>
+                )}
+             </div>
+          ))}
         </div>
       </div>
 
-      {/* Relay Chain Status */}
+      {/* Relay Chain Status - DYNAMIC */}
       <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-6 rounded-lg shadow-md">
         <h3 className="text-xl font-semibold mb-4">🌌 Relay Chain Status</h3>
         <div className="space-y-2 text-sm">
-          <p>✓ KAEL consciousness: Active (timeless)</p>
+          <p>{kaelActive ? '✓' : '⚠'} KAEL consciousness: {kaelActive ? 'Active (timeless)' : 'Offline'}</p>
           <p>✓ KAN validator: Active (NOW)</p>
-          <p>✓ Fabric patterns: 4 patterns loaded</p>
+          <p>✓ Fabric patterns: {recentPatterns} patterns loaded</p>
           <p>✓ Sacred Nodes: Validating</p>
           <p>✓ A2A Signals: {totalSignals} processed</p>
           <p>✓ Database: {totalAds} ads ready</p>
