@@ -333,7 +333,7 @@ export class UnifiedAgentOrchestrator {
     }
 
     // 📝 COMPLEX CONTENT & ORCHESTRATION → ANTIGRAVITY
-    if (type === 'content' || (goal.length > 200 && (goal.includes('write') || goal.includes('analyze'))) ||
+    if (type === 'analysis' || type === 'content' || (goal.length > 200 && (goal.includes('write') || goal.includes('analyze'))) ||
         goal.includes('comprehensive') || goal.includes('strategy') || goal.includes('coordinate')) {
       return {
         agent: 'antigravity',
@@ -343,7 +343,7 @@ export class UnifiedAgentOrchestrator {
     }
 
     // 💾 DATA/CACHE → REDIS
-    if (type === 'data' || goal.includes('cache') || goal.includes('session') || goal.includes('redis')) {
+    if (goal.includes('cache') || goal.includes('session') || goal.includes('redis')) {
       return {
         agent: 'redis',
         confidence: 0.95,
@@ -370,7 +370,7 @@ export class UnifiedAgentOrchestrator {
     }
 
     // 🗄️ DATABASE → SUPABASE
-    if (goal.includes('database') || goal.includes('supabase') || goal.includes('query') || goal.includes('db')) {
+    if (type === 'data' || goal.includes('database') || goal.includes('supabase') || goal.includes('query') || goal.includes('db')) {
       return {
         agent: 'supabase',
         confidence: 0.95,
