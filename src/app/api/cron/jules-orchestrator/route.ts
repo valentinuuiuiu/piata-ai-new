@@ -15,6 +15,8 @@ import { kael } from '@/lib/agents/unified-orchestrator';
 import { AgentCapability } from '@/lib/agents/types';
 import { v4 as uuidv4 } from 'uuid';
 
+export const dynamic = 'force-dynamic'; // Ensure this route is never cached
+
 const TASKS: { [key: string]: () => Promise<any> } = {
   'blog-daily': generateDailyBlogPost,
   'check-agents': checkAgentHealth,
@@ -68,6 +70,7 @@ async function runAndLogTask(taskName: string, supabase: any) {
     }
 
     // Wrap in KAEL execution for unified logging, metrics, and memory
+    // Note: KAEL must be initialized before execution, which we do in GET()
     const kaelResult = await kael.execute({
       id: uuidv4(),
       goal: `Execute scheduled task: ${taskName}`,
@@ -106,6 +109,17 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+  // 🧠 CRITICAL: Initialize KAEL to waken the agent swarm and update registry
+  // This ensures the KAN dashboard has fresh data and MCP/Agents are ready
+  try {
+    await kael.initialize();
+    console.log('[ORCHESTRATOR] KAEL initialized successfully.');
+  } catch (err) {
+    console.error('[ORCHESTRATOR] Failed to initialize KAEL:', err);
+    // We continue even if KAEL fails, to try running basic tasks
+  }
+
   const { searchParams } = new URL(request.url);
   const specificTask = searchParams.get('task');
 
