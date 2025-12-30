@@ -1,11 +1,11 @@
-import { test, expect, describe } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * AI Orchestration System E2E Tests
  * Tests the multi-agent AI system with A2A protocol integration
  */
 
-describe('AI Orchestrator Core', () => {
+test.describe('AI Orchestrator Core', () => {
   test('AI router accepts valid requests', async ({ page }) => {
     const response = await page.request.post('/api/ai', {
       data: {
@@ -41,7 +41,7 @@ describe('AI Orchestrator Core', () => {
   });
 });
 
-describe('A2A Protocol Integration', () => {
+test.describe('A2A Protocol Integration', () => {
   test('A2A Signal Manager registers agents', async ({ page }) => {
     const response = await page.request.get('/api/a2a/registry');
     expect(response.status()).toBeGreaterThanOrEqual(200);
@@ -65,7 +65,7 @@ describe('A2A Protocol Integration', () => {
   });
 });
 
-describe('Agent Capabilities', () => {
+test.describe('Agent Capabilities', () => {
   test('Claude agent is registered', async ({ page }) => {
     const response = await page.request.get('/api/ai/agents');
     expect(response.status()).toBeGreaterThanOrEqual(200);
@@ -106,7 +106,7 @@ describe('Agent Capabilities', () => {
   });
 });
 
-describe('Task Delegation', () => {
+test.describe('Task Delegation', () => {
   test('Single agent task execution', async ({ page }) => {
     const response = await page.request.post('/api/ai/delegate', {
       data: {
@@ -142,7 +142,7 @@ describe('Task Delegation', () => {
   });
 });
 
-describe('Performance Tracking', () => {
+test.describe('Performance Tracking', () => {
   test('Response time tracking', async ({ page }) => {
     const startTime = Date.now();
 
@@ -170,7 +170,7 @@ describe('Performance Tracking', () => {
   });
 });
 
-describe('Error Handling', () => {
+test.describe('Error Handling', () => {
   test('Invalid agent request handled gracefully', async ({ page }) => {
     const response = await page.request.post('/api/ai', {
       data: {
@@ -208,7 +208,7 @@ describe('Error Handling', () => {
   });
 });
 
-describe('Cost & Usage Tracking', () => {
+test.describe('Cost & Usage Tracking', () => {
   test('Token usage recorded', async ({ page }) => {
     const response = await page.request.get('/api/ai/usage');
     expect(response.status()).toBeGreaterThanOrEqual(200);
@@ -225,7 +225,7 @@ describe('Cost & Usage Tracking', () => {
   });
 });
 
-describe('Fallback & Retry Logic', () => {
+test.describe('Fallback & Retry Logic', () => {
   test('Fallback agent on primary failure', async ({ page }) => {
     const response = await page.request.post('/api/ai/fallback-test', {
       data: {
