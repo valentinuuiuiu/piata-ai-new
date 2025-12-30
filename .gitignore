@@ -73,7 +73,6 @@ temp/
 
 # Gemini extension (has problematic symlinks)
 gemini_extension/
-.gemini/
 
 inspect-db.js
 fannymae.py
@@ -83,4 +82,5 @@ docs/AVATAR_NODE.md
 
 # Local secrets file used during investigations — keep out of repo
 mcp_settings.json
+.claude/
 .env

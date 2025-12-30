@@ -1,19 +1,80 @@
 {
-  "name": "piata-ai-gemini-flow",
-  "displayName": "Piata AI Gemini Flow Integrations",
-  "version": "0.1.0",
-  "description": "Custom integrations for Piata AI project, inspired by Gemini Flow",
-  "author": "Gemini-CLI Agent",
+  "name": "piata-ai-antigravity",
+  "displayName": "Piata AI & Antigravity Extension",
+  "version": "1.1.0",
+  "description": "Integrated environment and Antigravity agent for gemini-cli with Stripe/Supabase/GitHub MCP",
+  "author": "Antigravity",
   "mcpServers": {
-    "computerUse": {
+    "antigravity": {
       "command": "bash",
       "args": ["gemini_extension/servers/run.sh"]
     },
-    "gcloud": {
+    "stripe": {
       "command": "npx",
       "args": [
         "-y",
-        "@google-cloud/gcloud-mcp"
+        "@stripe/mcp",
+        "--tools=all",
+        "--api-key=${STRIPE_SECRET_KEY}"
+      ]
+    },
+    "github": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "-e",
+        "GITHUB_TOOLSETS",
+        "-e",
+        "GITHUB_READ_ONLY",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}",
+        "GITHUB_TOOLSETS": "",
+        "GITHUB_READ_ONLY": ""
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@0.5.5",
+        "--access-token",
+        "sbp_5460a0c658e796c00ff638d17980dd9270424c9a"
+      ],
+      "alwaysAllow": [
+        "execute_sql",
+        "get_logs",
+        "list_projects",
+        "get_project",
+        "list_tables",
+        "apply_migration",
+        "search_docs",
+        "list_files",
+        "list_migrations",
+        "generate_typescript_types",
+        "list_organizations",
+        "get_organization",
+        "confirm_cost",
+        "get_cost",
+        "create_project",
+        "pause_project",
+        "restore_project",
+        "list_extensions",
+        "get_advisors",
+        "get_project_url",
+        "get_anon_key",
+        "list_edge_functions",
+        "get_edge_function",
+        "list_branches",
+        "merge_branch",
+        "delete_branch",
+        "rebase_branch",
+        "reset_branch"
       ]
     }
   },
@@ -25,49 +86,7 @@
       "path": "gemini/commands/email.toml"
     },
     {
-      "path": "gemini_extension/commands/ComputerUse/click.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/close.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/drag.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/googleSearch.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/help.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/init.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/javascript.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/macro.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/open.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/press.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/scroll.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/search.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/state.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/type.toml"
-    },
-    {
-      "path": "gemini_extension/commands/ComputerUse/wikiSearch.toml"
+      "path": "gemini_extension/commands/Antigravity/antigravity.toml"
     }
   ]
 }

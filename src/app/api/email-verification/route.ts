@@ -11,7 +11,7 @@ import {
   sendAdPostingConfirmationEmail,
   sendPermissionRequestEmail,
   EmailTestService
-} from '@/lib/email-automation';
+} from '@/lib/email';
 
 // Type definitions for verification data
 interface AccountCreationData {

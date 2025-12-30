@@ -2,7 +2,7 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home"],
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/shiva/piata-ai-new"],
       "alwaysAllow": ["read_text_file", "write_file", "search_files", "directory_tree"]
     },
     "sequentialthinking": {
@@ -24,13 +24,13 @@
         "get_edge_function", "list_branches", "merge_branch", "delete_branch", "rebase_branch", "reset_branch"
       ]
     },
-    // "stripe": {
-    //   "command": "npx",
-    //   "args": ["-y", "@stripe/mcp", "--tools=all"],
-    //   "env": {
-    //     "STRIPE_SECRET_KEY": "your_stripe_key_here"  // Set in local environment only
-    //   }
-    // },
+    "stripe": {
+      "command": "npx",
+      "args": ["-y", "@stripe/mcp", "--tools=all"],
+      "env": {
+        "STRIPE_SECRET_KEY": "${STRIPE_SECRET_KEY}"
+      }
+    },
     "taita": {
       "command": "npx",
       "args": ["ts-node", "-r", "tsconfig-paths/register", "src/lib/mcp-server-taita.ts"]

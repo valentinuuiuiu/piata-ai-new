@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail } from '@/lib/email-automation';
+import { sendEmail } from '@/lib/email';
 
 interface ShoppingAgentResult {
   agentsProcessed: number;

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmailAnalytics, CampaignType, UserSegment } from '@/lib/email-system';
+import { EmailAnalytics, CampaignType, UserSegment } from '@/lib/email';
 
 interface AnalyticsData {
   campaignId: string;

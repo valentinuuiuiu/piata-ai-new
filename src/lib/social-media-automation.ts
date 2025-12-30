@@ -22,13 +22,6 @@ interface RomanianMarketData {
     cpc_range: [number, number];
     content_strategy: string;
   };
-  tiktok: {
-    users: number;
-    engagement_rate: number;
-    optimal_posting_times: string[];
-    cpc_range: [number, number];
-    content_strategy: string;
-  };
   linkedin: {
     users: number;
     engagement_rate: number;
@@ -39,7 +32,7 @@ interface RomanianMarketData {
 
 interface ContentPost {
   id: string;
-  platform: 'facebook' | 'instagram' | 'tiktok' | 'linkedin';
+  platform: 'facebook' | 'instagram' | 'linkedin';
   content: string;
   media_urls?: string[];
   hashtags: string[];
@@ -105,13 +98,6 @@ export class RomanianSocialMediaAutomation {
         optimal_posting_times: ['11:00', '13:00', '19:00', '21:00'],
         cpc_range: [0.25, 0.65],
         content_strategy: 'Visual content, stories, reels'
-      },
-      tiktok: {
-        users: 850000,
-        engagement_rate: 0.058,
-        optimal_posting_times: ['14:00', '16:00', '20:00', '22:00'],
-        cpc_range: [0.10, 0.35],
-        content_strategy: 'Short videos, trends, challenges'
       },
       linkedin: {
         users: 1200000,
@@ -197,7 +183,6 @@ export class RomanianSocialMediaAutomation {
     // Based on Romanian market intelligence
     this.optimalSchedule.set('facebook', ['18:00', '20:00', '12:00', '13:00']);
     this.optimalSchedule.set('instagram', ['11:00', '13:00', '19:00', '21:00']);
-    this.optimalSchedule.set('tiktok', ['14:00', '16:00', '20:00', '22:00']);
     this.optimalSchedule.set('linkedin', ['09:00', '12:00', '17:00', '18:00']);
   }
 
@@ -263,7 +248,7 @@ export class RomanianSocialMediaAutomation {
     contentType: string,
     platformSpecificContent?: Record<string, string>
   ): Promise<ContentPost[]> {
-    const platforms = ['facebook', 'instagram', 'tiktok', 'linkedin'];
+    const platforms = ['facebook', 'instagram', 'linkedin'];
     const scheduledContent: ContentPost[] = [];
 
     for (const platform of platforms) {

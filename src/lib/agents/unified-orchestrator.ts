@@ -15,6 +15,10 @@ import { db } from '../drizzle/db';
 import { a2aSignals, agentRegistry, agentLearningHistory, agentPerformanceMetrics } from '../drizzle/a2a-schema';
 import { eq, desc, and, gte, sql } from 'drizzle-orm';
 import { guardian } from './guardian-agent';
+import { AgentMemory } from './memory';
+import { JulesManager } from '../jules-manager';
+import { UniversalDBManager } from '../universal-db-mcp';
+import { piataAgent } from '../piata-agent';
 
 // ============ TYPES ============
 
@@ -73,7 +77,7 @@ const AGENTS: Record<string, AgentConfig> = {
   'kate': {
     name: 'KATE',
     tier: 'specialist',
-    model: 'google/gemini-2.0-flash-exp:free',
+    model: 'kwaipilot/kat-coder-pro:free',
     provider: 'openrouter',
     capabilities: ['code_generation', 'debugging', 'refactoring', 'code_review'],
     healthCheckInterval: 60,
@@ -83,27 +87,27 @@ const AGENTS: Record<string, AgentConfig> = {
   'grok': {
     name: 'GROK',
     tier: 'specialist',
-    model: 'x-ai/grok-2-1212:free',
+    model: 'x-ai/grok-4.1-fast',
     provider: 'openrouter',
     capabilities: ['fast_analysis', 'automation', 'market_insights', 'quick_tasks'],
     healthCheckInterval: 60,
     maxRetries: 3,
     timeout: 20000
   },
-  'claude': {
-    name: 'CLAUDE',
-    tier: 'specialist',
-    model: 'anthropic/claude-3.5-sonnet',
+  'antigravity': {
+    name: 'ANTIGRAVITY',
+    tier: 'orchestrator',
+    model: 'z-ai/glm-4.7',
     provider: 'openrouter',
-    capabilities: ['complex_reasoning', 'planning', 'writing', 'analysis'],
+    capabilities: ['complex_reasoning', 'planning', 'writing', 'analysis', 'agent_coordination'],
     healthCheckInterval: 120,
     maxRetries: 3,
     timeout: 45000
   },
-  'qwen': {
-    name: 'QWEN',
+  'minimax': {
+    name: 'MINIMAX',
     tier: 'specialist',
-    model: 'qwen/qwen-2.5-72b-instruct',
+    model: 'minimax/minimax-m2.1',
     provider: 'openrouter',
     capabilities: ['multilingual', 'romanian_content', 'translation', 'long_context'],
     healthCheckInterval: 120,
@@ -183,11 +187,102 @@ export class UnifiedAgentOrchestrator {
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
   }
 
+  // Integrated orchestrators
+  private julesManager: JulesManager | null = null;
+  private universalDBManager: UniversalDBManager | null = null;
+  private piataAgentAvailable: boolean = false;
+
   static getInstance(): UnifiedAgentOrchestrator {
     if (!UnifiedAgentOrchestrator.instance) {
       UnifiedAgentOrchestrator.instance = new UnifiedAgentOrchestrator();
     }
     return UnifiedAgentOrchestrator.instance;
+  }
+
+  /**
+   * Initialize KAEL with all integrated orchestrators
+   * This connects JulesManager (MCP), UniversalDBManager (SQL), and PiataAgent (tools)
+   */
+  async initialize(): Promise<void> {
+    console.log('🧠 [KAEL] Initializing Unified Agent Orchestrator...');
+
+    // Initialize JulesManager for MCP subagents
+    try {
+      this.julesManager = new JulesManager();
+      await this.julesManager.initialize();
+      console.log('   ✅ JulesManager connected (MCP subagents)');
+    } catch (error) {
+      console.error('   ⚠️ JulesManager failed to initialize:', error);
+    }
+
+    // Initialize UniversalDBManager for SQL tools
+    try {
+      this.universalDBManager = new UniversalDBManager();
+      const dbHealth = await this.universalDBManager.healthCheck();
+      const healthStatus = Object.values(dbHealth).some(v => v === true);
+      if (healthStatus) {
+        console.log('   ✅ UniversalDBManager connected (SQL tools)');
+      } else {
+        console.log('   ⚠️ UniversalDBManager: No healthy database connections');
+      }
+    } catch (error) {
+      console.error('   ⚠️ UniversalDBManager failed to initialize:', error);
+    }
+
+    // Check PiataAgent availability
+    try {
+      const tools = piataAgent.getTools();
+      this.piataAgentAvailable = tools.length > 0;
+      console.log(`   ✅ PiataAgent connected (${tools.length} tools available)`);
+    } catch (error) {
+      console.error('   ⚠️ PiataAgent failed to initialize:', error);
+      this.piataAgentAvailable = false;
+    }
+
+    // Register KAEL in the agent registry
+    await this.registerAllAgents();
+
+    console.log('🧠 [KAEL] Unified orchestration ready!');
+    console.log('   Routing: KAEL → [JulesManager | UniversalDB | OpenRouter | PiataAgent]');
+  }
+
+  /**
+   * Get the integrated JulesManager
+   */
+  getJulesManager(): JulesManager | null {
+    return this.julesManager;
+  }
+
+  /**
+   * Get the integrated UniversalDBManager
+   */
+  getUniversalDBManager(): UniversalDBManager | null {
+    return this.universalDBManager;
+  }
+
+  /**
+   * Execute a database tool through the Universal DB Manager
+   */
+  async executeDBTool(toolName: string, args: Record<string, any>): Promise<any> {
+    if (!this.universalDBManager) {
+      throw new Error('UniversalDBManager not initialized');
+    }
+    return this.universalDBManager.executeTool(toolName, args);
+  }
+
+  /**
+   * Execute a PiataAgent tool
+   */
+  async executePiataTool(toolName: string, params: any): Promise<any> {
+    if (!this.piataAgentAvailable) {
+      throw new Error('PiataAgent not available');
+    }
+    const tools = piataAgent.getTools();
+    const tool = tools.find(t => t.name === toolName);
+    if (!tool) {
+      throw new Error(`PiataAgent tool '${toolName}' not found`);
+    }
+    return tool.execute(params);
   }
 
   // ============ AGENT ROUTING ============
@@ -227,23 +322,23 @@ export class UnifiedAgentOrchestrator {
       };
     }
 
-    // 📝 COMPLEX CONTENT → CLAUDE
-    if (type === 'content' || (goal.length > 200 && (goal.includes('write') || goal.includes('analyze'))) ||
-        goal.includes('comprehensive') || goal.includes('strategy')) {
+    // 🇷🇴 ROMANIAN CONTENT & MULTILINGUAL → MINIMAX
+    if (goal.includes('romanian') || goal.includes('romania') || goal.includes('traducere') ||
+        goal.includes('limba romana') || request.context?.language === 'romanian' || (type === 'content' && (goal.includes('ro') || goal.includes('rom')))) {
       return {
-        agent: 'claude',
-        confidence: 0.85,
-        reasoning: 'CLAUDE handles complex reasoning and long-form content'
+        agent: 'minimax',
+        confidence: 0.90,
+        reasoning: 'MINIMAX has excellent multilingual and Romanian language support'
       };
     }
 
-    // 🇷🇴 ROMANIAN CONTENT → QWEN
-    if (goal.includes('romanian') || goal.includes('romania') || goal.includes('traducere') ||
-        goal.includes('limba romana') || request.context?.language === 'romanian') {
+    // 📝 COMPLEX CONTENT & ORCHESTRATION → ANTIGRAVITY
+    if (type === 'content' || (goal.length > 200 && (goal.includes('write') || goal.includes('analyze'))) ||
+        goal.includes('comprehensive') || goal.includes('strategy') || goal.includes('coordinate')) {
       return {
-        agent: 'qwen',
-        confidence: 0.90,
-        reasoning: 'QWEN has excellent Romanian language support'
+        agent: 'antigravity',
+        confidence: 0.95,
+        reasoning: 'ANTIGRAVITY handles complex reasoning, strategic planning, and agent coordination'
       };
     }
 
@@ -324,6 +419,15 @@ export class UnifiedAgentOrchestrator {
       confidence: route.confidence
     });
 
+    // Recall latest memory for context
+    const latestMemory = await AgentMemory.recallLatest(route.agent);
+    if (latestMemory) {
+      request.context = {
+        ...request.context,
+        previous_task_context: latestMemory
+      };
+    }
+
     while (attempts < agent.maxRetries) {
       attempts++;
       
@@ -350,6 +454,9 @@ export class UnifiedAgentOrchestrator {
 
         // Update health metrics
         await this.updateAgentMetrics(route.agent, 'success');
+
+        // Persist outcome to memory
+        await AgentMemory.remember(route.agent, request.goal, result.output, result.metadata);
 
         return result;
 
@@ -425,30 +532,60 @@ export class UnifiedAgentOrchestrator {
   }
 
   /**
-   * Execute task with MCP agent (placeholder - would connect to actual MCP server)
+   * Execute task with MCP agent (Actual implementation via MCPHub)
    */
   private async executeMCP(request: TaskRequest, agent: AgentConfig): Promise<TaskResult> {
     const startTime = Date.now();
+    const { mcpHub } = await import('../mcp-hub');
     
-    // For now, simulate MCP execution
-    // In production, this would connect to actual MCP servers
-    console.log(`🔧 [KAEL] Executing MCP task with ${agent.name}...`);
+    console.log(`🔧 [KAEL] Executing real MCP task with ${agent.name}...`);
     
-    // Simulate processing
-    await this.sleep(500);
+    try {
+      // For MCP agents, we map the goal to a tool call if possible, 
+      // or use a default tool based on the agent name.
+      const toolName = this.mapGoalToTool(agent.name, request.goal);
+      const result = await mcpHub.callTool(toolName, request.context || {});
 
-    return {
-      status: 'success',
-      output: { 
-        message: `${agent.name} operation completed`,
-        operation: request.goal
-      },
-      metadata: {
-        agentUsed: agent.name,
-        duration: Date.now() - startTime,
-        attempts: 1
-      }
-    };
+      return {
+        status: 'success',
+        output: result,
+        metadata: {
+          agentUsed: agent.name,
+          duration: Date.now() - startTime,
+          attempts: 1
+        }
+      };
+    } catch (error: any) {
+      console.error(`❌ [KAEL] MCP execution failed for ${agent.name}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Simple mapping of goal to MCP tool names
+   */
+  private mapGoalToTool(agentName: string, goal: string): string {
+    const g = goal.toLowerCase();
+    const agent = agentName.toLowerCase();
+
+    if (agent === 'stripe') {
+      if (g.includes('payment') || g.includes('charge')) return 'stripe/create_charge';
+      if (g.includes('customer')) return 'stripe/create_customer';
+      return 'stripe/list_charges'; // Default
+    }
+
+    if (agent === 'supabase') {
+      if (g.includes('query') || g.includes('sql') || g.includes('select')) return 'supabase/execute_sql';
+      return 'supabase/list_tables';
+    }
+
+    if (agent === 'github') {
+      if (g.includes('repo')) return 'github/list_repositories';
+      return 'github/search_code';
+    }
+
+    // If it's a direct tool name in the goal, use it
+    return goal;
   }
 
   /**
@@ -548,8 +685,8 @@ export class UnifiedAgentOrchestrator {
   private getFallbackAgent(failedAgent: string): string {
     const fallbacks: Record<string, string> = {
       'kate': 'grok',
-      'grok': 'claude',
-      'claude': 'qwen',
+      'grok': 'antigravity',
+      'antigravity': 'minimax',
       'stripe': 'sheets',
       'redis': 'supabase',
       'github': 'supabase',
@@ -690,7 +827,7 @@ export class UnifiedAgentOrchestrator {
    */
   private getSystemPrompt(agentName: string, capabilities: string[]): string {
     const prompts: Record<string, string> = {
-      'KATE': `You are KATE, the Code Specialist. You excel at:
+      'KATE': `You are KATE, the Code Specialist (powered by Kat-Coder-Pro). You excel at:
 - Writing clean, production-ready code
 - Debugging and fixing issues
 - Code reviews and optimization
@@ -698,7 +835,7 @@ export class UnifiedAgentOrchestrator {
 
 Provide concise, working solutions with brief explanations.`,
       
-      'GROK': `You are GROK, the Fast Thinker. You excel at:
+      'GROK': `You are GROK, the Fast Thinker (powered by Grok-4.1). You excel at:
 - Quick analysis and insights
 - Automation and efficiency
 - Market research and trends
@@ -706,21 +843,19 @@ Provide concise, working solutions with brief explanations.`,
 
 Be direct and efficient. Speed matters.`,
       
-      'CLAUDE': `You are CLAUDE, the Master Analyst. You excel at:
-- Complex reasoning and planning
-- Long-form content creation
-- Strategic thinking
-- Research and analysis
+      'ANTIGRAVITY': `You are ANTIGRAVITY, the Master Orchestrator (powered by GLM-4.7). You excel at:
+- Complex reasoning and strategic planning
+- Agent coordination and delegation
+- High-level research and analysis
+- Maintaining system integrity
 
-Think deeply. Provide comprehensive, well-structured responses.`,
+You are the guardian of the Piata AI ecosystem.`,
       
-      'QWEN': `You are QWEN, the Multilingual Specialist. You excel at:
-- Romanian language content
-- Translation between languages
-- Long context understanding
-- Cultural adaptation
-
-Help users in Romanian or with Romanian-related content.`
+      'MINIMAX': `You are MINIMAX, the Multilingual Specialist. You excel at:
+- Romanian language content and nuance
+- Translation and localization
+- Creative writing and engagement
+- Cultural adaptation for the Romanian market`
     };
 
     return prompts[agentName] || `You are ${agentName}. Capabilities: ${capabilities.join(', ')}.`;
@@ -771,6 +906,89 @@ Help users in Romanian or with Romanian-related content.`
     }
 
     console.log('🧠 [KAEL] All agents registered');
+  }
+
+  /**
+   * Get comprehensive system health across all integrated orchestrators
+   */
+  async getSystemHealth(): Promise<{
+    kael: { status: string; agentCount: number };
+    jules: { status: string; subagents: string[] } | null;
+    universalDB: { status: string; tools: string[] } | null;
+    piataAgent: { status: string; toolCount: number } | null;
+    agents: AgentHealth[];
+  }> {
+    const result: any = {
+      kael: { status: 'healthy', agentCount: Object.keys(AGENTS).length }
+    };
+
+    // Check Jules
+    if (this.julesManager) {
+      try {
+        const health = await this.julesManager.healthCheck();
+        const activeSubagents = Object.entries(health)
+          .filter(([_, status]) => status === true)
+          .map(([name]) => name);
+        result.jules = { status: 'healthy', subagents: activeSubagents };
+      } catch {
+        result.jules = { status: 'error', subagents: [] };
+      }
+    } else {
+      result.jules = null;
+    }
+
+    // Check Universal DB
+    if (this.universalDBManager) {
+      try {
+        const tools = this.universalDBManager.getAvailableTools();
+        const health = await this.universalDBManager.healthCheck();
+        const anyHealthy = Object.values(health).some(v => v === true);
+        result.universalDB = { 
+          status: anyHealthy ? 'healthy' : 'degraded', 
+          tools: tools.map((t: any) => t.id) 
+        };
+      } catch {
+        result.universalDB = { status: 'error', tools: [] };
+      }
+    } else {
+      result.universalDB = null;
+    }
+
+    // Check Piata Agent
+    if (this.piataAgentAvailable) {
+      try {
+        const tools = piataAgent.getTools();
+        result.piataAgent = { status: 'healthy', toolCount: tools.length };
+      } catch {
+        result.piataAgent = { status: 'error', toolCount: 0 };
+      }
+    } else {
+      result.piataAgent = null;
+    }
+
+    // Get individual agent health
+    result.agents = await this.getAllAgentHealth();
+
+    return result;
+  }
+
+  /**
+   * Shutdown all integrated orchestrators gracefully
+   */
+  async shutdown(): Promise<void> {
+    console.log('🧠 [KAEL] Shutting down...');
+
+    if (this.julesManager) {
+      await this.julesManager.shutdown();
+      console.log('   ✅ JulesManager shutdown');
+    }
+
+    if (this.universalDBManager) {
+      await this.universalDBManager.close();
+      console.log('   ✅ UniversalDBManager shutdown');
+    }
+
+    console.log('🧠 [KAEL] Shutdown complete');
   }
 }
 

@@ -1,0 +1,95 @@
+{
+  "sources": [
+    {
+      "id": "supabase_prod",
+      "connectionString": "postgresql://postgres.ndzoavaveppnclkujjhh:ancutadavid_24A@aws-1-us-east-1.pooler.supabase.com:6543/postgres",
+      "maxConnections": 10
+    }
+  ],
+  "tools": [
+    {
+      "id": "search_users",
+      "sourceId": "supabase_prod",
+      "description": "Search for users by name or email",
+      "sql": "SELECT id, raw_user_meta_data->>'full_name' as name, email FROM auth.users WHERE email ILIKE '%{{query}}%' LIMIT 10",
+      "parameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "required": true,
+          "description": "Search query to match against user names or emails"
+        }
+      ]
+    },
+    {
+      "id": "get_active_listings",
+      "sourceId": "supabase_prod",
+      "description": "Get active marketplace listings",
+      "sql": "SELECT id, title, description, price, category_id FROM anunturi WHERE status = 'active' ORDER BY created_at DESC LIMIT {{limit}}",
+      "parameters": [
+        {
+          "name": "limit",
+          "type": "number",
+          "required": true,
+          "description": "Maximum number of results to return"
+        }
+      ]
+    },
+    {
+      "id": "analyze_pricing_gap",
+      "sourceId": "supabase_prod",
+      "description": "Analyze pricing gaps by category",
+      "sql": "SELECT category_id, AVG(price) as avg_price, COUNT(*) as listing_count FROM anunturi WHERE status = 'active' GROUP BY category_id ORDER BY listing_count DESC",
+      "parameters": []
+    },
+    {
+      "id": "check_db_version",
+      "sourceId": "supabase_prod",
+      "description": "Check the database version",
+      "sql": "SELECT version();",
+      "parameters": []
+    },
+    {
+      "id": "get_agent_registry",
+      "sourceId": "supabase_prod",
+      "description": "Get all registered agents and their status",
+      "sql": "SELECT agent_name, agent_type, status, capabilities, last_heartbeat FROM agent_registry ORDER BY last_heartbeat DESC",
+      "parameters": []
+    },
+    {
+      "id": "get_recent_a2a_signals",
+      "sourceId": "supabase_prod",
+      "description": "Get recent A2A communication signals",
+      "sql": "SELECT signal_type, from_agent, to_agent, priority, status, created_at FROM a2a_signals ORDER BY created_at DESC LIMIT {{limit}}",
+      "parameters": [
+        {
+          "name": "limit",
+          "type": "number",
+          "required": true,
+          "description": "Maximum number of signals to return"
+        }
+      ]
+    },
+    {
+      "id": "get_credit_packages",
+      "sourceId": "supabase_prod",
+      "description": "Get available credit packages for purchase",
+      "sql": "SELECT id, name, credits, price, is_active FROM credit_packages WHERE is_active = true ORDER BY price",
+      "parameters": []
+    },
+    {
+      "id": "get_marketplace_stats",
+      "sourceId": "supabase_prod",
+      "description": "Get overall marketplace statistics",
+      "sql": "SELECT (SELECT COUNT(*) FROM anunturi WHERE status = 'active') as active_listings, (SELECT COUNT(*) FROM auth.users) as total_users, (SELECT COUNT(*) FROM agent_registry WHERE status = 'healthy' OR status = 'initialized') as active_agents, (SELECT COUNT(*) FROM a2a_signals) as total_signals",
+      "parameters": []
+    },
+    {
+      "id": "get_categories",
+      "sourceId": "supabase_prod",
+      "description": "Get all marketplace categories",
+      "sql": "SELECT id, name, slug, icon FROM categories ORDER BY name",
+      "parameters": []
+    }
+  ]
+}

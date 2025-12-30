@@ -16,6 +16,11 @@ export class TikTokAutomation {
     this.businessAccountId = process.env.TIKTOK_BUSINESS_ACCOUNT_ID!;
     this.accessToken = process.env.TIKTOK_ACCESS_TOKEN!;
     this.pixelId = process.env.TIKTOK_PIXEL_ID!;
+    
+    // TikTok is currently disabled due to revoked business account
+    if (!this.accessToken || this.accessToken === 'your_access_token_here') {
+      console.warn('⚠️ TikTok Automation is DISABLED: Missing valid access token.');
+    }
   }
 
   /**

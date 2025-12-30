@@ -4,11 +4,19 @@
  */
 
 import { RomanianSocialMediaAutomation } from '../social-media-automation';
+import { FacebookService } from '../facebook';
 
 export class FacebookAutomation {
   private automation: RomanianSocialMediaAutomation;
   private accessToken: string;
   private pageId: string;
+
+  /**
+   * Post a message to the Facebook Page via FacebookService
+   */
+  static async postToPage(message: string, link?: string) {
+    return FacebookService.postToPage(message, link);
+  }
 
   constructor(automation: RomanianSocialMediaAutomation) {
     this.automation = automation;

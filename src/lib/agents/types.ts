@@ -10,7 +10,8 @@ export enum AgentCapability {
 export enum AgentType {
   OPENMANUS = 'OPENMANUS',
   CONTENT = 'CONTENT',
-  PYTHON_BRIDGE = 'PYTHON_BRIDGE'
+  PYTHON_BRIDGE = 'PYTHON_BRIDGE',
+  GEMINI = 'GEMINI'
 }
 
 export interface AgentTask {

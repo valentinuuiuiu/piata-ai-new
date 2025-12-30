@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { hashToken } from '@/lib/email-automation';
+import { hashToken } from '@/lib/email';
 
 // Mock database - replace with actual DB integration
 const verificationStore = new Map();

@@ -125,7 +125,16 @@ export async function DELETE(
        return NextResponse.json({ error: 'Ad not found or permission denied' }, { status: 404 });
     }
 
-    if (ad.user_id !== user.id) {
+    // Verify ownership or admin role
+    const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+        
+    const isAdmin = profile?.role === 'admin';
+
+    if (ad.user_id !== user.id && !isAdmin) {
        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

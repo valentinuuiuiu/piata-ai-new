@@ -315,7 +315,7 @@ class PiataAIAgent {
         console.log(`[PAI] Sending ad confirmation email for ad #${adId} to ${userEmail}`);
         
         try {
-          const { sendAdConfirmationEmail } = await import('@/lib/email-confirmation');
+          const { sendAdConfirmationEmail } = await import('@/lib/email');
           const result = await sendAdConfirmationEmail({
             email: userEmail,
             adId,
@@ -850,7 +850,7 @@ class PiataAIAgent {
       console.log(`[PiataAgent] Listing created with ID: ${listingId}`);
       
       // 2. Send confirmation email via PAI's internal Resend system
-      const { sendAdConfirmationEmail } = await import('@/lib/email-confirmation');
+      const { sendAdConfirmationEmail } = await import('@/lib/email');
       
       // Get category name
       const categoryResult = await query('SELECT name FROM categories WHERE id = ?', [data.categoryId]);

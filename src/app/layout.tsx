@@ -67,6 +67,8 @@ export const metadata: Metadata = {
   verification: {
     google: 'your-google-verification-code',
   },
+  manifest: '/manifest.json',
+  themeColor: '#000000',
 };
 
 export default function RootLayout({
@@ -92,6 +94,21 @@ export default function RootLayout({
 
           <SacredSpace />
           <PerformanceMonitor />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                      console.log('[PWA] ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function(err) {
+                      console.log('[PWA] ServiceWorker registration failed: ', err);
+                    });
+                  });
+                }
+              `
+            }}
+          />
         </ErrorBoundary>
       </body>
     </html>

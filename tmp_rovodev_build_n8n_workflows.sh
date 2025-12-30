@@ -13,7 +13,11 @@ echo ""
 N8N_URL="http://localhost:5678"
 WORKFLOWS_DIR="/tmp/piata_n8n_workflows"
 SUPABASE_URL="https://ndzoavaveppnclkujjhh.supabase.co"
-SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kem9hdmF2ZXBwbmNsa3VqamhoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDM5NzkxMSwiZXhwIjoyMDc5OTczOTExfQ.2d6bkmNV2kIaLLSOzEE0DQ-emoyZBqwMi8s1ZANKM0g"
+SUPABASE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+if [ -z "$SUPABASE_KEY" ]; then
+  echo "❌ ERROR: SUPABASE_SERVICE_ROLE_KEY not found in environment."
+  exit 1
+fi
 APP_URL="http://localhost:3001"
 
 # Create workflows directory

@@ -13,7 +13,11 @@
 const crypto = require('crypto');
 
 const SUPABASE_URL = 'https://ndzoavaveppnclkujjhh.supabase.co';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kem9hdmF2ZXBwbmNsa3VqamhoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDM5NzkxMSwiZXhwIjoyMDc5OTczOTExfQ.2d6bkmNV2kIaLLSOzEE0DQ-emoyZBqwMi8s1ZANKM0g';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_ROLE_KEY) {
+  console.error('❌ ERROR: SUPABASE_SERVICE_ROLE_KEY not found in environment.');
+  process.exit(1);
+}
 
 const PROD_API = 'https://www.piata-ai.ro';
 

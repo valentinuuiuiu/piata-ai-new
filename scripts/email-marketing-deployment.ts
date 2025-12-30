@@ -1,10 +1,10 @@
 // Email Marketing Automation System - Deployment & Testing Script
 // Comprehensive testing and deployment for the complete system
 
-import { EmailMarketingSystem } from '../src/lib/email-system';
-import { EmailAutomationEngine } from '../src/lib/email-automation';
+import { EmailMarketingSystem } from '../src/lib/email';
+import { EmailAutomationEngine } from '../src/lib/email';
 import { UserSegmentationEngine } from '../src/lib/user-segmentation';
-import { EmailIntegrationService, EmailEventGenerator } from '../src/lib/email-integration';
+import { EmailIntegrationService, EmailEventGenerator } from '../src/lib/email';
 import { ScheduledCampaignManager } from '../src/lib/scheduled-campaigns';
 import marketIntelligence from '../data/market-intelligence.json';
 

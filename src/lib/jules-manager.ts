@@ -1,6 +1,7 @@
 import { MCPClient } from './mcp-client';
 import { OpenRouterAgent, KATE_CODER_AGENT, JULES_REASONING_AGENT, GROK_AGENT } from './openrouter-agent';
 import { a2aSignalManager, a2aSignalFilter, a2aPerformanceDashboard } from './a2a';
+import { UniversalDBManager } from './universal-db-mcp';
 import path from 'path';
 
 /**
@@ -29,11 +30,12 @@ export class JulesManager {
   private clients: Map<string, MCPClient> = new Map();
   private openRouterAgents: Map<string, OpenRouterAgent> = new Map();
   private openRouterConfig: OpenRouterConfig | null = null;
+  private universalDBManager: UniversalDBManager | null = null;
   private baseDir: string;
 
   constructor(baseDir?: string) {
     this.baseDir = baseDir || process.cwd();
-    
+
     // Load OpenRouter configuration from environment
     const apiKey = process.env.OPENROUTER_API_KEY || '';
     if (apiKey) {
@@ -41,6 +43,13 @@ export class JulesManager {
         apiKey,
         endpoint: 'https://openrouter.ai/api/v1/chat/completions'
       };
+    }
+
+    // Initialize Universal DB Manager
+    try {
+      this.universalDBManager = new UniversalDBManager();
+    } catch (error) {
+      console.error('[Jules] Failed to initialize UniversalDBManager:', error);
     }
   }
 
@@ -115,7 +124,7 @@ export class JulesManager {
           const client = new MCPClient(subagent.name, subagent.scriptPath, []);
           this.clients.set(subagent.name.toLowerCase(), client);
           console.log(`[Jules] ✅ ${subagent.name} registered (MCP)`);
-          
+
           // Register agent in A2A protocol
           await a2aSignalManager.updateAgentRegistry(subagent.name.toLowerCase(), {
             agentType: 'mcp_subagent',
@@ -133,7 +142,7 @@ export class JulesManager {
             this.openRouterAgents.set('grok', GROK_AGENT);
           }
           console.log(`[Jules] ✅ ${subagent.name} registered (OpenRouter: ${subagent.model})`);
-          
+
           // Register OpenRouter agent in A2A protocol
           await a2aSignalManager.updateAgentRegistry(subagent.name.toLowerCase(), {
             agentType: 'llm_agent',
@@ -147,10 +156,26 @@ export class JulesManager {
       }
     }
 
+    // Initialize Universal DB Manager if available
+    if (this.universalDBManager) {
+      console.log('[Jules] ✅ Universal DB Manager initialized');
+      try {
+        // Register in A2A protocol
+        await a2aSignalManager.updateAgentRegistry('universal_db', {
+          agentType: 'db_mcp_agent',
+          status: 'initialized',
+          capabilities: ['database_query', 'sql_execution', 'parameterized_tools'],
+          metadata: { description: 'Universal Database MCP Manager with dynamic SQL tools' }
+        });
+      } catch (error) {
+        console.error('[Jules] Failed to register Universal DB in A2A:', error);
+      }
+    }
+
     // Log Jules Manager initialization as A2A broadcast
     await a2aSignalManager.broadcastEnhanced('JULES_INITIALIZED', {
       totalAgents: subagents.filter(s => s.enabled).length,
-      agents: subagents.filter(s => s.enabled).map(s => s.name.toLowerCase()),
+      agents: [...subagents.filter(s => s.enabled).map(s => s.name.toLowerCase()), 'universal_db'],
       timestamp: new Date()
     }, 'jules-manager', 'high');
   }
@@ -276,6 +301,58 @@ export class JulesManager {
   }
 
   /**
+   * Execute a database tool using the Universal DB Manager
+   */
+  async executeDBTool(toolName: string, args: Record<string, any>): Promise<any> {
+    if (!this.universalDBManager) {
+      throw new Error('Universal DB Manager not initialized');
+    }
+
+    const startTime = Date.now();
+
+    // Log the database tool execution attempt
+    await a2aSignalManager.broadcastEnhanced('DB_TOOL_EXECUTION_ATTEMPT', {
+      toolName,
+      args,
+      timestamp: new Date()
+    }, 'jules-manager', 'normal');
+
+    try {
+      const result = await this.universalDBManager.executeTool(toolName, args);
+      const duration = Date.now() - startTime;
+
+      console.log(`[Jules] Database tool ${toolName} executed successfully`);
+
+      // Log successful execution
+      await a2aSignalManager.broadcastEnhanced('DB_TOOL_EXECUTED', {
+        tool: toolName,
+        duration,
+        success: result.success,
+        rowCount: result.rowCount,
+        timestamp: new Date()
+      }, 'jules-manager', 'normal');
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.error(`[Jules] Error executing database tool ${toolName}:`, error);
+
+      // Log failure
+      await a2aSignalManager.broadcastEnhanced('DB_TOOL_FAILED', {
+        tool: toolName,
+        duration,
+        success: false,
+        error: errorMessage,
+        timestamp: new Date()
+      }, 'jules-manager', 'high');
+
+      throw error;
+    }
+  }
+
+  /**
    * Smart routing: automatically select the right subagent for a task
    */
   async executeTask(taskDescription: string, toolName?: string, args?: any): Promise<any> {
@@ -292,26 +369,87 @@ export class JulesManager {
     // Route to KATE-CODER for coding tasks (TOON Optimized)
     if (task.includes('code') || task.includes('debug') || task.includes('function') ||
         task.includes('class') || task.includes('bug') || task.includes('optimize code')) {
-      
+
       // TOON: Compact signal
       await a2aSignalManager.broadcastEnhanced('T_RTD', { t: 'kate-coder', r: 'code' }, 'jules-manager');
-      
+
       return this.callOpenRouterAgent('kate-coder', taskDescription);
     }
 
     // Route to Grok for fast insights and automation (TOON Optimized)
     if (task.includes('analyze') || task.includes('insight') || task.includes('automate') ||
         task.includes('optimize listing') || task.includes('marketplace')) {
-      
+
       await a2aSignalManager.broadcastEnhanced('T_RTD', { t: 'grok', r: 'auto' }, 'jules-manager');
-      
+
       return this.callOpenRouterAgent('grok', taskDescription);
+    }
+
+    // Route to database for data-related tasks
+    if (task.includes('database') || task.includes('db') || task.includes('query') ||
+        task.includes('search') || task.includes('find') || task.includes('list') ||
+        task.includes('get') || task.includes('select') || task.includes('user') ||
+        task.includes('listing') || task.includes('product') || task.includes('data')) {
+      console.log('[Jules] Routing to Universal DB Manager...');
+
+      await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
+        task: taskDescription,
+        routedTo: 'universal_db',
+        reason: 'database_query',
+        timestamp: new Date()
+      }, 'jules-manager', 'normal');
+
+      // If no specific tool is provided, use JULES to determine the best database tool
+      if (!toolName) {
+        console.log('[Jules] Using JULES to plan database query...');
+        const planPrompt = `You are JULES, the orchestrator. The user wants to perform a database operation: "${taskDescription}".
+        Available database tools:
+        - search_users(query) - Search for users by name or email
+        - get_active_listings(limit) - Get active marketplace listings
+        - check_db_version() - Check the database version
+
+        Respond ONLY with a JSON object in this format:
+        {
+          "toolName": "name_of_tool",
+          "args": { "arg1": "value1", ... }
+        }`;
+
+        const planResult = await this.callOpenRouterAgent('jules', planPrompt);
+        if (planResult.success) {
+          try {
+            const plan = JSON.parse(planResult.content.replace(/```json|```/g, '').trim());
+            toolName = plan.toolName;
+            args = plan.args;
+            console.log(`[Jules] JULES planned database tool: ${toolName} with args:`, args);
+          } catch (e) {
+            console.error('[Jules] Failed to parse JULES database plan:', e);
+            // Default to a search_users if we can't parse the plan
+            toolName = 'search_users';
+            args = { query: taskDescription };
+          }
+        } else {
+          // Default to a search_users if JULES fails
+          toolName = 'search_users';
+          args = { query: taskDescription };
+        }
+      }
+
+      await a2aSignalManager.logAgentInteraction({
+        fromAgent: 'jules-manager',
+        toAgent: 'universal_db',
+        interactionType: 'task_execution',
+        taskDescription,
+        outcome: 'success',
+        context: { toolName, args, reason: 'database_query' }
+      });
+
+      return this.executeDBTool(toolName, args);
     }
 
     // Route to Stripe for payment-related tasks
     if (task.includes('payment') || task.includes('stripe') || task.includes('charge') || task.includes('refund') || task.includes('invoice')) {
       console.log('[Jules] Routing to Stripe Agent...');
-      
+
       await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
         task: taskDescription,
         routedTo: 'stripe',
@@ -361,7 +499,7 @@ export class JulesManager {
           }
         }
       }
-      
+
       await a2aSignalManager.logAgentInteraction({
         fromAgent: 'jules-manager',
         toAgent: 'stripe',
@@ -370,21 +508,21 @@ export class JulesManager {
         outcome: 'success',
         context: { toolName: toolName || 'list_products', args, reason: 'payment_operations' }
       });
-      
+
       return this.callTool('stripe', toolName || 'list_products', args || {});
     }
 
     // Route to Redis for cache/session tasks
     if (task.includes('cache') || task.includes('redis') || task.includes('session') || task.includes('store')) {
       console.log('[Jules] Routing to Redis Agent...');
-      
+
       await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
         task: taskDescription,
         routedTo: 'redis',
         reason: 'cache_management',
         timestamp: new Date()
       }, 'jules-manager', 'normal');
-      
+
       await a2aSignalManager.logAgentInteraction({
         fromAgent: 'jules-manager',
         toAgent: 'redis',
@@ -393,21 +531,21 @@ export class JulesManager {
         outcome: 'success',
         context: { toolName: toolName || 'get', args, reason: 'cache_management' }
       });
-      
+
       return this.callTool('redis', toolName || 'get', args || {});
     }
 
     // Route to GitHub for repo tasks
     if (task.includes('github') || task.includes('repo') || task.includes('repository') || task.includes('commit')) {
       console.log('[Jules] Routing to GitHub Agent...');
-      
+
       await a2aSignalManager.broadcastEnhanced('TASK_ROUTED', {
         task: taskDescription,
         routedTo: 'github',
         reason: 'repository_operations',
         timestamp: new Date()
       }, 'jules-manager', 'normal');
-      
+
       await a2aSignalManager.logAgentInteraction({
         fromAgent: 'jules-manager',
         toAgent: 'github',
@@ -416,7 +554,7 @@ export class JulesManager {
         outcome: 'success',
         context: { toolName: toolName || 'search_repositories', args, reason: 'repository_operations' }
       });
-      
+
       return this.callTool('github', toolName || 'search_repositories', args || {});
     }
 
@@ -456,6 +594,16 @@ export class JulesManager {
       }
     }
 
+    // Check Universal DB Manager
+    if (this.universalDBManager) {
+      try {
+        const dbStatus = await this.universalDBManager.healthCheck();
+        status['universal_db'] = Object.values(dbStatus).every(s => s === true);
+      } catch (error) {
+        status['universal_db'] = false;
+      }
+    }
+
     return status;
   }
 
@@ -470,6 +618,16 @@ export class JulesManager {
         console.log(`[Jules] ✅ ${name} disconnected`);
       } catch (error) {
         console.error(`[Jules] Failed to disconnect ${name}:`, error);
+      }
+    }
+
+    // Close Universal DB Manager connections
+    if (this.universalDBManager) {
+      try {
+        await this.universalDBManager.close();
+        console.log('[Jules] ✅ Universal DB Manager connections closed');
+      } catch (error) {
+        console.error('[Jules] Failed to close Universal DB Manager:', error);
       }
     }
   }

@@ -5,7 +5,7 @@
  */
 
 import { analyticsSystem } from '../lib/analytics-system';
-import { emailSystem } from '../lib/email-system';
+import { emailSystem } from '../src/lib/email';
 import { socialMediaAutomation } from '../lib/social-media-automation';
 import { seoAutomation } from '../lib/seo/seo-automation-orchestrator';
 import { referralSystem } from '../lib/referral-system';

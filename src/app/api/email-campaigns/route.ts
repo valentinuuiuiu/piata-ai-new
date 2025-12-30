@@ -2,8 +2,8 @@
 // Handles email campaign management and automation triggers
 
 import { NextRequest, NextResponse } from 'next/server';
-import { EmailMarketingSystem, EmailCampaign, TriggerType, UserSegment, CampaignType } from '@/lib/email-system';
-import { EmailAutomationEngine } from '@/lib/email-automation';
+import { EmailMarketingSystem, EmailCampaign, TriggerType, UserSegment, CampaignType } from '@/lib/email';
+import { EmailAutomationEngine } from '@/lib/email';
 import { UserSegmentationEngine, createBehaviorDataFromActions } from '@/lib/user-segmentation';
 
 // Load market intelligence data

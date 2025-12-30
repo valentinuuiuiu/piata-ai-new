@@ -11,6 +11,9 @@ import { runReEngagementEmailCampaign } from '@/lib/automation-tasks/emailCampai
 import { runShoppingAgents } from '@/lib/automation-tasks/shoppingAgents';
 import { generateSocialMediaContent } from '@/lib/automation-tasks/socialMedia';
 import { sendWeeklyDigest } from '@/lib/automation-tasks/weeklyDigest';
+import { kael } from '@/lib/agents/unified-orchestrator';
+import { AgentCapability } from '@/lib/agents/types';
+import { v4 as uuidv4 } from 'uuid';
 
 const TASKS: { [key: string]: () => Promise<any> } = {
   'blog-daily': generateDailyBlogPost,
@@ -63,6 +66,20 @@ async function runAndLogTask(taskName: string, supabase: any) {
     if (!TASKS[taskName]) {
       throw new Error(`Task not found: ${taskName}`);
     }
+
+    // Wrap in KAEL execution for unified logging, metrics, and memory
+    const kaelResult = await kael.execute({
+      id: uuidv4(),
+      goal: `Execute scheduled task: ${taskName}`,
+      type: taskName.includes('blog') || taskName.includes('social') ? 'content' : 'automation',
+      priority: 'normal'
+    });
+
+    if (kaelResult.status === 'error') {
+      throw new Error(kaelResult.error);
+    }
+
+    // Run the actual task implementation
     result = await TASKS[taskName]();
     status = result.success ? 'success' : 'failure';
   } catch (error: any) {
@@ -70,11 +87,13 @@ async function runAndLogTask(taskName: string, supabase: any) {
   } finally {
     const durationMs = Date.now() - startTime;
     await supabase.from('automation_logs').insert({
-      task_name: taskName,
+      automation_name: taskName,
       status: status,
-      duration_ms: durationMs,
-      summary: result.error ? result.error.substring(0, 250) : JSON.stringify(result.results || result),
-      details: result.error ? result.error : undefined,
+      execution_duration_ms: durationMs,
+      results: {
+        summary: result.error ? result.error.substring(0, 250) : (result.results || result),
+        details: result.error ? result.error : undefined
+      },
     });
   }
   return result;
@@ -97,9 +116,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: result.success, task: specificTask, result });
     }
 
-    console.log('[ORCHESTRATOR] Running scheduled tasks from JULES_DAILY_DIRECTIVE.md');
-    const directivePath = path.join(process.cwd(), 'JULES_DAILY_DIRECTIVE.md');
-    const dailyDirective = await fs.readFile(directivePath, 'utf-8');
+    console.log('[ORCHESTRATOR] Running scheduled tasks');
+    
+    let dailyDirective = '';
+    try {
+      const { data: directiveData, error: directiveError } = await supabase
+        .from('automation_directives')
+        .select('content')
+        .eq('directive_name', 'jules_daily_directive')
+        .eq('is_active', true)
+        .single();
+      
+      if (directiveError || !directiveData) {
+        console.warn('[ORCHESTRATOR] Could not fetch directive from DB, falling back to file:', directiveError?.message);
+        const directivePath = path.join(process.cwd(), 'JULES_DAILY_DIRECTIVE.md');
+        dailyDirective = await fs.readFile(directivePath, 'utf-8');
+      } else {
+        dailyDirective = directiveData.content;
+        console.log('[ORCHESTRATOR] Using daily directive from Database');
+      }
+    } catch (err) {
+      console.warn('[ORCHESTRATOR] Error fetching directive from DB, falling back to file:', err);
+      const directivePath = path.join(process.cwd(), 'JULES_DAILY_DIRECTIVE.md');
+      dailyDirective = await fs.readFile(directivePath, 'utf-8');
+    }
+
     const tasksToRun = await getTasksForCurrentHour(dailyDirective);
 
     if (tasksToRun.length === 0) {
@@ -121,10 +162,12 @@ export async function GET(request: NextRequest) {
     console.error('[ORCHESTRATOR] Critical error:', error);
     // Log the top-level error as well
     await supabase.from('automation_logs').insert({
-      task_name: 'orchestrator-critical-failure',
+      automation_name: 'orchestrator-critical-failure',
       status: 'failure',
-      summary: 'A top-level error occurred in the orchestrator.',
-      details: error.message,
+      results: {
+        summary: 'A top-level error occurred in the orchestrator.',
+        details: error.message,
+      },
     });
     return NextResponse.json(
       { success: false, error: 'An error occurred during orchestration.', details: error.message },
