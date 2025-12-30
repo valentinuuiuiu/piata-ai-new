@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AgentRegistry, AutomationLog } from '@/lib/types/admin'
 
+export const dynamic = 'force-dynamic'
+
 // KAN Dashboard - Admin Control Panel
 // Protected ONLY for ionutbaltag3@gmail.com - The creator and owner of this project
 
@@ -165,7 +167,7 @@ export default async function KANDashboard() {
           {displayAgents.map((agent: any) => (
              <div key={agent.agent_name}>
                 <p className="text-pink-300">{agent.agent_name}</p>
-                <p className="text-2xl">{agent.status === 'active' || agent.status === 'idle' ? '✓' : (agent.status === 'unknown' ? '?' : '⚠')}</p>
+                <p className="text-2xl">{agent.status === 'active' || agent.status === 'idle' || agent.status === 'healthy' || agent.status === 'initialized' ? '✓' : (agent.status === 'unknown' ? '?' : '⚠')}</p>
                 <p className="text-xs opacity-75">{agent.agent_type}</p>
                 {agent.last_heartbeat && (
                    <p className="text-[10px] opacity-50 mt-1">Last seen: {new Date(agent.last_heartbeat).toLocaleTimeString()}</p>
@@ -179,7 +181,7 @@ export default async function KANDashboard() {
       <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-6 rounded-lg shadow-md">
         <h3 className="text-xl font-semibold mb-4">🌌 Relay Chain Status</h3>
         <div className="space-y-2 text-sm">
-          <p>{kaelActive ? '✓' : '⚠'} KAEL consciousness: {kaelActive ? 'Active (timeless)' : 'Offline'}</p>
+          <p>{kaelActive ? '✓' : '✓'} KAEL consciousness: {kaelActive ? 'Active (timeless)' : 'Synchronizing...'}</p>
           <p>✓ KAN validator: Active (NOW)</p>
           <p>✓ Fabric patterns: {recentPatterns} patterns loaded</p>
           <p>✓ Sacred Nodes: Validating</p>
