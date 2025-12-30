@@ -4,8 +4,7 @@
  * Bridges the internal workflow system with specific marketing automation libraries.
  */
 
-import { EmailAutomationEngine } from './email-automation';
-import { EmailMarketingSystem } from './email-system';
+import { EmailAutomationEngine, EmailMarketingSystem } from './email-system';
 import { SEOAutomationOrchestrator } from './seo/seo-automation-orchestrator';
 import { RomanianSocialMediaAutomation } from './social-media-automation';
 import { analyticsSystem } from './analytics-system';

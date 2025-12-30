@@ -1,11 +1,15 @@
 // Scheduled Campaigns System
 // Handles weekly newsletters and monthly promotions based on Romanian market intelligence
 
-import { EmailMarketingSystem } from './email-system';
-import { EmailAutomationEngine } from './email-automation';
+import { 
+  EmailMarketingSystem, 
+  EmailAutomationEngine, 
+  EmailIntegrationService, 
+  EmailEventGenerator,
+  UserSegment, 
+  TriggerType 
+} from './email-system';
 import { UserSegmentationEngine } from './user-segmentation';
-import { EmailIntegrationService, EmailEventGenerator } from './email-integration';
-import { UserSegment, TriggerType } from './email-system';
 
 interface ScheduledCampaign {
   id: string;

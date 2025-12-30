@@ -139,7 +139,7 @@ export class SearchManager {
         snippet: `This is a simulated search result from ${source} related to your query: "${query}". The result contains relevant information that might be useful for your research.`,
         source: source,
         relevanceScore: Math.max(0.1, relevanceScore),
-        ...(query.includeEvidence ? { evidence: `Additional context for verification: ${query} - ${source} - result ${i + 1}` } : {})
+        ...(false ? { evidence: `Additional context for verification: ${query} - ${source} - result ${i + 1}` } : {})
       });
     }
     

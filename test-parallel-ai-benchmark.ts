@@ -96,7 +96,7 @@ async function runParallelAIBenchmark() {
       company: 'Future AI Ventures',
       source: 'website',
       score: 0,
-      status: 'new',
+      status: 'new' as const,
       timestamp: new Date()
     };
     
