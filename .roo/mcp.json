@@ -34,6 +34,15 @@
     "taita": {
       "command": "npx",
       "args": ["ts-node", "-r", "tsconfig-paths/register", "src/lib/mcp-server-taita.ts"]
+    },
+    "hostinger-mcp": {
+      "command": "npx",
+      "args": [
+        "hostinger-api-mcp@latest"
+      ],
+      "env": {
+        "API_TOKEN": "${HOSTINGER_API_TOKEN}"
+      }
     }
   }
 }
